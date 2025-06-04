@@ -725,15 +725,32 @@ export default function InvoiceDetail() {
                 </div>
               )}
 
-              {emailSummary && (
-                <div className="mb-6 p-4 border rounded-lg bg-green-50">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Bot className="w-5 h-5 text-green-600" />
-                    <h4 className="font-medium text-green-900">AI Conversation Summary</h4>
+              {emailHistory && emailHistory.length > 0 && (
+                <div className="mb-6 p-4 border rounded-lg bg-blue-50">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Bot className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-medium text-blue-900">AI Conversation Analysis</h4>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => generateSummaryMutation.mutate("")}
+                      disabled={generateSummaryMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {generateSummaryMutation.isPending ? "Analyzing..." : "Generate Summary"}
+                    </Button>
                   </div>
-                  <div className="text-sm text-green-800 whitespace-pre-wrap">
-                    {emailSummary}
-                  </div>
+                  {emailSummary && (
+                    <div className="text-sm text-blue-800 whitespace-pre-wrap">
+                      {emailSummary}
+                    </div>
+                  )}
+                  {!emailSummary && !generateSummaryMutation.isPending && (
+                    <div className="text-sm text-blue-600">
+                      Click "Generate Summary" to get an AI analysis of this email conversation.
+                    </div>
+                  )}
                 </div>
               )}
 
