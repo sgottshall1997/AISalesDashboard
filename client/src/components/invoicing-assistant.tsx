@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -240,6 +241,7 @@ export default function InvoicingAssistant() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent Date</th>
@@ -253,6 +255,11 @@ export default function InvoicingAssistant() {
                     const daysOverdue = calculateDaysOverdue(invoice.sent_date);
                     return (
                       <tr key={invoice.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <Link href={`/invoice/${invoice.id}`} className="text-blue-600 hover:text-blue-800 underline">
+                            {invoice.invoice_number}
+                          </Link>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {invoice.client.name}
                         </td>
@@ -288,10 +295,12 @@ export default function InvoicingAssistant() {
                               Draft AI Reminder
                             </Button>
                           )}
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
+                          <Link href={`/invoice/${invoice.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4 mr-1" />
+                              View Details
+                            </Button>
+                          </Link>
                         </td>
                       </tr>
                     );
