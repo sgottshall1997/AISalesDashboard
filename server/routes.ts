@@ -283,6 +283,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invoice detail endpoints
+  app.get("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const invoice = await storage.getInvoiceWithClient(invoiceId);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Get invoice error:", error);
+      res.status(500).json({ error: "Failed to get invoice" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const updates = req.body;
+      const invoice = await storage.updateInvoice(invoiceId, updates);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Update invoice error:", error);
+      res.status(500).json({ error: "Failed to update invoice" });
+    }
+  });
+
+  // Email history endpoints
+  app.get("/api/invoices/:id/emails", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const emails = await storage.getEmailHistory(invoiceId);
+      res.json(emails);
+    } catch (error) {
+      console.error("Get email history error:", error);
+      res.status(500).json({ error: "Failed to get email history" });
+    }
+  });
+
+  app.post("/api/invoices/:id/emails", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const emailData = { ...req.body, invoice_id: invoiceId };
+      const validatedData = insertEmailHistorySchema.parse(emailData);
+      const email = await storage.createEmailHistory(validatedData);
+      res.json(email);
+    } catch (error) {
+      console.error("Create email history error:", error);
+      res.status(500).json({ error: "Failed to create email history" });
+    }
+  });
+
+  // AI follow-up suggestion endpoint
+  app.get("/api/invoices/:id/ai-suggestion", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const suggestion = await storage.getInvoiceAISuggestion(invoiceId);
+      res.json(suggestion);
+    } catch (error) {
+      console.error("Get AI suggestion error:", error);
+      res.status(500).json({ error: "Failed to get AI suggestion" });
+    }
+  });
+
+  app.post("/api/invoices/:id/generate-followup", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const invoice = await storage.getInvoiceWithClient(invoiceId);
+      const emailHistory = await storage.getEmailHistory(invoiceId);
+      
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found" });
+      }
+
+      const suggestion = await storage.generateInvoiceFollowUp(invoice, emailHistory);
+      res.json(suggestion);
+    } catch (error) {
+      console.error("Generate follow-up error:", error);
+      res.status(500).json({ error: "Failed to generate follow-up" });
+    }
+  });
+
   // Bulk delete endpoints
   app.delete("/api/invoices/all", async (req, res) => {
     try {

@@ -1,9 +1,9 @@
 import { 
-  clients, invoices, leads, content_reports, client_engagements, ai_suggestions,
+  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
-  type AiSuggestion, type InsertAiSuggestion,
+  type AiSuggestion, type InsertAiSuggestion, type EmailHistory, type InsertEmailHistory,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -57,6 +57,17 @@ export interface IStorage {
     avgEngagement: number;
     atRiskRenewals: number;
   }>;
+
+  // Invoice detail methods
+  getInvoiceWithClient(id: number): Promise<(Invoice & { client: Client }) | undefined>;
+  
+  // Email history methods
+  getEmailHistory(invoiceId: number): Promise<EmailHistory[]>;
+  createEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory>;
+  
+  // AI suggestions for invoices
+  getInvoiceAISuggestion(invoiceId: number): Promise<any>;
+  generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -304,6 +315,84 @@ export class DatabaseStorage implements IStorage {
       avgEngagement: Number(avgEngagementResult.avg) || 0,
       atRiskRenewals: Number(atRiskResult.count) || 0
     };
+  }
+
+  async getInvoiceWithClient(id: number): Promise<(Invoice & { client: Client }) | undefined> {
+    const [result] = await db
+      .select()
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.client_id, clients.id))
+      .where(eq(invoices.id, id));
+
+    if (!result || !result.clients) {
+      return undefined;
+    }
+
+    return {
+      ...result.invoices,
+      client: result.clients
+    };
+  }
+
+  async getEmailHistory(invoiceId: number): Promise<EmailHistory[]> {
+    return await db
+      .select()
+      .from(email_history)
+      .where(eq(email_history.invoice_id, invoiceId))
+      .orderBy(desc(email_history.sent_date));
+  }
+
+  async createEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory> {
+    const [email] = await db
+      .insert(email_history)
+      .values(emailData)
+      .returning();
+    return email;
+  }
+
+  async getInvoiceAISuggestion(invoiceId: number): Promise<any> {
+    const invoice = await this.getInvoiceWithClient(invoiceId);
+    const emailHistory = await this.getEmailHistory(invoiceId);
+    
+    if (!invoice) {
+      return null;
+    }
+
+    return this.generateInvoiceFollowUp(invoice, emailHistory);
+  }
+
+  async generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any> {
+    const daysOverdue = Math.floor((Date.now() - new Date(invoice.sent_date).getTime()) / (1000 * 60 * 60 * 24));
+    const lastEmail = emailHistory[0];
+    const daysSinceLastEmail = lastEmail ? 
+      Math.floor((Date.now() - new Date(lastEmail.sent_date).getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+    let suggestion = {
+      subject: `Follow up on Invoice ${invoice.invoice_number}`,
+      body: `Dear ${invoice.client.name},\n\nI hope this message finds you well. I wanted to follow up regarding Invoice ${invoice.invoice_number} for $${invoice.amount}, which was sent on ${new Date(invoice.sent_date).toLocaleDateString()}.`,
+      reason: `Invoice is ${daysOverdue} days overdue`,
+      priority: "medium" as const
+    };
+
+    if (daysOverdue > 60) {
+      suggestion.priority = "high";
+      suggestion.body += `\n\nThis invoice is now significantly overdue (${daysOverdue} days). We would appreciate your immediate attention to resolve this matter.`;
+      suggestion.reason = `Critical: ${daysOverdue} days overdue`;
+    } else if (daysOverdue > 30) {
+      suggestion.priority = "high";
+      suggestion.body += `\n\nThis invoice is ${daysOverdue} days overdue. Please let us know when we can expect payment or if there are any issues we can help resolve.`;
+    } else if (daysOverdue > 0) {
+      suggestion.body += `\n\nThis invoice is ${daysOverdue} days past due. We would appreciate payment at your earliest convenience.`;
+    }
+
+    if (lastEmail && daysSinceLastEmail) {
+      suggestion.body += `\n\nI notice our last communication was ${daysSinceLastEmail} days ago. Please don't hesitate to reach out if you have any questions or concerns.`;
+      suggestion.reason += `, last email ${daysSinceLastEmail} days ago`;
+    }
+
+    suggestion.body += `\n\nThank you for your prompt attention to this matter.\n\nBest regards`;
+
+    return suggestion;
   }
 }
 
