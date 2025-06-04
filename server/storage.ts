@@ -27,6 +27,7 @@ export interface IStorage {
   getOverdueInvoices(): Promise<(Invoice & { client: Client })[]>;
   createInvoice(invoice: InsertInvoice): Promise<Invoice>;
   updateInvoice(id: number, updates: Partial<InsertInvoice>): Promise<Invoice | undefined>;
+  deleteInvoice(id: number): Promise<boolean>;
 
   // Leads
   getAllLeads(): Promise<Lead[]>;

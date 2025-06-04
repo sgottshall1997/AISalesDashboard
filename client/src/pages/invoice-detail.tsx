@@ -35,6 +35,7 @@ interface InvoiceWithClient {
   sent_date: string;
   payment_status: string;
   last_reminder_sent?: string;
+  notes?: string;
   client: {
     id: number;
     name: string;
@@ -244,13 +245,27 @@ export default function InvoiceDetail() {
           
           <div className="flex gap-2">
             {!isEditing ? (
-              <Button onClick={() => {
-                setIsEditing(true);
-                setEditData(invoice);
-              }}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Invoice
-              </Button>
+              <>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this invoice? This action cannot be undone.')) {
+                      deleteInvoiceMutation.mutate();
+                    }
+                  }}
+                  disabled={deleteInvoiceMutation.isPending}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+                <Button onClick={() => {
+                  setIsEditing(true);
+                  setEditData(invoice);
+                }}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Invoice
+                </Button>
+              </>
             ) : (
               <>
                 <Button variant="outline" onClick={() => setIsEditing(false)}>
@@ -348,6 +363,69 @@ export default function InvoiceDetail() {
                     </div>
                   </div>
                 </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Notes */}
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="flex items-center gap-2">
+                  <StickyNote className="w-5 h-5" />
+                  Quick Notes
+                </CardTitle>
+                {!isEditingNotes ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsEditingNotes(true)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Notes
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingNotes(false);
+                        setNotes(invoice?.notes || "");
+                      }}
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm"
+                      onClick={() => saveNotesMutation.mutate(notes)}
+                      disabled={saveNotesMutation.isPending}
+                    >
+                      <Save className="w-4 h-4 mr-2" />
+                      Save
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!isEditingNotes ? (
+                <div className="min-h-[100px] p-4 bg-gray-50 rounded-lg">
+                  {notes ? (
+                    <p className="whitespace-pre-wrap text-gray-700">{notes}</p>
+                  ) : (
+                    <p className="text-gray-500 italic">No notes added yet. Click "Edit Notes" to add some.</p>
+                  )}
+                </div>
+              ) : (
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add your notes about this invoice..."
+                  rows={6}
+                  className="w-full"
+                />
               )}
             </CardContent>
           </Card>

@@ -32,6 +32,7 @@ export const invoices = pgTable("invoices", {
   sent_date: timestamp("sent_date").notNull(),
   payment_status: text("payment_status").notNull().default("pending"), // pending, paid, overdue
   last_reminder_sent: timestamp("last_reminder_sent"),
+  notes: text("notes"),
   created_at: timestamp("created_at").defaultNow(),
 });
 
