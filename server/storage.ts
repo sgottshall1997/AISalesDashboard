@@ -410,7 +410,7 @@ export class DatabaseStorage implements IStorage {
       }).join('\n\n---\n\n');
 
       try {
-        const OpenAI = require('openai');
+        const OpenAI = (await import('openai')).default;
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
         const response = await openai.chat.completions.create({
