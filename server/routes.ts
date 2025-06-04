@@ -406,8 +406,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const daysOverdue = parseInt(row['Days Overdue'] || '0');
                 const arNote = row['A/R And Invoicing Note'] || '';
                 
+                console.log(`Processing row ${index + 2}: ${accountName} - ${opportunityName} - ${invoiceAmount} - ${daysOverdue} days`);
+                
                 if (!accountName) {
                   errors.push(`Row ${index + 2}: Missing Account Name`);
+                  continue;
+                }
+
+                if (!opportunityName) {
+                  errors.push(`Row ${index + 2}: Missing Opportunity Name for ${accountName}`);
                   continue;
                 }
 
@@ -450,9 +457,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   last_reminder_sent: null
                 };
 
-                // Check for existing invoice
+                // Check for existing invoice by both invoice number and client
                 const existingInvoices = await storage.getAllInvoices();
-                const duplicate = existingInvoices.find(inv => inv.invoice_number === invoiceData.invoice_number);
+                const duplicate = existingInvoices.find(inv => 
+                  inv.invoice_number === invoiceData.invoice_number && 
+                  inv.client_id === invoiceData.client_id
+                );
                 
                 if (duplicate) {
                   await storage.updateInvoice(duplicate.id, invoiceData);
