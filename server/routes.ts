@@ -1,14 +1,25 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateAIEmail } from "./openai";
 import OpenAI from "openai";
+import multer from "multer";
+import fs from "fs";
+import csv from "csv-parser";
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
   insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
 } from "@shared/schema";
 import { db } from "./db";
+
+// Configure multer for file uploads
+const upload = multer({
+  dest: 'uploads/',
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
@@ -696,6 +707,121 @@ Format your response as:
     } catch (error) {
       console.error('CSV upload error:', error);
       res.status(500).json({ error: 'Failed to process CSV file' });
+    }
+  });
+
+  // Reading history management
+  app.get("/api/reading-history", async (req: Request, res: Response) => {
+    try {
+      const readingHistory = await storage.getAllReadingHistory();
+      res.json(readingHistory);
+    } catch (error) {
+      console.error("Error fetching reading history:", error);
+      res.status(500).json({ message: "Failed to fetch reading history" });
+    }
+  });
+
+  app.post("/api/reading-history", async (req: Request, res: Response) => {
+    try {
+      const { client_id, report_title, read_date, engagement_notes } = req.body;
+      
+      if (!client_id || !report_title || !read_date) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const readingHistoryData = {
+        client_id: parseInt(client_id),
+        report_title,
+        read_date: new Date(read_date),
+        engagement_notes: engagement_notes || null
+      };
+
+      const readingHistory = await storage.createReadingHistory(readingHistoryData);
+      res.json(readingHistory);
+    } catch (error) {
+      console.error("Error creating reading history:", error);
+      res.status(500).json({ message: "Failed to create reading history" });
+    }
+  });
+
+  app.delete("/api/reading-history/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteReadingHistory(id);
+      
+      if (success) {
+        res.json({ message: "Reading history deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Reading history not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting reading history:", error);
+      res.status(500).json({ message: "Failed to delete reading history" });
+    }
+  });
+
+  // PDF report upload endpoint
+  app.post("/api/reports/upload", async (req, res) => {
+    try {
+      const multer = await import('multer');
+      const fs = await import('fs');
+      
+      // Configure multer for PDF uploads
+      const upload = multer.default({
+        dest: '/tmp/',
+        fileFilter: (req, file, cb) => {
+          if (file.mimetype === 'application/pdf' || file.originalname.endsWith('.pdf')) {
+            cb(null, true);
+          } else {
+            cb(new Error('Only PDF files are allowed'));
+          }
+        }
+      });
+
+      upload.single('pdf')(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ error: err.message });
+        }
+
+        const file = req.file;
+
+        if (!file) {
+          return res.status(400).json({ error: 'No PDF file uploaded' });
+        }
+
+        try {
+          // Process the PDF upload
+          const reportData = {
+            title: file.originalname.replace('.pdf', ''),
+            type: 'Research Report',
+            published_date: new Date(),
+            open_rate: '0%',
+            click_rate: '0%',
+            engagement_level: 'medium' as const,
+            tags: []
+          };
+
+          const report = await storage.createContentReport(reportData);
+          
+          // Clean up uploaded file
+          fs.unlinkSync(file.path);
+          
+          res.json({ 
+            message: "PDF uploaded and processed successfully",
+            report 
+          });
+        } catch (processingError) {
+          // Clean up uploaded file
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+          throw processingError;
+        }
+      });
+
+    } catch (error) {
+      console.error('PDF upload error:', error);
+      res.status(500).json({ error: 'Failed to process PDF file' });
     }
   });
 
