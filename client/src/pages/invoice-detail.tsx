@@ -77,6 +77,7 @@ export default function InvoiceDetail() {
   const [showConversationParser, setShowConversationParser] = useState(false);
   const [notes, setNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [emailSummary, setEmailSummary] = useState<string | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -147,6 +148,27 @@ export default function InvoiceDetail() {
       toast({
         title: "AI Suggestion Generated",
         description: "New follow-up suggestion has been created.",
+      });
+    },
+  });
+
+  const generateSummaryMutation = useMutation({
+    mutationFn: async (conversationText: string) => {
+      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/summary`, { conversation: conversationText });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setEmailSummary(data.summary);
+      toast({
+        title: "Summary Generated",
+        description: "AI summary of the conversation has been created.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to generate conversation summary.",
+        variant: "destructive",
       });
     },
   });
@@ -354,12 +376,17 @@ export default function InvoiceDetail() {
       }, index * 500); // Stagger the requests
     });
     
+    // Generate AI summary after a delay to ensure all emails are added
+    setTimeout(() => {
+      generateSummaryMutation.mutate(conversationText);
+    }, parsedEmails.length * 500 + 1000);
+    
     setConversationText('');
     setShowConversationParser(false);
     
     toast({
       title: "Conversation Parsed",
-      description: `Added ${parsedEmails.length} emails to the history.`,
+      description: `Added ${parsedEmails.length} emails and generating AI summary.`,
     });
   };
 
