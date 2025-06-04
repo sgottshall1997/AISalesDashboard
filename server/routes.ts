@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generateAIEmail } from "./openai";
 import { 
-  insertClientSchema, insertInvoiceSchema, insertLeadSchema,
+  insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
   insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
 } from "@shared/schema";
@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/invoices/:id", async (req, res) => {
     try {
       console.log("Update request body:", req.body);
-      const updates = insertInvoiceSchema.partial().parse(req.body);
+      const updates = updateInvoiceSchema.parse(req.body);
       console.log("Parsed updates:", updates);
       const invoice = await storage.updateInvoice(parseInt(req.params.id), updates);
       if (!invoice) {

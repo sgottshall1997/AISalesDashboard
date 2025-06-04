@@ -104,6 +104,22 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   created_at: true,
 });
 
+// Update schema that accepts string dates and converts them
+export const updateInvoiceSchema = insertInvoiceSchema.extend({
+  sent_date: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (typeof val === 'string') {
+      return new Date(val);
+    }
+    return val;
+  }),
+  last_reminder_sent: z.union([z.string(), z.date(), z.null()]).optional().transform((val) => {
+    if (typeof val === 'string') {
+      return new Date(val);
+    }
+    return val;
+  }),
+}).partial();
+
 export const insertLeadSchema = createInsertSchema(leads).omit({
   id: true,
   created_at: true,
