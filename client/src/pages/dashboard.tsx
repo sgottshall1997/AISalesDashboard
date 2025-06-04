@@ -24,6 +24,8 @@ export default function Dashboard() {
         return <LeadPipeline />;
       case "followup":
         return <FollowUpGenerator />;
+      case "upload":
+        return <CsvUpload />;
       default:
         return <Overview />;
     }

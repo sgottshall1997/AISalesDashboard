@@ -330,7 +330,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Process based on upload type
           if (uploadType === 'prospects') {
-            for (const [index, row] of results.entries()) {
+            for (let index = 0; index < results.length; index++) {
+              const row = results[index];
               try {
                 const leadData = {
                   name: row['Contact Name'] || row['Prospect Name'] || '',
@@ -344,8 +345,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
 
                 // Check for existing lead by email
-                const existingLead = await storage.getAllLeads();
-                const duplicate = existingLead.find(l => l.email === leadData.email);
+                const existingLeads = await storage.getAllLeads();
+                const duplicate = existingLeads.find(l => l.email === leadData.email);
                 
                 if (duplicate) {
                   await storage.updateLead(duplicate.id, leadData);
@@ -354,20 +355,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.createLead(leadData);
                 }
                 processed++;
-              } catch (error) {
-                errors.push(`Row ${index + 2}: ${error.message}`);
+              } catch (error: any) {
+                errors.push(`Row ${index + 2}: ${error.message || 'Unknown error'}`);
               }
             }
           } else if (uploadType === 'invoices') {
-            for (const [index, row] of results.entries()) {
+            for (let index = 0; index < results.length; index++) {
+              const row = results[index];
               try {
                 // Find or create client
                 const clientName = row['Client Name'] || '';
                 const clientEmail = `${clientName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
                 
-                let client = await storage.getAllClients().then(clients => 
-                  clients.find(c => c.name.toLowerCase() === clientName.toLowerCase())
-                );
+                const allClients = await storage.getAllClients();
+                let client = allClients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
 
                 if (!client) {
                   client = await storage.createClient({
@@ -404,8 +405,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   await storage.createInvoice(invoiceData);
                 }
                 processed++;
-              } catch (error) {
-                errors.push(`Row ${index + 2}: ${error.message}`);
+              } catch (error: any) {
+                errors.push(`Row ${index + 2}: ${error.message || 'Unknown error'}`);
               }
             }
           }
