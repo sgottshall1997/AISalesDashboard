@@ -1,9 +1,10 @@
 import { 
-  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history,
+  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
   type AiSuggestion, type InsertAiSuggestion, type EmailHistory, type InsertEmailHistory,
+  type ReadingHistory, type InsertReadingHistory,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -75,6 +76,11 @@ export interface IStorage {
   createEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory>;
   deleteEmailHistory(emailId: number): Promise<boolean>;
   deleteAllEmailHistory(invoiceId: number): Promise<boolean>;
+  
+  // Reading history methods
+  getAllReadingHistory(): Promise<(ReadingHistory & { client: Client })[]>;
+  createReadingHistory(data: InsertReadingHistory): Promise<ReadingHistory>;
+  deleteReadingHistory(id: number): Promise<boolean>;
   
   // AI suggestions for invoices
   getInvoiceAISuggestion(invoiceId: number): Promise<any>;
@@ -557,6 +563,37 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
         bucket_60_89: { count: 0, amount: 0 },
         bucket_90_plus: { count: 0, amount: 0 }
       };
+    }
+  }
+
+  async getAllReadingHistory(): Promise<(ReadingHistory & { client: Client })[]> {
+    const result = await db
+      .select()
+      .from(reading_history)
+      .leftJoin(clients, eq(reading_history.client_id, clients.id))
+      .orderBy(desc(reading_history.created_at));
+
+    return result.map(row => ({
+      ...row.reading_history,
+      client: row.clients!
+    }));
+  }
+
+  async createReadingHistory(data: InsertReadingHistory): Promise<ReadingHistory> {
+    const [result] = await db
+      .insert(reading_history)
+      .values(data)
+      .returning();
+    return result;
+  }
+
+  async deleteReadingHistory(id: number): Promise<boolean> {
+    try {
+      await db.delete(reading_history).where(eq(reading_history.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting reading history:', error);
+      return false;
     }
   }
 }
