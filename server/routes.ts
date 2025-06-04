@@ -396,40 +396,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             for (let index = 0; index < results.length; index++) {
               const row = results[index];
               try {
-                // Find or create client
-                const clientName = row['Client Name'] || '';
-                const clientEmail = `${clientName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+                // Parse your specific CSV column format
+                const accountName = row['Account Name'] || '';
+                const opportunityName = row['Opportunity Name'] || '';
+                const invoiceAmount = row['Invoice Amount'] || '0';
+                const daysOverdue = parseInt(row['Days Overdue'] || '0');
+                const arNote = row['A/R And Invoicing Note'] || '';
+                
+                if (!accountName) {
+                  errors.push(`Row ${index + 2}: Missing Account Name`);
+                  continue;
+                }
+
+                const clientEmail = `${accountName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
                 
                 const allClients = await storage.getAllClients();
-                let client = allClients.find(c => c.name.toLowerCase() === clientName.toLowerCase());
+                let client = allClients.find(c => c.name.toLowerCase() === accountName.toLowerCase());
 
                 if (!client) {
                   client = await storage.createClient({
-                    name: clientName,
+                    name: accountName,
                     email: clientEmail,
-                    company: clientName,
+                    company: accountName,
                     subscription_type: 'Standard',
                     renewal_date: null,
                     engagement_rate: null,
                     click_rate: null,
                     interest_tags: [],
-                    risk_level: 'medium',
-                    notes: 'Created from CSV import'
+                    risk_level: daysOverdue > 30 ? 'high' : daysOverdue > 0 ? 'medium' : 'low',
+                    notes: arNote || 'Created from CSV import'
                   });
                 }
 
-                // Handle multiple possible column names from your CSV
-                const amount = row['Amount'] || row['Invoice Amount'] || row['Total'] || '0';
-                const invoiceNumber = row['Invoice Number'] || row['Invoice ID'] || row['Reference'] || `INV-${Date.now()}-${index}`;
-                const sentDate = row['Sent Date'] || row['Invoice Date'] || row['Date'] || row['Created Date'];
-                const status = row['Payment Status'] || row['Status'] || 'pending';
+                // Calculate sent date based on days overdue
+                const currentDate = new Date();
+                const sentDate = new Date(currentDate.getTime() - (daysOverdue * 24 * 60 * 60 * 1000));
+                
+                // Determine payment status based on days overdue
+                let paymentStatus = 'paid';
+                if (daysOverdue > 30) {
+                  paymentStatus = 'overdue';
+                } else if (daysOverdue > 0) {
+                  paymentStatus = 'pending';
+                }
                 
                 const invoiceData = {
                   client_id: client.id,
-                  invoice_number: invoiceNumber,
-                  amount: parseFloat(amount.toString().replace(/[^0-9.-]/g, '') || '0').toFixed(2),
-                  sent_date: parseDate(sentDate) || new Date(),
-                  payment_status: mapPaymentStatus(status),
+                  invoice_number: opportunityName || `INV-${Date.now()}-${index}`,
+                  amount: parseFloat(invoiceAmount.toString().replace(/[^0-9.-]/g, '') || '0').toFixed(2),
+                  sent_date: sentDate,
+                  payment_status: paymentStatus,
                   last_reminder_sent: null
                 };
 

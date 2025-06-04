@@ -140,9 +140,9 @@ export default function CsvUpload() {
   ];
 
   const sampleInvoiceFormat = [
-    "Client Name,Invoice Number,Amount,Sent Date,Status",
-    "Acme Corp,INV-2024-001,5000.00,2024-01-15,pending",
-    "Tech Solutions,INV-2024-002,7500.00,2024-01-20,paid"
+    "Opportunity Name,Account Name,Invoice Amount,Days Overdue,A/R And Invoicing Note",
+    "Q4 Research Project,Acme Corp,5000.00,15,Follow up required",
+    "Annual Subscription,Tech Solutions,7500.00,0,Payment received"
   ];
 
   return (
@@ -253,11 +253,11 @@ export default function CsvUpload() {
                   ))}
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
-                  <p><strong>Client Name:</strong> Name of the client company</p>
-                  <p><strong>Invoice Number:</strong> Unique invoice identifier</p>
-                  <p><strong>Amount:</strong> Invoice amount (numbers only, no currency symbols)</p>
-                  <p><strong>Sent Date:</strong> Date in YYYY-MM-DD format</p>
-                  <p><strong>Status:</strong> pending, paid, or overdue</p>
+                  <p><strong>Opportunity Name:</strong> Name of the opportunity/project (used as invoice identifier)</p>
+                  <p><strong>Account Name:</strong> Name of the client company</p>
+                  <p><strong>Invoice Amount:</strong> Invoice amount (numbers only, no currency symbols)</p>
+                  <p><strong>Days Overdue:</strong> Number of days past due (0 for current invoices)</p>
+                  <p><strong>A/R And Invoicing Note:</strong> Additional notes about the invoice</p>
                 </div>
               </CardContent>
             </Card>
