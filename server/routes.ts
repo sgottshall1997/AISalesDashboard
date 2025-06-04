@@ -790,8 +790,92 @@ Format your response as:
         }
 
         try {
-          // Process the PDF upload
+          // Extract text from PDF
+          const pdfParse = await import('pdf-parse');
+          const pdfBuffer = fs.readFileSync(file.path);
+          const pdfData = await pdfParse.default(pdfBuffer);
+          const extractedText = pdfData.text;
+
+          // Analyze PDF content with AI
+          const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+          
+          const analysisResponse = await openai.chat.completions.create({
+            model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert financial research analyst. Analyze this investment research report and extract key insights for client prospecting and engagement."
+              },
+              {
+                role: "user",
+                content: `Analyze this research report and provide a JSON response with the following structure:
+{
+  "title": "extracted or inferred title",
+  "summary": "2-3 sentence executive summary",
+  "keyInsights": ["insight1", "insight2", "insight3"],
+  "investmentThesis": "main investment thesis",
+  "targetSectors": ["sector1", "sector2"],
+  "riskFactors": ["risk1", "risk2"],
+  "prospectingTalkingPoints": ["talking point for client outreach"],
+  "clientRelevance": {
+    "highNetWorth": "relevance for HNW clients",
+    "institutional": "relevance for institutional clients",
+    "retail": "relevance for retail clients"
+  }
+}
+
+Report content:
+${extractedText.substring(0, 8000)}`
+              }
+            ],
+            max_tokens: 1500,
+            temperature: 0.3,
+            response_format: { type: "json_object" }
+          });
+
+          const analysis = JSON.parse(analysisResponse.choices[0].message.content || '{}');
+
+          // Create comprehensive report data
           const reportData = {
+            title: analysis.title || file.originalname.replace('.pdf', ''),
+            type: 'Research Report',
+            published_date: new Date(),
+            open_rate: '0%',
+            click_rate: '0%',
+            engagement_level: 'medium' as const,
+            tags: analysis.targetSectors || [],
+            content_summary: analysis.summary,
+            investment_thesis: analysis.investmentThesis,
+            key_insights: analysis.keyInsights,
+            risk_factors: analysis.riskFactors,
+            prospecting_points: analysis.prospectingTalkingPoints,
+            client_relevance: analysis.clientRelevance,
+            full_content: extractedText
+          };
+
+          const report = await storage.createContentReport(reportData);
+          
+          // Clean up uploaded file
+          fs.unlinkSync(file.path);
+          
+          res.json({ 
+            message: "PDF uploaded and analyzed successfully",
+            report,
+            analysis: {
+              summary: analysis.summary,
+              keyInsights: analysis.keyInsights,
+              prospectingPoints: analysis.prospectingTalkingPoints
+            }
+          });
+        } catch (processingError) {
+          console.error('PDF processing error:', processingError);
+          // Clean up uploaded file
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+          
+          // Fallback to basic upload without AI analysis
+          const basicReportData = {
             title: file.originalname.replace('.pdf', ''),
             type: 'Research Report',
             published_date: new Date(),
@@ -801,21 +885,13 @@ Format your response as:
             tags: []
           };
 
-          const report = await storage.createContentReport(reportData);
-          
-          // Clean up uploaded file
-          fs.unlinkSync(file.path);
+          const report = await storage.createContentReport(basicReportData);
           
           res.json({ 
-            message: "PDF uploaded and processed successfully",
-            report 
+            message: "PDF uploaded successfully (analysis unavailable)",
+            report,
+            warning: "AI analysis failed, basic report created"
           });
-        } catch (processingError) {
-          // Clean up uploaded file
-          if (fs.existsSync(file.path)) {
-            fs.unlinkSync(file.path);
-          }
-          throw processingError;
         }
       });
 

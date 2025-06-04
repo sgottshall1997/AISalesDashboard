@@ -58,6 +58,17 @@ export const content_reports = pgTable("content_reports", {
   click_rate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
   engagement_level: text("engagement_level").notNull().default("medium"), // low, medium, high
   tags: json("tags").$type<string[]>().default([]),
+  content_summary: text("content_summary"),
+  investment_thesis: text("investment_thesis"),
+  key_insights: json("key_insights").$type<string[]>().default([]),
+  risk_factors: json("risk_factors").$type<string[]>().default([]),
+  prospecting_points: json("prospecting_points").$type<string[]>().default([]),
+  client_relevance: json("client_relevance").$type<{
+    highNetWorth?: string;
+    institutional?: string;
+    retail?: string;
+  }>(),
+  full_content: text("full_content"),
   created_at: timestamp("created_at").defaultNow(),
 });
 
