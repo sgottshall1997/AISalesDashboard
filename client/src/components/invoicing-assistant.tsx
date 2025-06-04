@@ -56,6 +56,10 @@ export default function InvoicingAssistant() {
     queryKey: ["/api/invoices/overdue"],
   });
 
+  const { data: agingData } = useQuery({
+    queryKey: ["/api/invoices/aging"],
+  });
+
   const generateEmailMutation = useMutation({
     mutationFn: async (invoiceId: number) => {
       const response = await apiRequest("POST", "/api/ai/generate-invoice-reminder", {

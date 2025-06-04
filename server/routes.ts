@@ -21,6 +21,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Invoice aging analytics
+  app.get("/api/invoices/aging", async (req, res) => {
+    try {
+      const aging = await storage.getInvoiceAging();
+      res.json(aging);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch invoice aging" });
+    }
+  });
+
   // Clients routes
   app.get("/api/clients", async (req, res) => {
     try {
