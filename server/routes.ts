@@ -71,6 +71,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/content-reports/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteContentReport(id);
+      
+      if (success) {
+        res.json({ message: "Content report deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Content report not found" });
+      }
+    } catch (error) {
+      console.error("Delete content report error:", error);
+      res.status(500).json({ message: "Failed to delete content report" });
+    }
+  });
+
   // Simple PDF upload endpoint that works with database
   app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {

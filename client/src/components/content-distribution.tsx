@@ -103,6 +103,30 @@ export default function ContentDistribution() {
     },
   });
 
+  const deleteReportMutation = useMutation({
+    mutationFn: async (reportId: number) => {
+      const response = await fetch(`/api/content-reports/${reportId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Delete failed');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+      toast({
+        title: "Report Deleted",
+        description: "Content report has been removed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete report. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addReadingHistoryMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("POST", "/api/reading-history", data);
@@ -372,6 +396,7 @@ export default function ContentDistribution() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">

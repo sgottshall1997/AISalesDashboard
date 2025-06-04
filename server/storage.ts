@@ -41,6 +41,7 @@ export interface IStorage {
   getAllContentReports(): Promise<ContentReport[]>;
   getRecentReports(limit?: number): Promise<ContentReport[]>;
   createContentReport(report: InsertContentReport): Promise<ContentReport>;
+  deleteContentReport(id: number): Promise<boolean>;
 
   // Client Engagements
   getClientEngagements(clientId: number): Promise<(ClientEngagement & { report: ContentReport })[]>;
@@ -250,6 +251,18 @@ export class DatabaseStorage implements IStorage {
       .values(insertReport)
       .returning();
     return report;
+  }
+
+  async deleteContentReport(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(content_reports)
+        .where(eq(content_reports.id, id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting content report:', error);
+      return false;
+    }
   }
 
   async getClientEngagements(clientId: number): Promise<(ClientEngagement & { report: ContentReport })[]> {
