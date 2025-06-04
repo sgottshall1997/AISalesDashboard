@@ -9,7 +9,8 @@ import {
   Send, 
   Menu, 
   X, 
-  User 
+  User,
+  Upload
 } from "lucide-react";
 
 interface SidebarProps {
@@ -26,6 +27,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: "content", name: "Content Distribution", icon: TrendingUp },
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
     { id: "followup", name: "Follow-Up Generator", icon: Send },
+    { id: "upload", name: "CSV Upload", icon: Upload },
   ];
 
   const SidebarContent = () => (

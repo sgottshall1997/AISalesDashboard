@@ -282,5 +282,205 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // CSV Upload endpoint
+  app.post("/api/upload/csv", async (req, res) => {
+    try {
+      const multer = await import('multer');
+      const csv = await import('csv-parser');
+      const fs = await import('fs');
+      
+      // Configure multer for file uploads
+      const upload = multer.default({
+        dest: '/tmp/',
+        fileFilter: (req, file, cb) => {
+          if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+            cb(null, true);
+          } else {
+            cb(new Error('Only CSV files are allowed'));
+          }
+        }
+      });
+
+      upload.single('file')(req, res, async (err) => {
+        if (err) {
+          return res.status(400).json({ error: err.message });
+        }
+
+        const file = req.file;
+        const uploadType = req.body.type;
+
+        if (!file) {
+          return res.status(400).json({ error: 'No file uploaded' });
+        }
+
+        try {
+          const results: any[] = [];
+          const errors: string[] = [];
+          let processed = 0;
+          let duplicates = 0;
+
+          // Parse CSV file
+          await new Promise((resolve, reject) => {
+            fs.createReadStream(file.path)
+              .pipe(csv.default())
+              .on('data', (data) => results.push(data))
+              .on('end', resolve)
+              .on('error', reject);
+          });
+
+          // Process based on upload type
+          if (uploadType === 'prospects') {
+            for (const [index, row] of results.entries()) {
+              try {
+                const leadData = {
+                  name: row['Contact Name'] || row['Prospect Name'] || '',
+                  email: `${(row['Contact Name'] || row['Prospect Name'] || '').toLowerCase().replace(/\s+/g, '.')}@${(row['Prospect Name'] || 'unknown').toLowerCase().replace(/\s+/g, '')}.com`,
+                  company: row['Prospect Name'] || '',
+                  stage: mapProspectStatus(row['Status'] || 'prospect'),
+                  last_contact: parseDate(row['Last Contacted']) || parseDate(row['Date']),
+                  next_step: row['Comments'] || null,
+                  notes: `${row['Comments'] || ''} ${row['Type'] ? `(Source: ${row['Type']})` : ''}`.trim(),
+                  interest_tags: []
+                };
+
+                // Check for existing lead by email
+                const existingLead = await storage.getAllLeads();
+                const duplicate = existingLead.find(l => l.email === leadData.email);
+                
+                if (duplicate) {
+                  await storage.updateLead(duplicate.id, leadData);
+                  duplicates++;
+                } else {
+                  await storage.createLead(leadData);
+                }
+                processed++;
+              } catch (error) {
+                errors.push(`Row ${index + 2}: ${error.message}`);
+              }
+            }
+          } else if (uploadType === 'invoices') {
+            for (const [index, row] of results.entries()) {
+              try {
+                // Find or create client
+                const clientName = row['Client Name'] || '';
+                const clientEmail = `${clientName.toLowerCase().replace(/\s+/g, '.')}@company.com`;
+                
+                let client = await storage.getAllClients().then(clients => 
+                  clients.find(c => c.name.toLowerCase() === clientName.toLowerCase())
+                );
+
+                if (!client) {
+                  client = await storage.createClient({
+                    name: clientName,
+                    email: clientEmail,
+                    company: clientName,
+                    subscription_type: 'Standard',
+                    renewal_date: null,
+                    engagement_rate: null,
+                    click_rate: null,
+                    interest_tags: [],
+                    risk_level: 'medium',
+                    notes: 'Created from CSV import'
+                  });
+                }
+
+                const invoiceData = {
+                  client_id: client.id,
+                  invoice_number: row['Invoice Number'] || `INV-${Date.now()}-${index}`,
+                  amount: parseFloat(row['Amount'] || '0').toFixed(2),
+                  sent_date: parseDate(row['Sent Date']) || new Date(),
+                  payment_status: mapPaymentStatus(row['Payment Status'] || 'pending'),
+                  last_reminder_sent: null
+                };
+
+                // Check for existing invoice
+                const existingInvoices = await storage.getAllInvoices();
+                const duplicate = existingInvoices.find(inv => inv.invoice_number === invoiceData.invoice_number);
+                
+                if (duplicate) {
+                  await storage.updateInvoice(duplicate.id, invoiceData);
+                  duplicates++;
+                } else {
+                  await storage.createInvoice(invoiceData);
+                }
+                processed++;
+              } catch (error) {
+                errors.push(`Row ${index + 2}: ${error.message}`);
+              }
+            }
+          }
+
+          // Clean up uploaded file
+          fs.unlinkSync(file.path);
+
+          res.json({
+            success: errors.length === 0,
+            processed,
+            duplicates,
+            errors: errors.slice(0, 10) // Limit to first 10 errors
+          });
+
+        } catch (processingError) {
+          // Clean up uploaded file
+          if (fs.existsSync(file.path)) {
+            fs.unlinkSync(file.path);
+          }
+          throw processingError;
+        }
+      });
+
+    } catch (error) {
+      console.error('CSV upload error:', error);
+      res.status(500).json({ error: 'Failed to process CSV file' });
+    }
+  });
+
   return httpServer;
+}
+
+function mapProspectStatus(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    'active': 'qualified',
+    'closed': 'converted',
+    'non renewal': 'lost',
+    'recycled': 'nurturing',
+    'sold': 'converted',
+    'qualified': 'qualified',
+    'proposal': 'proposal'
+  };
+  
+  return statusMap[status.toLowerCase()] || 'prospect';
+}
+
+function mapPaymentStatus(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    'paid': 'paid',
+    'pending': 'pending',
+    'overdue': 'overdue',
+    'unpaid': 'overdue'
+  };
+  
+  return statusMap[status.toLowerCase()] || 'pending';
+}
+
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr) return null;
+  
+  // Try different date formats
+  const formats = [
+    /^\d{1,2}\/\d{1,2}\/\d{4}$/, // MM/DD/YYYY or M/D/YYYY
+    /^\d{4}-\d{2}-\d{2}$/, // YYYY-MM-DD
+    /^\d{1,2}-\w{3}$/ // DD-MMM
+  ];
+  
+  for (const format of formats) {
+    if (format.test(dateStr)) {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+  }
+  
+  return null;
 }

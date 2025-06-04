@@ -5,6 +5,7 @@ import InvoicingAssistant from "@/components/invoicing-assistant";
 import ContentDistribution from "@/components/content-distribution";
 import LeadPipeline from "@/components/lead-pipeline";
 import FollowUpGenerator from "@/components/follow-up-generator";
+import CsvUpload from "@/components/csv-upload";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
