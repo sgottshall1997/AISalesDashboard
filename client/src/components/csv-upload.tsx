@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, FileSpreadsheet, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -73,6 +73,30 @@ export default function CsvUpload() {
     },
   });
 
+  const clearAllMutation = useMutation({
+    mutationFn: async ({ type }: { type: string }) => {
+      const response = await apiRequest("DELETE", `/api/${type}/all`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      toast({
+        title: "Success",
+        description: "All records have been cleared",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to clear records",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleFileSelect = (file: File) => {
     if (file && file.type === 'text/csv') {
       setSelectedFile(file);
@@ -90,7 +114,7 @@ export default function CsvUpload() {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];
-    handleFileSelect(file);
+    if (file) handleFileSelect(file);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -104,244 +128,274 @@ export default function CsvUpload() {
   };
 
   const handleUpload = () => {
-    if (!selectedFile) return;
-    uploadMutation.mutate({ file: selectedFile, type: uploadType });
+    if (selectedFile) {
+      uploadMutation.mutate({ file: selectedFile, type: uploadType });
+    }
   };
 
   const sampleProspectFormat = [
-    "Date,Prospect Name,Contact Name,Contact Role,Type,Key Prospect,Status,Comments,Last Contacted",
-    "5/6/2023,Arlington Family Office,Meg Nailen,Executive Assistant,Pardot,Y,Active,Follow up,16-Aug"
+    "Name,Email,Company,Phone,Stage,Interest Tags",
+    "John Doe,john@example.com,Acme Corp,(555) 123-4567,qualified,technology;fintech",
+    "Jane Smith,jane@example.com,Tech Solutions,(555) 987-6543,proposal,healthcare;AI"
   ];
 
   const sampleInvoiceFormat = [
-    "Client Name,Invoice Number,Amount,Sent Date,Payment Status,Notes",
-    "Tech Ventures LLC,INV-12345,15000.00,2025-05-15,overdue,Follow up required"
+    "Client Name,Invoice Number,Amount,Sent Date,Status",
+    "Acme Corp,INV-2024-001,5000.00,2024-01-15,pending",
+    "Tech Solutions,INV-2024-002,7500.00,2024-01-20,paid"
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-start">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">CSV Upload</h2>
-          <p className="text-muted-foreground">
-            Import prospects and invoice data from CSV files
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">CSV Data Import</h2>
+          <p className="text-gray-600">Upload prospect and invoice data from CSV files</p>
+        </div>
+        
+        {/* Bulk Delete Options */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete all clients? This action cannot be undone.")) {
+                clearAllMutation.mutate({ type: 'clients' });
+              }
+            }}
+            disabled={clearAllMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear Clients
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete all leads? This action cannot be undone.")) {
+                clearAllMutation.mutate({ type: 'leads' });
+              }
+            }}
+            disabled={clearAllMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear Leads
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete all invoices? This action cannot be undone.")) {
+                clearAllMutation.mutate({ type: 'invoices' });
+              }
+            }}
+            disabled={clearAllMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear Invoices
+          </Button>
         </div>
       </div>
 
-      <Tabs value={uploadType} onValueChange={(value) => setUploadType(value as "prospects" | "invoices")}>
+      <Tabs defaultValue="upload" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="prospects">Prospect Data</TabsTrigger>
-          <TabsTrigger value="invoices">Invoice Data</TabsTrigger>
+          <TabsTrigger value="upload">Upload CSV</TabsTrigger>
+          <TabsTrigger value="format">CSV Format Guide</TabsTrigger>
         </TabsList>
-
-        <TabsContent value="prospects" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5" />
-                Upload Prospect Data
-              </CardTitle>
-              <CardDescription>
-                Import prospect information to add new leads to your pipeline
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Expected CSV Format:</Label>
-                <div className="bg-muted p-3 rounded-md font-mono text-sm">
+        
+        <TabsContent value="format" className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5" />
+                  Prospects CSV Format
+                </CardTitle>
+                <CardDescription>
+                  Required columns for prospect data import
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm">
                   {sampleProspectFormat.map((line, i) => (
-                    <div key={i} className={i === 0 ? "font-semibold" : ""}>
+                    <div key={i} className={i === 0 ? "font-bold text-blue-600" : ""}>
                       {line}
                     </div>
                   ))}
                 </div>
-              </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p><strong>Name:</strong> Full name of the prospect</p>
+                  <p><strong>Email:</strong> Email address (required for deduplication)</p>
+                  <p><strong>Company:</strong> Company name</p>
+                  <p><strong>Phone:</strong> Contact phone number</p>
+                  <p><strong>Stage:</strong> Pipeline stage (new, qualified, proposal, etc.)</p>
+                  <p><strong>Interest Tags:</strong> Semicolon-separated tags</p>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Prospects will be imported as leads. Existing prospects with the same email will be updated.
-                </AlertDescription>
-              </Alert>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5" />
+                  Invoices CSV Format
+                </CardTitle>
+                <CardDescription>
+                  Required columns for invoice data import
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 p-4 rounded-lg font-mono text-sm">
+                  {sampleInvoiceFormat.map((line, i) => (
+                    <div key={i} className={i === 0 ? "font-bold text-blue-600" : ""}>
+                      {line}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 space-y-2 text-sm">
+                  <p><strong>Client Name:</strong> Name of the client company</p>
+                  <p><strong>Invoice Number:</strong> Unique invoice identifier</p>
+                  <p><strong>Amount:</strong> Invoice amount (numbers only, no currency symbols)</p>
+                  <p><strong>Sent Date:</strong> Date in YYYY-MM-DD format</p>
+                  <p><strong>Status:</strong> pending, paid, or overdue</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="invoices" className="space-y-4">
+        <TabsContent value="upload" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileSpreadsheet className="h-5 w-5" />
-                Upload Invoice Data
-              </CardTitle>
+              <CardTitle>Upload CSV File</CardTitle>
               <CardDescription>
-                Import invoice information to track payments and outstanding amounts
+                Select the type of data you're uploading and choose your CSV file
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Expected CSV Format:</Label>
-                <div className="bg-muted p-3 rounded-md font-mono text-sm">
-                  {sampleInvoiceFormat.map((line, i) => (
-                    <div key={i} className={i === 0 ? "font-semibold" : ""}>
-                      {line}
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <Label>Data Type</Label>
+                <Select value={uploadType} onValueChange={(value: "prospects" | "invoices") => setUploadType(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select data type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="prospects">Prospects/Leads</SelectItem>
+                    <SelectItem value="invoices">Invoices</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Invoices will be linked to existing clients. If a client doesn't exist, they will be created automatically.
-                </AlertDescription>
-              </Alert>
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-900 mb-2">
+                  Drop your CSV file here, or click to browse
+                </p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Files should be in CSV format and under 10MB
+                </p>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
+                  className="hidden"
+                  id="csv-upload"
+                />
+                <label htmlFor="csv-upload">
+                  <Button variant="outline" className="cursor-pointer">
+                    Choose File
+                  </Button>
+                </label>
+              </div>
+
+              {selectedFile && (
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                    <span className="font-medium">{selectedFile.name}</span>
+                    <span className="text-sm text-gray-500">
+                      ({(selectedFile.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploadMutation.isPending}
+                  >
+                    {uploadMutation.isPending ? "Uploading..." : "Upload"}
+                  </Button>
+                </div>
+              )}
+
+              {uploadMutation.isPending && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Processing...</span>
+                  </div>
+                  <Progress value={75} className="w-full" />
+                </div>
+              )}
             </CardContent>
           </Card>
+
+          {uploadResult && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {uploadResult.success ? (
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  ) : (
+                    <AlertCircle className="w-5 h-5 text-red-600" />
+                  )}
+                  Upload Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {uploadResult.processed}
+                    </div>
+                    <div className="text-sm text-green-700">Records Processed</div>
+                  </div>
+                  <div className="text-center p-4 bg-red-50 rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">
+                      {uploadResult.errors.length}
+                    </div>
+                    <div className="text-sm text-red-700">Errors</div>
+                  </div>
+                </div>
+
+                {uploadResult.errors.length > 0 && (
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="space-y-1">
+                        <p className="font-medium">Errors encountered:</p>
+                        {uploadResult.errors.slice(0, 5).map((error, i) => (
+                          <p key={i} className="text-sm">• {error}</p>
+                        ))}
+                        {uploadResult.errors.length > 5 && (
+                          <p className="text-sm">... and {uploadResult.errors.length - 5} more</p>
+                        )}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Upload File</CardTitle>
-          <CardDescription>
-            Select a CSV file to upload or drag and drop it below
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-              isDragOver
-                ? "border-primary bg-primary/10"
-                : "border-muted-foreground/25 hover:border-primary/50"
-            }`}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-          >
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <div className="space-y-2">
-              <p className="text-lg font-medium">
-                {selectedFile ? selectedFile.name : "Drop your CSV file here"}
-              </p>
-              <p className="text-muted-foreground">
-                or{" "}
-                <label className="text-primary cursor-pointer hover:underline">
-                  browse files
-                  <input
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelect(file);
-                    }}
-                  />
-                </label>
-              </p>
-            </div>
-          </div>
-
-          {selectedFile && (
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="h-4 w-4" />
-                <span className="font-medium">{selectedFile.name}</span>
-                <span className="text-muted-foreground">
-                  ({(selectedFile.size / 1024).toFixed(1)} KB)
-                </span>
-              </div>
-              <Button
-                onClick={() => setSelectedFile(null)}
-                variant="outline"
-                size="sm"
-              >
-                Remove
-              </Button>
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              onClick={handleUpload}
-              disabled={!selectedFile || uploadMutation.isPending}
-              className="flex-1"
-            >
-              {uploadMutation.isPending ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                  Uploading...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload {uploadType === "prospects" ? "Prospects" : "Invoices"}
-                </>
-              )}
-            </Button>
-          </div>
-
-          {uploadMutation.isPending && (
-            <div className="space-y-2">
-              <Progress value={undefined} className="w-full" />
-              <p className="text-sm text-muted-foreground text-center">
-                Processing CSV file...
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {uploadResult && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {uploadResult.success ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-orange-500" />
-              )}
-              Upload Results
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {uploadResult.processed}
-                </div>
-                <div className="text-sm text-muted-foreground">Processed</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-orange-600">
-                  {uploadResult.duplicates || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">Duplicates</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-600">
-                  {uploadResult.errors.length}
-                </div>
-                <div className="text-sm text-muted-foreground">Errors</div>
-              </div>
-            </div>
-
-            {uploadResult.errors.length > 0 && (
-              <div className="space-y-2">
-                <Label>Errors:</Label>
-                <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-md max-h-32 overflow-y-auto">
-                  {uploadResult.errors.map((error, i) => (
-                    <div key={i} className="text-sm text-red-700 dark:text-red-400">
-                      {error}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

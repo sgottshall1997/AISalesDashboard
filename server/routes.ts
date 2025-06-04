@@ -4,8 +4,10 @@ import { storage } from "./storage";
 import { generateAIEmail } from "./openai";
 import { 
   insertClientSchema, insertInvoiceSchema, insertLeadSchema,
-  insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema
+  insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
+  clients, invoices, leads
 } from "@shared/schema";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
@@ -416,12 +418,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                 }
 
+                // Handle multiple possible column names from your CSV
+                const amount = row['Amount'] || row['Invoice Amount'] || row['Total'] || '0';
+                const invoiceNumber = row['Invoice Number'] || row['Invoice ID'] || row['Reference'] || `INV-${Date.now()}-${index}`;
+                const sentDate = row['Sent Date'] || row['Invoice Date'] || row['Date'] || row['Created Date'];
+                const status = row['Payment Status'] || row['Status'] || 'pending';
+                
                 const invoiceData = {
                   client_id: client.id,
-                  invoice_number: row['Invoice Number'] || `INV-${Date.now()}-${index}`,
-                  amount: parseFloat(row['Amount'] || '0').toFixed(2),
-                  sent_date: parseDate(row['Sent Date']) || new Date(),
-                  payment_status: mapPaymentStatus(row['Payment Status'] || 'pending'),
+                  invoice_number: invoiceNumber,
+                  amount: parseFloat(amount.toString().replace(/[^0-9.-]/g, '') || '0').toFixed(2),
+                  sent_date: parseDate(sentDate) || new Date(),
+                  payment_status: mapPaymentStatus(status),
                   last_reminder_sent: null
                 };
 
