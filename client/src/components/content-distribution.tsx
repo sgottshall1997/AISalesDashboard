@@ -1,17 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
-  Mail, 
-  MousePointer, 
-  Send, 
-  Lightbulb, 
-  Bot,
-  TrendingUp,
-  TrendingDown,
-  AlertCircle
+  FileText,
+  Upload, 
+  BookOpen,
+  BarChart3,
+  Plus,
+  Calendar,
+  User,
+  Trash2
 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface ContentReport {
   id: number;
@@ -33,38 +40,152 @@ interface Client {
   interest_tags: string[];
 }
 
+interface ReadingHistory {
+  id: number;
+  client_id: number;
+  report_title: string;
+  read_date: string;
+  engagement_notes: string;
+  client: {
+    name: string;
+    company: string;
+  };
+}
+
 export default function ContentDistribution() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [readingHistoryForm, setReadingHistoryForm] = useState({
+    client_id: "",
+    report_title: "",
+    read_date: "",
+    engagement_notes: ""
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: reports } = useQuery<ContentReport[]>({
-    queryKey: ["/api/content-reports/recent"],
+    queryKey: ["/api/content-reports"],
   });
 
   const { data: clients } = useQuery<Client[]>({
     queryKey: ["/api/clients"],
   });
 
-  const avgOpenRate = reports?.reduce((sum, report) => sum + parseFloat(report.open_rate), 0) / (reports?.length || 1) || 0;
-  const avgClickRate = reports?.reduce((sum, report) => sum + parseFloat(report.click_rate), 0) / (reports?.length || 1) || 0;
+  const { data: readingHistory } = useQuery<ReadingHistory[]>({
+    queryKey: ["/api/reading-history"],
+  });
+
+  const uploadReportMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      const response = await fetch('/api/reports/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+      setSelectedFile(null);
+      toast({
+        title: "Report Uploaded",
+        description: "PDF report has been uploaded and analyzed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload PDF report. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addReadingHistoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/reading-history", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reading-history"] });
+      setReadingHistoryForm({
+        client_id: "",
+        report_title: "",
+        read_date: "",
+        engagement_notes: ""
+      });
+      toast({
+        title: "Reading History Added",
+        description: "Client reading history has been recorded successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to add reading history. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteReadingHistoryMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("DELETE", `/api/reading-history/${id}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/reading-history"] });
+      toast({
+        title: "Reading History Deleted",
+        description: "Reading history entry has been removed.",
+      });
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Invalid File",
+        description: "Please select a PDF file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmitReadingHistory = () => {
+    if (!readingHistoryForm.client_id || !readingHistoryForm.report_title || !readingHistoryForm.read_date) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addReadingHistoryMutation.mutate({
+      client_id: parseInt(readingHistoryForm.client_id),
+      report_title: readingHistoryForm.report_title,
+      read_date: readingHistoryForm.read_date,
+      engagement_notes: readingHistoryForm.engagement_notes
+    });
+  };
 
   const getEngagementColor = (level: string) => {
     switch (level) {
       case "high":
         return "bg-green-100 text-green-800";
       case "medium":
-        return "bg-blue-100 text-blue-800";
-      default:
         return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const getTagColor = (tag: string) => {
-    const colors = [
-      "bg-blue-100 text-blue-800",
-      "bg-green-100 text-green-800", 
-      "bg-purple-100 text-purple-800",
-      "bg-orange-100 text-orange-800",
-      "bg-red-100 text-red-800"
-    ];
-    return colors[tag.length % colors.length];
   };
 
   return (
@@ -72,62 +193,161 @@ export default function ContentDistribution() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Distribution Tracker</h2>
-          <p className="text-gray-600">Monitor report engagement and optimize client outreach</p>
+          <p className="text-gray-600">Upload PDF reports for analysis and track client reading history</p>
         </div>
 
-        {/* Engagement Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* PDF Report Upload Section */}
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Open Rate</p>
-                  <p className="text-2xl font-bold text-green-600">{Math.round(avgOpenRate)}%</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <Mail className="h-6 w-6 text-green-600" />
-                </div>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="w-5 h-5" />
+                Upload PDF Reports
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="pdf-upload">Select PDF Report</Label>
+                <Input
+                  id="pdf-upload"
+                  type="file"
+                  accept=".pdf"
+                  onChange={handleFileUpload}
+                  className="mt-1"
+                />
               </div>
+              
+              {selectedFile && (
+                <div className="p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-900">{selectedFile.name}</span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              )}
+
+              <Button 
+                onClick={() => selectedFile && uploadReportMutation.mutate(selectedFile)}
+                disabled={!selectedFile || uploadReportMutation.isPending}
+                className="w-full"
+              >
+                {uploadReportMutation.isPending ? "Uploading..." : "Upload & Analyze Report"}
+              </Button>
             </CardContent>
           </Card>
-          
+
+          {/* Client Reading History Input */}
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Click Rate</p>
-                  <p className="text-2xl font-bold text-primary">{Math.round(avgClickRate)}%</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <MousePointer className="h-6 w-6 text-primary" />
-                </div>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Add Reading History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="client-select">Client</Label>
+                <Select value={readingHistoryForm.client_id} onValueChange={(value) => 
+                  setReadingHistoryForm(prev => ({ ...prev, client_id: value }))
+                }>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id.toString()}>
+                        {client.name} - {client.company}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div>
+                <Label htmlFor="report-title">Report Title</Label>
+                <Input
+                  id="report-title"
+                  value={readingHistoryForm.report_title}
+                  onChange={(e) => setReadingHistoryForm(prev => ({ ...prev, report_title: e.target.value }))}
+                  placeholder="Enter report title"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="read-date">Read Date</Label>
+                <Input
+                  id="read-date"
+                  type="date"
+                  value={readingHistoryForm.read_date}
+                  onChange={(e) => setReadingHistoryForm(prev => ({ ...prev, read_date: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="engagement-notes">Engagement Notes</Label>
+                <Textarea
+                  id="engagement-notes"
+                  value={readingHistoryForm.engagement_notes}
+                  onChange={(e) => setReadingHistoryForm(prev => ({ ...prev, engagement_notes: e.target.value }))}
+                  placeholder="Add notes about client engagement..."
+                  className="min-h-[80px]"
+                />
+              </div>
+
+              <Button 
+                onClick={handleSubmitReadingHistory}
+                disabled={addReadingHistoryMutation.isPending}
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {addReadingHistoryMutation.isPending ? "Adding..." : "Add Reading History"}
+              </Button>
             </CardContent>
           </Card>
-          
+        </div>
+
+        {/* Analytics Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Reports Sent</p>
+                  <p className="text-sm font-medium text-gray-600">Total Reports</p>
                   <p className="text-2xl font-bold text-gray-900">{reports?.length || 0}</p>
                 </div>
-                <div className="p-3 bg-gray-100 rounded-full">
-                  <Send className="h-6 w-6 text-gray-600" />
+                <div className="p-3 bg-blue-100 rounded-full">
+                  <FileText className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">AI Suggestions</p>
-                  <p className="text-2xl font-bold text-secondary">24</p>
+                  <p className="text-sm font-medium text-gray-600">Reading Entries</p>
+                  <p className="text-2xl font-bold text-gray-900">{readingHistory?.length || 0}</p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-full">
+                  <BookOpen className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Active Clients</p>
+                  <p className="text-2xl font-bold text-gray-900">{clients?.length || 0}</p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-full">
-                  <Lightbulb className="h-6 w-6 text-secondary" />
+                  <User className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -135,161 +355,108 @@ export default function ContentDistribution() {
         </div>
 
         {/* Recent Reports */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {reports && reports.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5" />
+                Recent Reports
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Published</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Engagement</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reports.slice(0, 5).map((report) => (
+                      <tr key={report.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {report.title}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {report.type}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(report.published_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge className={getEngagementColor(report.engagement_level)}>
+                            {report.engagement_level}
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Reading History */}
+        {readingHistory && readingHistory.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Recent Reports</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Recent Reading History
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {reports?.map((report) => (
-                  <div key={report.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between">
+                {readingHistory.slice(0, 10).map((entry) => (
+                  <div key={entry.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <h4 className="text-sm font-medium text-gray-900">{report.title}</h4>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Published: {new Date(report.published_date).toLocaleDateString()}
-                        </p>
-                        <div className="mt-2 flex items-center space-x-4 text-sm">
-                          <span className="text-green-600 flex items-center">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {parseFloat(report.open_rate)}% open rate
-                          </span>
-                          <span className="text-primary flex items-center">
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                            {parseFloat(report.click_rate)}% click rate
-                          </span>
+                        <div className="flex items-center gap-2 mb-2">
+                          <User className="w-4 h-4 text-gray-500" />
+                          <span className="font-medium">{entry.client.name}</span>
+                          <span className="text-gray-500">-</span>
+                          <span className="text-gray-600">{entry.client.company}</span>
                         </div>
+                        <p className="text-sm font-medium text-gray-900 mb-1">{entry.report_title}</p>
+                        <p className="text-sm text-gray-600 mb-2">
+                          Read on {new Date(entry.read_date).toLocaleDateString()}
+                        </p>
+                        {entry.engagement_notes && (
+                          <p className="text-sm text-gray-700 italic">"{entry.engagement_notes}"</p>
+                        )}
                       </div>
-                      <Badge className={getEngagementColor(report.engagement_level)}>
-                        {report.engagement_level} engagement
-                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteReadingHistoryMutation.mutate(entry.id)}
+                        disabled={deleteReadingHistoryMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4 text-gray-400" />
+                      </Button>
                     </div>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
+        )}
 
+        {/* Empty States */}
+        {(!reports || reports.length === 0) && (!readingHistory || readingHistory.length === 0) && (
           <Card>
-            <CardHeader>
-              <CardTitle>AI Content Suggestions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Bot className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-blue-800">High Interest in Tech Trends</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        5 clients clicked multiple links in latest tech report. Consider creating follow-up content on semiconductor supply chains.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" className="text-xs">
-                          Create Follow-up
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Lightbulb className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-green-800">Energy Sector Opportunity</p>
-                      <p className="text-sm text-green-700 mt-1">
-                        Beta Fund and 3 other clients highly engaged with AI & Energy report. Perfect timing for renewal discussions.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" className="text-xs border-green-300 text-green-700">
-                          Draft Outreach
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 text-amber-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-yellow-800">Healthcare Content Underperformed</p>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Only 45% open rate on healthcare report. Consider more targeted distribution or topic refinement.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" variant="outline" className="text-xs border-amber-300 text-amber-700">
-                          Analyze Audience
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <CardContent className="p-12 text-center">
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Content Data</h3>
+              <p className="text-gray-600 mb-6">
+                Upload PDF reports and add client reading history to start tracking content distribution analytics.
+              </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Client Engagement Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Client Engagement Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Open Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Click Rate</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Interest Tags</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Engagement</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Suggestion</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {clients?.slice(0, 5).map((client) => (
-                    <tr key={client.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {client.company}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                        {parseFloat(client.engagement_rate)}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
-                        {parseFloat(client.click_rate)}%
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex flex-wrap gap-1">
-                          {client.interest_tags.slice(0, 3).map((tag, index) => (
-                            <Badge key={index} className={getTagColor(tag)} variant="secondary">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">WILTW #66</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
-                        {parseFloat(client.engagement_rate) > 80 ? "Renewal opportunity" : 
-                         parseFloat(client.engagement_rate) < 50 ? "Re-engage with content" :
-                         "Send relevant report"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        )}
       </div>
     </div>
   );

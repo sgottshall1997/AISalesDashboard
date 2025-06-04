@@ -93,6 +93,15 @@ export const email_history = pgTable("email_history", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+export const reading_history = pgTable("reading_history", {
+  id: serial("id").primaryKey(),
+  client_id: integer("client_id").references(() => clients.id).notNull(),
+  report_title: text("report_title").notNull(),
+  read_date: timestamp("read_date").notNull(),
+  engagement_notes: text("engagement_notes"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -169,6 +178,14 @@ export type InsertAiSuggestion = z.infer<typeof insertAiSuggestionSchema>;
 
 export type EmailHistory = typeof email_history.$inferSelect;
 export type InsertEmailHistory = z.infer<typeof insertEmailHistorySchema>;
+
+export const insertReadingHistorySchema = createInsertSchema(reading_history).omit({
+  id: true,
+  created_at: true,
+});
+
+export type ReadingHistory = typeof reading_history.$inferSelect;
+export type InsertReadingHistory = z.infer<typeof insertReadingHistorySchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
