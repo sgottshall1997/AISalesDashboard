@@ -179,7 +179,8 @@ export default function InvoiceDetail() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}/emails`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}/ai-suggestion`] });
       toast({
         title: "Email Deleted",
         description: "Email removed from history.",
@@ -193,7 +194,8 @@ export default function InvoiceDetail() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'emails'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}/emails`] });
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}/ai-suggestion`] });
       setEmailSummary("");
       toast({
         title: "All Emails Deleted",
