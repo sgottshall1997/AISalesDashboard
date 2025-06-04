@@ -306,14 +306,26 @@ export default function InvoiceDetail() {
           subject: 'Email Conversation',
           content: '',
           email_type: senderEmail.includes(invoice?.client?.email || '') ? 'incoming' : 'outgoing',
-          senderName
+          senderName,
+          sent_date: new Date().toISOString() // Default to current date, will be updated if Sent: line found
         };
         isInSignature = false;
         continue;
       }
       
-      // Detect "Sent:" timestamp lines
+      // Detect "Sent:" timestamp lines and extract date
       if (line.startsWith('Sent:')) {
+        if (currentEmail) {
+          const dateText = line.replace('Sent:', '').trim();
+          try {
+            const parsedDate = new Date(dateText);
+            if (!isNaN(parsedDate.getTime())) {
+              currentEmail.sent_date = parsedDate.toISOString();
+            }
+          } catch (e) {
+            // Keep default date if parsing fails
+          }
+        }
         continue;
       }
       
@@ -778,9 +790,10 @@ export default function InvoiceDetail() {
                     <Button 
                       size="sm" 
                       onClick={() => {
-                        const conversationText = emailHistory?.map(email => 
-                          `${email.email_type === 'incoming' ? 'From' : 'To'}: ${email.from_email}\nSubject: ${email.subject}\n${email.content}`
-                        ).join('\n\n---\n\n') || '';
+                        const conversationText = emailHistory?.map(email => {
+                          const date = email.sent_date ? new Date(email.sent_date).toLocaleDateString() : 'Unknown date';
+                          return `Date: ${date}\n${email.email_type === 'incoming' ? 'From' : 'To'}: ${email.from_email}\nSubject: ${email.subject}\n${email.content}`;
+                        }).join('\n\n---\n\n') || '';
                         generateSummaryMutation.mutate(conversationText);
                       }}
                       disabled={generateSummaryMutation.isPending}

@@ -413,32 +413,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Conversation text is required" });
       }
 
-      // Generate summary using OpenAI
-      const openaiModule = await import("./openai");
-      
-      const summary = await openaiModule.generateAIEmail(
-        "follow_up",
-        "Client",
-        "Company",
-        {
-          invoice_number: "Summary",
-          amount: "",
-          sent_date: "",
-          conversation_context: conversation
-        }
-      );
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const summaryText = `**Email Conversation Summary:**
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert business communication analyst. Analyze the email conversation and provide a comprehensive summary focusing on timeline, key points, client sentiment, and next steps. Include specific dates when mentioned in the conversation."
+          },
+          {
+            role: "user",
+            content: `Please analyze this email conversation and provide a structured summary:
+
+${conversation}
+
+Format your response as:
+**Email Conversation Summary:**
+
+**Timeline & Key Events:**
+[List events chronologically with dates when available]
 
 **Key Points:**
-- Client acknowledged receipt of invoice
-- Payment submission confirmed
-- Professional and responsive communication
+[Main discussion points and decisions]
 
-**Client Sentiment:** Positive and cooperative
-**Next Steps:** Monitor payment processing
-**Relationship Status:** Good standing, client is responsive`;
+**Client Sentiment:** [Professional assessment]
+**Next Steps:** [Recommended actions]
+**Relationship Status:** [Current state of business relationship]`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3
+      });
 
+      const summaryText = response.choices[0].message.content || "Unable to generate summary";
       res.json({ summary: summaryText });
     } catch (error) {
       console.error("Generate summary error:", error);
