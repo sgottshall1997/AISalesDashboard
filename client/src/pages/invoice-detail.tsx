@@ -73,6 +73,8 @@ export default function InvoiceDetail() {
     email_type: "incoming" as "incoming" | "outgoing"
   });
   const [showAddEmail, setShowAddEmail] = useState(false);
+  const [conversationText, setConversationText] = useState("");
+  const [showConversationParser, setShowConversationParser] = useState(false);
   const [notes, setNotes] = useState("");
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   
@@ -215,6 +217,148 @@ export default function InvoiceDetail() {
 
   const handleSave = () => {
     updateInvoiceMutation.mutate(editData);
+  };
+
+  const parseEmailConversation = (conversation: string) => {
+    const lines = conversation.split('\n');
+    const emails = [];
+    let currentEmail = null;
+    let isInSignature = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Skip empty lines
+      if (!line) continue;
+      
+      // Detect email signature separators
+      if (line.includes('_________________________') || line.match(/^[-_=]{5,}$/)) {
+        isInSignature = true;
+        continue;
+      }
+      
+      // Detect "From:" headers (start of new email)
+      if (line.startsWith('From:') && line.includes('<') && line.includes('>')) {
+        if (currentEmail) {
+          emails.push(currentEmail);
+        }
+        
+        const emailMatch = line.match(/From:\s*(.+?)\s*<(.+?)>/);
+        const senderName = emailMatch ? emailMatch[1].trim() : 'Unknown';
+        const senderEmail = emailMatch ? emailMatch[2].trim() : '';
+        
+        currentEmail = {
+          from_email: senderEmail,
+          to_email: invoice?.client?.email || '',
+          subject: 'Email Conversation',
+          content: '',
+          email_type: senderEmail.includes(invoice?.client?.email || '') ? 'incoming' : 'outgoing',
+          senderName
+        };
+        isInSignature = false;
+        continue;
+      }
+      
+      // Detect "Sent:" timestamp lines
+      if (line.startsWith('Sent:')) {
+        continue;
+      }
+      
+      // Detect "Subject:" lines
+      if (line.startsWith('Subject:')) {
+        if (currentEmail) {
+          currentEmail.subject = line.replace('Subject:', '').replace('[External]', '').trim();
+        }
+        continue;
+      }
+      
+      // Detect "To:" lines
+      if (line.startsWith('To:')) {
+        if (currentEmail) {
+          const toMatch = line.match(/To:\s*(.+?)\s*<(.+?)>/);
+          if (toMatch) {
+            currentEmail.to_email = toMatch[2].trim();
+          }
+        }
+        continue;
+      }
+      
+      // Skip signature content
+      if (isInSignature) {
+        if (line.includes('Tel:') || line.includes('Email:') || line.includes('NOTICE:') || line.includes('Fax:')) {
+          continue;
+        }
+      }
+      
+      // Add content to current email
+      if (currentEmail && !isInSignature) {
+        if (currentEmail.content) {
+          currentEmail.content += '\n' + line;
+        } else {
+          currentEmail.content = line;
+        }
+      } else if (!currentEmail) {
+        // First email in conversation (no "From:" header)
+        if (!currentEmail) {
+          currentEmail = {
+            from_email: invoice?.client?.email || '',
+            to_email: 'spencer@13d.com',
+            subject: 'Email Conversation',
+            content: line,
+            email_type: 'incoming',
+            senderName: invoice?.client?.name || 'Client'
+          };
+        }
+      }
+    }
+    
+    // Add the last email
+    if (currentEmail) {
+      emails.push(currentEmail);
+    }
+    
+    return emails.reverse(); // Show oldest first
+  };
+
+  const handleParseConversation = () => {
+    if (!conversationText.trim()) {
+      toast({
+        title: "Missing Conversation",
+        description: "Please paste the email conversation to parse.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const parsedEmails = parseEmailConversation(conversationText);
+    
+    if (parsedEmails.length === 0) {
+      toast({
+        title: "No Emails Found",
+        description: "Could not parse any emails from the conversation.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Add all parsed emails
+    parsedEmails.forEach((email, index) => {
+      setTimeout(() => {
+        addEmailMutation.mutate({
+          subject: email.subject,
+          content: email.content,
+          email_type: email.email_type
+        });
+      }, index * 500); // Stagger the requests
+    });
+    
+    setConversationText('');
+    setShowConversationParser(false);
+    
+    toast({
+      title: "Conversation Parsed",
+      description: `Added ${parsedEmails.length} emails to the history.`,
+    });
   };
 
   const handleAddEmail = () => {
@@ -453,17 +597,63 @@ export default function InvoiceDetail() {
                   <Mail className="w-5 h-5" />
                   Email History
                 </CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowAddEmail(true)}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Email
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowConversationParser(true)}
+                  >
+                    <Bot className="w-4 h-4 mr-2" />
+                    Parse Conversation
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowAddEmail(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Email
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
+              {showConversationParser && (
+                <div className="mb-6 p-4 border rounded-lg bg-blue-50">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bot className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-medium text-blue-900">Parse Email Conversation</h4>
+                    </div>
+                    <p className="text-sm text-blue-700 mb-3">
+                      Paste a full email conversation below. The system will automatically detect individual messages, 
+                      extract sender information, and add them to the email history.
+                    </p>
+                    <Textarea
+                      placeholder="Paste the full email conversation here..."
+                      value={conversationText}
+                      onChange={(e) => setConversationText(e.target.value)}
+                      rows={10}
+                      className="w-full"
+                    />
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        onClick={handleParseConversation} 
+                        disabled={addEmailMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Bot className="w-4 h-4 mr-2" />
+                        Parse Conversation
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowConversationParser(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {showAddEmail && (
                 <div className="mb-6 p-4 border rounded-lg bg-gray-50">
                   <div className="space-y-3">
