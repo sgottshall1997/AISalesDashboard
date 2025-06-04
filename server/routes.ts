@@ -5,7 +5,7 @@ import { generateAIEmail } from "./openai";
 import { 
   insertClientSchema, insertInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  clients, invoices, leads, client_engagements
+  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
 } from "@shared/schema";
 import { db } from "./db";
 
