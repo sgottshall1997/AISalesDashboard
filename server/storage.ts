@@ -505,45 +505,59 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     bucket_60_89: { count: number; amount: number };
     bucket_90_plus: { count: number; amount: number };
   }> {
-    const currentDate = new Date();
-    
-    const results = await db
-      .select({
-        id: invoices.id,
-        amount: invoices.amount,
-        due_date: invoices.due_date,
-        payment_status: invoices.payment_status
-      })
-      .from(invoices)
-      .where(sql`${invoices.payment_status} != 'paid'`);
+    try {
+      const currentDate = new Date();
+      
+      const results = await db
+        .select({
+          id: invoices.id,
+          amount: invoices.amount,
+          due_date: invoices.due_date,
+          payment_status: invoices.payment_status
+        })
+        .from(invoices)
+        .where(sql`${invoices.payment_status} != 'paid'`);
 
-    const aging = {
-      bucket_0_29: { count: 0, amount: 0 },
-      bucket_30_59: { count: 0, amount: 0 },
-      bucket_60_89: { count: 0, amount: 0 },
-      bucket_90_plus: { count: 0, amount: 0 }
-    };
+      const aging = {
+        bucket_0_29: { count: 0, amount: 0 },
+        bucket_30_59: { count: 0, amount: 0 },
+        bucket_60_89: { count: 0, amount: 0 },
+        bucket_90_plus: { count: 0, amount: 0 }
+      };
 
-    results.forEach(invoice => {
-      const daysOverdue = Math.floor((currentDate.getTime() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24));
-      const amount = parseFloat(invoice.amount);
+      results.forEach(invoice => {
+        try {
+          const daysOverdue = Math.floor((currentDate.getTime() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24));
+          const amount = parseFloat(invoice.amount) || 0;
 
-      if (daysOverdue >= 0 && daysOverdue <= 29) {
-        aging.bucket_0_29.count++;
-        aging.bucket_0_29.amount += amount;
-      } else if (daysOverdue >= 30 && daysOverdue <= 59) {
-        aging.bucket_30_59.count++;
-        aging.bucket_30_59.amount += amount;
-      } else if (daysOverdue >= 60 && daysOverdue <= 89) {
-        aging.bucket_60_89.count++;
-        aging.bucket_60_89.amount += amount;
-      } else if (daysOverdue >= 90) {
-        aging.bucket_90_plus.count++;
-        aging.bucket_90_plus.amount += amount;
-      }
-    });
+          if (daysOverdue >= 0 && daysOverdue <= 29) {
+            aging.bucket_0_29.count++;
+            aging.bucket_0_29.amount += amount;
+          } else if (daysOverdue >= 30 && daysOverdue <= 59) {
+            aging.bucket_30_59.count++;
+            aging.bucket_30_59.amount += amount;
+          } else if (daysOverdue >= 60 && daysOverdue <= 89) {
+            aging.bucket_60_89.count++;
+            aging.bucket_60_89.amount += amount;
+          } else if (daysOverdue >= 90) {
+            aging.bucket_90_plus.count++;
+            aging.bucket_90_plus.amount += amount;
+          }
+        } catch (error) {
+          console.log(`Error processing invoice ${invoice.id}:`, error);
+        }
+      });
 
-    return aging;
+      return aging;
+    } catch (error) {
+      console.log("Error in getInvoiceAging:", error);
+      return {
+        bucket_0_29: { count: 0, amount: 0 },
+        bucket_30_59: { count: 0, amount: 0 },
+        bucket_60_89: { count: 0, amount: 0 },
+        bucket_90_plus: { count: 0, amount: 0 }
+      };
+    }
   }
 }
 
