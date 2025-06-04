@@ -75,18 +75,18 @@ export default function InvoiceDetail() {
   const queryClient = useQueryClient();
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithClient>({
-    queryKey: ['/api/invoices', invoiceId],
+    queryKey: [`/api/invoices/${invoiceId}`],
     enabled: !!invoiceId,
   });
 
   const { data: emailHistory } = useQuery<EmailHistory[]>({
-    queryKey: ['/api/invoices', invoiceId, 'emails'],
+    queryKey: [`/api/invoices/${invoiceId}/emails`],
     enabled: !!invoiceId,
   });
 
   const { data: aiSuggestion } = useQuery<AIFollowUpSuggestion>({
-    queryKey: ['/api/invoices', invoiceId, 'ai-suggestion'],
-    enabled: !!invoiceId && !!emailHistory,
+    queryKey: [`/api/invoices/${invoiceId}/ai-suggestion`],
+    enabled: !!invoiceId,
   });
 
   const updateInvoiceMutation = useMutation({
