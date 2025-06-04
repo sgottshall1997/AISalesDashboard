@@ -558,7 +558,17 @@ export default function InvoiceDetail() {
                       <Input
                         type="date"
                         value={editData.due_date?.split('T')[0] || ""}
-                        onChange={(e) => setEditData({ ...editData, due_date: e.target.value })}
+                        onChange={(e) => {
+                          // Ensure date is stored as ISO string in local timezone
+                          const selectedDate = e.target.value;
+                          if (selectedDate) {
+                            // Create date at noon local time to avoid timezone shifts
+                            const localDate = new Date(selectedDate + 'T12:00:00');
+                            setEditData({ ...editData, due_date: localDate.toISOString() });
+                          } else {
+                            setEditData({ ...editData, due_date: '' });
+                          }
+                        }}
                       />
                     </div>
                   </div>
