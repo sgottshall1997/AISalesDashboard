@@ -72,7 +72,7 @@ export default function ContentDistribution() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Distribution Tracker</h2>
-          <p className="text-gray-600">Monitor WILTW report engagement and optimize client outreach</p>
+          <p className="text-gray-600">Monitor report engagement and optimize client outreach</p>
         </div>
 
         {/* Engagement Overview */}
@@ -134,11 +134,11 @@ export default function ContentDistribution() {
           </Card>
         </div>
 
-        {/* Recent WILTW Reports */}
+        {/* Recent Reports */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Recent WILTW Reports</CardTitle>
+              <CardTitle>Recent Reports</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

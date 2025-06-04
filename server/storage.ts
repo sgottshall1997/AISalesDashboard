@@ -221,8 +221,8 @@ export class MemStorage implements IStorage {
     // Create sample content reports
     const sampleReports: InsertContentReport[] = [
       {
-        title: "WILTW #66 – Global Tech Trends",
-        type: "WILTW",
+        title: "Report #66 – Global Tech Trends",
+        type: "Report",
         published_date: new Date("2025-05-10"),
         open_rate: "72.0",
         click_rate: "35.0", 
@@ -230,8 +230,8 @@ export class MemStorage implements IStorage {
         tags: ["Tech", "Global", "Trends"]
       },
       {
-        title: "WILTW #65 – AI & Energy Markets",
-        type: "WILTW",
+        title: "Report #65 – AI & Energy Markets",
+        type: "Report",
         published_date: new Date("2025-04-30"),
         open_rate: "64.0",
         click_rate: "28.0",
@@ -239,8 +239,8 @@ export class MemStorage implements IStorage {
         tags: ["AI", "Energy", "Markets"]
       },
       {
-        title: "WILTW #64 – Healthcare Innovation",
-        type: "WILTW",
+        title: "Report #64 – Healthcare Innovation",
+        type: "Report",
         published_date: new Date("2025-04-15"),
         open_rate: "45.0",
         click_rate: "18.0",

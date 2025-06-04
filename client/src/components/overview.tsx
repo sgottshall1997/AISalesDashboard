@@ -102,7 +102,7 @@ export default function Overview() {
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">WILTW Engagement</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Report Engagement</dt>
                     <dd className="text-2xl font-semibold text-gray-900">
                       {stats?.avgEngagement ? `${Math.round(stats.avgEngagement)}%` : '0%'}
                     </dd>
@@ -172,7 +172,7 @@ export default function Overview() {
                       </div>
                       <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
                         <div>
-                          <p className="text-sm text-gray-500">Updated engagement analytics for WILTW #66</p>
+                          <p className="text-sm text-gray-500">Updated engagement analytics for Report #66</p>
                         </div>
                         <div className="text-right text-sm whitespace-nowrap text-gray-500">
                           5 hours ago
