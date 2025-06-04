@@ -169,7 +169,7 @@ export default function InvoiceDetail() {
     return <div className="flex justify-center items-center h-64">Loading invoice details...</div>;
   }
 
-  if (!invoice) {
+  if (!invoice || !invoice.client) {
     return <div className="flex justify-center items-center h-64">Invoice not found</div>;
   }
 
@@ -184,7 +184,7 @@ export default function InvoiceDetail() {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold mb-2">{invoice.invoice_number}</h1>
-            <p className="text-gray-600">{invoice.client.company}</p>
+            <p className="text-gray-600">{invoice.client.name}</p>
           </div>
           
           <div className="flex gap-2">
