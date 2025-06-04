@@ -537,9 +537,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                 }
 
-                // Calculate sent date based on days overdue
+                // Calculate due date based on days overdue
                 const currentDate = new Date();
-                const sentDate = new Date(currentDate.getTime() - (daysOverdue * 24 * 60 * 60 * 1000));
+                const dueDate = new Date(currentDate.getTime() - (daysOverdue * 24 * 60 * 60 * 1000));
                 
                 // All invoices with 0-29 days are pending since 0 means sent before due date
                 let paymentStatus = 'pending';
@@ -551,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   client_id: client.id,
                   invoice_number: opportunityName || `INV-${Date.now()}-${index}`,
                   amount: parseFloat(invoiceAmount.toString().replace(/[^0-9.-]/g, '') || '0').toFixed(2),
-                  sent_date: sentDate,
+                  due_date: dueDate,
                   payment_status: `${daysOverdue} days`,
                   last_reminder_sent: null
                 };

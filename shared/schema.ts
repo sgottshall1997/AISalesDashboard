@@ -29,7 +29,7 @@ export const invoices = pgTable("invoices", {
   client_id: integer("client_id").references(() => clients.id).notNull(),
   invoice_number: text("invoice_number").notNull().unique(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  sent_date: timestamp("sent_date").notNull(),
+  due_date: timestamp("due_date").notNull(),
   payment_status: text("payment_status").notNull().default("pending"), // pending, paid, overdue
   last_reminder_sent: timestamp("last_reminder_sent"),
   notes: text("notes"),
@@ -106,7 +106,7 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
 
 // Update schema that accepts string dates and converts them
 export const updateInvoiceSchema = insertInvoiceSchema.extend({
-  sent_date: z.union([z.string(), z.date()]).optional().transform((val) => {
+  due_date: z.union([z.string(), z.date()]).optional().transform((val) => {
     if (typeof val === 'string') {
       return new Date(val);
     }
