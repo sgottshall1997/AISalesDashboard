@@ -173,6 +173,35 @@ export default function InvoiceDetail() {
     },
   });
 
+  const deleteEmailMutation = useMutation({
+    mutationFn: async (emailId: number) => {
+      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}/emails/${emailId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'emails'] });
+      toast({
+        title: "Email Deleted",
+        description: "Email removed from history.",
+      });
+    },
+  });
+
+  const deleteAllEmailsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}/emails`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'emails'] });
+      setEmailSummary("");
+      toast({
+        title: "All Emails Deleted",
+        description: "Email history cleared.",
+      });
+    },
+  });
+
   const deleteInvoiceMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}`);
@@ -765,10 +794,20 @@ export default function InvoiceDetail() {
                           </Badge>
                           <span className="font-medium">{email.subject}</span>
                         </div>
-                        <span className="text-sm text-gray-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDistanceToNow(new Date(email.sent_date))} ago
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDistanceToNow(new Date(email.sent_date))} ago
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => deleteEmailMutation.mutate(email.id)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-sm text-gray-700">{email.content}</p>
                     </div>
