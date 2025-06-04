@@ -777,7 +777,12 @@ export default function InvoiceDetail() {
                     </div>
                     <Button 
                       size="sm" 
-                      onClick={() => generateSummaryMutation.mutate("")}
+                      onClick={() => {
+                        const conversationText = emailHistory?.map(email => 
+                          `${email.email_type === 'incoming' ? 'From' : 'To'}: ${email.from_email}\nSubject: ${email.subject}\n${email.content}`
+                        ).join('\n\n---\n\n') || '';
+                        generateSummaryMutation.mutate(conversationText);
+                      }}
                       disabled={generateSummaryMutation.isPending}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
