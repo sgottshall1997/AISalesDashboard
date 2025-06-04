@@ -95,6 +95,29 @@ export default function InvoicingAssistant() {
     },
   });
 
+  const clearAllInvoicesMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", "/api/invoices/all", {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/overdue"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Success",
+        description: "All invoices have been removed",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to remove invoices",
+        variant: "destructive",
+      });
+    },
+  });
+
   const calculateDaysOverdue = (sentDate: string) => {
     const daysDiff = Math.floor((Date.now() - new Date(sentDate).getTime()) / (1000 * 60 * 60 * 24));
     return daysDiff;
@@ -133,9 +156,22 @@ export default function InvoicingAssistant() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoicing Assistant</h2>
-          <p className="text-gray-600">Track payments and automate follow-up communications</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Invoicing Assistant</h2>
+            <p className="text-gray-600">Track payments and automate follow-up communications</p>
+          </div>
+          <Button
+            variant="destructive"
+            onClick={() => {
+              if (confirm("Are you sure you want to delete all invoices? This action cannot be undone.")) {
+                clearAllInvoicesMutation.mutate();
+              }
+            }}
+            disabled={clearAllInvoicesMutation.isPending}
+          >
+            {clearAllInvoicesMutation.isPending ? "Removing..." : "Remove All Invoices"}
+          </Button>
         </div>
 
         {/* Invoice Summary Cards */}

@@ -281,6 +281,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk delete endpoints
+  app.delete("/api/invoices/all", async (req, res) => {
+    try {
+      const result = await db.delete(invoices);
+      res.json({ success: true, message: "All invoices deleted" });
+    } catch (error) {
+      console.error('Delete invoices error:', error);
+      res.status(500).json({ error: 'Failed to delete invoices' });
+    }
+  });
+
+  app.delete("/api/leads/all", async (req, res) => {
+    try {
+      const result = await db.delete(leads);
+      res.json({ success: true, message: "All leads deleted" });
+    } catch (error) {
+      console.error('Delete leads error:', error);
+      res.status(500).json({ error: 'Failed to delete leads' });
+    }
+  });
+
+  app.delete("/api/clients/all", async (req, res) => {
+    try {
+      const result = await db.delete(clients);
+      res.json({ success: true, message: "All clients deleted" });
+    } catch (error) {
+      console.error('Delete clients error:', error);
+      res.status(500).json({ error: 'Failed to delete clients' });
+    }
+  });
+
   const httpServer = createServer(app);
   // CSV Upload endpoint
   app.post("/api/upload/csv", async (req, res) => {
