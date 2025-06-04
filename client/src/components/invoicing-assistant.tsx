@@ -13,7 +13,10 @@ import {
   Bot, 
   Plus,
   Eye,
-  Edit
+  Edit,
+  ChevronDown,
+  ChevronUp,
+  BarChart3
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +48,7 @@ export default function InvoicingAssistant() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceWithClient | null>(null);
   const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [expandedBuckets, setExpandedBuckets] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -59,6 +63,41 @@ export default function InvoicingAssistant() {
   const { data: agingData } = useQuery({
     queryKey: ["/api/invoices/aging"],
   });
+
+  // Group invoices by aging periods
+  const groupInvoicesByAging = (invoices: InvoiceWithClient[]) => {
+    const groups = {
+      "0-29": [] as InvoiceWithClient[],
+      "30-59": [] as InvoiceWithClient[],
+      "60-89": [] as InvoiceWithClient[],
+      "90+": [] as InvoiceWithClient[]
+    };
+
+    invoices?.forEach(invoice => {
+      const daysOverdue = Math.floor((new Date().getTime() - new Date(invoice.sent_date).getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysOverdue <= 29) {
+        groups["0-29"].push(invoice);
+      } else if (daysOverdue <= 59) {
+        groups["30-59"].push(invoice);
+      } else if (daysOverdue <= 89) {
+        groups["60-89"].push(invoice);
+      } else {
+        groups["90+"].push(invoice);
+      }
+    });
+
+    return groups;
+  };
+
+  const invoiceGroups = groupInvoicesByAging(invoices || []);
+
+  const toggleBucket = (bucket: string) => {
+    setExpandedBuckets(prev => ({
+      ...prev,
+      [bucket]: !prev[bucket]
+    }));
+  };
 
   const generateEmailMutation = useMutation({
     mutationFn: async (invoiceId: number) => {
