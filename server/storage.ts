@@ -60,400 +60,211 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private users: Map<number, User> = new Map();
-  private clients: Map<number, Client> = new Map();
-  private invoices: Map<number, Invoice> = new Map();
-  private leads: Map<number, Lead> = new Map();
-  private contentReports: Map<number, ContentReport> = new Map();
-  private clientEngagements: Map<number, ClientEngagement> = new Map();
-  private aiSuggestions: Map<number, AiSuggestion> = new Map();
-  
-  private currentUserId = 1;
-  private currentClientId = 1;
-  private currentInvoiceId = 1;
-  private currentLeadId = 1;
-  private currentReportId = 1;
-  private currentEngagementId = 1;
-  private currentSuggestionId = 1;
-
-  constructor() {
-    this.seedData();
-  }
-
-  private seedData() {
-    // Create sample clients
-    const sampleClients: InsertClient[] = [
-      {
-        name: "Acme Corp",
-        email: "contact@acme.com",
-        company: "Acme Corp",
-        subscription_type: "standard",
-        renewal_date: new Date("2025-07-15"),
-        engagement_rate: "75.5",
-        click_rate: "32.0",
-        interest_tags: ["Tech", "Semiconductors"],
-        risk_level: "medium",
-        notes: "High engagement with tech content"
-      },
-      {
-        name: "Beta Fund",
-        email: "info@betafund.com", 
-        company: "Beta Fund",
-        subscription_type: "premium",
-        renewal_date: new Date("2025-06-15"),
-        engagement_rate: "85.0",
-        click_rate: "42.0",
-        interest_tags: ["AI", "Energy", "CleanTech"],
-        risk_level: "medium",
-        notes: "Interested in AI and energy markets"
-      },
-      {
-        name: "TechStart Inc",
-        email: "hello@techstart.com",
-        company: "TechStart Inc", 
-        subscription_type: "standard",
-        renewal_date: new Date("2025-08-20"),
-        engagement_rate: "90.0",
-        click_rate: "45.0",
-        interest_tags: ["Tech", "AI", "Innovation"],
-        risk_level: "low",
-        notes: "Upgrade candidate - high engagement"
-      },
-      {
-        name: "GlobalFund LLC",
-        email: "contact@globalfund.com",
-        company: "GlobalFund LLC",
-        subscription_type: "standard", 
-        renewal_date: new Date("2025-07-10"),
-        engagement_rate: "65.0",
-        click_rate: "28.0",
-        interest_tags: ["Healthcare", "Biotech"],
-        risk_level: "low",
-        notes: "Steady engagement"
-      },
-      {
-        name: "Quantum Holdings",
-        email: "info@quantum.com",
-        company: "Quantum Holdings",
-        subscription_type: "premium",
-        renewal_date: new Date("2025-06-08"),
-        engagement_rate: "35.0", 
-        click_rate: "15.0",
-        interest_tags: ["Finance"],
-        risk_level: "high",
-        notes: "Low engagement - at risk"
-      }
-    ];
-
-    sampleClients.forEach(client => this.createClient(client));
-
-    // Create sample invoices
-    const sampleInvoices: InsertInvoice[] = [
-      {
-        client_id: 1,
-        invoice_number: "INV-12345",
-        amount: "15000.00",
-        sent_date: new Date("2025-05-15"),
-        payment_status: "overdue"
-      },
-      {
-        client_id: 3,
-        invoice_number: "INV-12346", 
-        amount: "8500.00",
-        sent_date: new Date("2025-05-28"),
-        payment_status: "pending"
-      },
-      {
-        client_id: 4,
-        invoice_number: "INV-12347",
-        amount: "24000.00",
-        sent_date: new Date("2025-05-30"),
-        payment_status: "paid"
-      }
-    ];
-
-    sampleInvoices.forEach(invoice => this.createInvoice(invoice));
-
-    // Create sample leads
-    const sampleLeads: InsertLead[] = [
-      {
-        name: "Jane Doe",
-        email: "jane@abccapital.com",
-        company: "ABC Capital",
-        stage: "qualified",
-        last_contact: new Date("2025-05-20"),
-        next_step: "Schedule discovery call",
-        notes: "Focuses on precious metals and emerging markets",
-        interest_tags: ["Precious Metals", "Emerging Markets"]
-      },
-      {
-        name: "Growth Partners",
-        email: "contact@growthpartners.com", 
-        company: "Growth Partners",
-        stage: "qualified",
-        last_contact: new Date("2025-05-25"),
-        next_step: "Send proposal",
-        notes: "Needs assessment complete - high interest",
-        interest_tags: ["Tech", "AI Investing"]
-      },
-      {
-        name: "Digital Ventures",
-        email: "info@digitalventures.com",
-        company: "Digital Ventures", 
-        stage: "prospect",
-        last_contact: new Date("2025-06-02"),
-        next_step: "Send intro email",
-        notes: "Initial contact made",
-        interest_tags: []
-      },
-      {
-        name: "Alpha Investments",
-        email: "contact@alphainv.com",
-        company: "Alpha Investments",
-        stage: "proposal",
-        last_contact: new Date("2025-06-01"),
-        next_step: "Follow up on proposal",
-        notes: "$25K proposal sent - awaiting response",
-        interest_tags: ["Tech", "Healthcare"]
-      }
-    ];
-
-    sampleLeads.forEach(lead => this.createLead(lead));
-
-    // Create sample content reports
-    const sampleReports: InsertContentReport[] = [
-      {
-        title: "Report #66 – Global Tech Trends",
-        type: "Report",
-        published_date: new Date("2025-05-10"),
-        open_rate: "72.0",
-        click_rate: "35.0", 
-        engagement_level: "high",
-        tags: ["Tech", "Global", "Trends"]
-      },
-      {
-        title: "Report #65 – AI & Energy Markets",
-        type: "Report",
-        published_date: new Date("2025-04-30"),
-        open_rate: "64.0",
-        click_rate: "28.0",
-        engagement_level: "medium", 
-        tags: ["AI", "Energy", "Markets"]
-      },
-      {
-        title: "Report #64 – Healthcare Innovation",
-        type: "Report",
-        published_date: new Date("2025-04-15"),
-        open_rate: "45.0",
-        click_rate: "18.0",
-        engagement_level: "low",
-        tags: ["Healthcare", "Innovation", "Biotech"]
-      }
-    ];
-
-    sampleReports.forEach(report => this.createContentReport(report));
-  }
-
-  // Users implementation
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
-  // Clients implementation
   async getAllClients(): Promise<Client[]> {
-    return Array.from(this.clients.values());
+    return await db.select().from(clients);
   }
 
   async getClient(id: number): Promise<Client | undefined> {
-    return this.clients.get(id);
+    const [client] = await db.select().from(clients).where(eq(clients.id, id));
+    return client || undefined;
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
-    const id = this.currentClientId++;
-    const client: Client = { 
-      ...insertClient, 
-      id,
-      created_at: new Date()
-    };
-    this.clients.set(id, client);
+    const [client] = await db
+      .insert(clients)
+      .values(insertClient)
+      .returning();
     return client;
   }
 
   async updateClient(id: number, updates: Partial<InsertClient>): Promise<Client | undefined> {
-    const client = this.clients.get(id);
-    if (!client) return undefined;
-    
-    const updatedClient = { ...client, ...updates };
-    this.clients.set(id, updatedClient);
-    return updatedClient;
+    const [client] = await db
+      .update(clients)
+      .set(updates)
+      .where(eq(clients.id, id))
+      .returning();
+    return client || undefined;
   }
 
-  // Invoices implementation  
   async getAllInvoices(): Promise<(Invoice & { client: Client })[]> {
-    const invoices = Array.from(this.invoices.values());
-    return invoices.map(invoice => ({
-      ...invoice,
-      client: this.clients.get(invoice.client_id)!
-    }));
+    return await db
+      .select({
+        id: invoices.id,
+        client_id: invoices.client_id,
+        invoice_number: invoices.invoice_number,
+        amount: invoices.amount,
+        sent_date: invoices.sent_date,
+        payment_status: invoices.payment_status,
+        last_reminder_sent: invoices.last_reminder_sent,
+        created_at: invoices.created_at,
+        client: clients
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.client_id, clients.id));
   }
 
   async getInvoicesByClient(clientId: number): Promise<Invoice[]> {
-    return Array.from(this.invoices.values()).filter(invoice => invoice.client_id === clientId);
+    return await db.select().from(invoices).where(eq(invoices.client_id, clientId));
   }
 
   async getOverdueInvoices(): Promise<(Invoice & { client: Client })[]> {
-    const invoices = Array.from(this.invoices.values()).filter(
-      invoice => invoice.payment_status === "overdue"
-    );
-    return invoices.map(invoice => ({
-      ...invoice,
-      client: this.clients.get(invoice.client_id)!
-    }));
+    return await db
+      .select({
+        id: invoices.id,
+        client_id: invoices.client_id,
+        invoice_number: invoices.invoice_number,
+        amount: invoices.amount,
+        sent_date: invoices.sent_date,
+        payment_status: invoices.payment_status,
+        last_reminder_sent: invoices.last_reminder_sent,
+        created_at: invoices.created_at,
+        client: clients
+      })
+      .from(invoices)
+      .leftJoin(clients, eq(invoices.client_id, clients.id))
+      .where(eq(invoices.payment_status, "overdue"));
   }
 
   async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
-    const id = this.currentInvoiceId++;
-    const invoice: Invoice = {
-      ...insertInvoice,
-      id,
-      created_at: new Date()
-    };
-    this.invoices.set(id, invoice);
+    const [invoice] = await db
+      .insert(invoices)
+      .values(insertInvoice)
+      .returning();
     return invoice;
   }
 
   async updateInvoice(id: number, updates: Partial<InsertInvoice>): Promise<Invoice | undefined> {
-    const invoice = this.invoices.get(id);
-    if (!invoice) return undefined;
-    
-    const updatedInvoice = { ...invoice, ...updates };
-    this.invoices.set(id, updatedInvoice);
-    return updatedInvoice;
+    const [invoice] = await db
+      .update(invoices)
+      .set(updates)
+      .where(eq(invoices.id, id))
+      .returning();
+    return invoice || undefined;
   }
 
-  // Leads implementation
   async getAllLeads(): Promise<Lead[]> {
-    return Array.from(this.leads.values());
+    return await db.select().from(leads);
   }
 
   async getLead(id: number): Promise<Lead | undefined> {
-    return this.leads.get(id);
+    const [lead] = await db.select().from(leads).where(eq(leads.id, id));
+    return lead || undefined;
   }
 
   async getLeadsByStage(stage: string): Promise<Lead[]> {
-    return Array.from(this.leads.values()).filter(lead => lead.stage === stage);
+    return await db.select().from(leads).where(eq(leads.stage, stage));
   }
 
   async createLead(insertLead: InsertLead): Promise<Lead> {
-    const id = this.currentLeadId++;
-    const lead: Lead = {
-      ...insertLead,
-      id,
-      created_at: new Date()
-    };
-    this.leads.set(id, lead);
+    const [lead] = await db
+      .insert(leads)
+      .values(insertLead)
+      .returning();
     return lead;
   }
 
   async updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined> {
-    const lead = this.leads.get(id);
-    if (!lead) return undefined;
-    
-    const updatedLead = { ...lead, ...updates };
-    this.leads.set(id, updatedLead);
-    return updatedLead;
+    const [lead] = await db
+      .update(leads)
+      .set(updates)
+      .where(eq(leads.id, id))
+      .returning();
+    return lead || undefined;
   }
 
-  // Content Reports implementation
   async getAllContentReports(): Promise<ContentReport[]> {
-    return Array.from(this.contentReports.values());
+    return await db.select().from(content_reports);
   }
 
   async getRecentReports(limit = 5): Promise<ContentReport[]> {
-    return Array.from(this.contentReports.values())
-      .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
-      .slice(0, limit);
+    return await db
+      .select()
+      .from(content_reports)
+      .orderBy(desc(content_reports.published_date))
+      .limit(limit);
   }
 
   async createContentReport(insertReport: InsertContentReport): Promise<ContentReport> {
-    const id = this.currentReportId++;
-    const report: ContentReport = {
-      ...insertReport,
-      id,
-      created_at: new Date()
-    };
-    this.contentReports.set(id, report);
+    const [report] = await db
+      .insert(content_reports)
+      .values(insertReport)
+      .returning();
     return report;
   }
 
-  // Client Engagements implementation
   async getClientEngagements(clientId: number): Promise<(ClientEngagement & { report: ContentReport })[]> {
-    const engagements = Array.from(this.clientEngagements.values()).filter(
-      engagement => engagement.client_id === clientId
-    );
-    return engagements.map(engagement => ({
-      ...engagement,
-      report: this.contentReports.get(engagement.report_id)!
-    }));
+    return await db
+      .select({
+        id: client_engagements.id,
+        client_id: client_engagements.client_id,
+        report_id: client_engagements.report_id,
+        opened: client_engagements.opened,
+        clicked: client_engagements.clicked,
+        engagement_date: client_engagements.engagement_date,
+        report: content_reports
+      })
+      .from(client_engagements)
+      .leftJoin(content_reports, eq(client_engagements.report_id, content_reports.id))
+      .where(eq(client_engagements.client_id, clientId));
   }
 
   async createClientEngagement(insertEngagement: InsertClientEngagement): Promise<ClientEngagement> {
-    const id = this.currentEngagementId++;
-    const engagement: ClientEngagement = {
-      ...insertEngagement,
-      id
-    };
-    this.clientEngagements.set(id, engagement);
+    const [engagement] = await db
+      .insert(client_engagements)
+      .values(insertEngagement)
+      .returning();
     return engagement;
   }
 
-  // AI Suggestions implementation
   async getAiSuggestions(targetType?: string, priority?: string): Promise<AiSuggestion[]> {
-    let suggestions = Array.from(this.aiSuggestions.values());
+    let query = db.select().from(ai_suggestions);
     
-    if (targetType) {
-      suggestions = suggestions.filter(s => s.target_type === targetType);
+    if (targetType && priority) {
+      return await query.where(and(eq(ai_suggestions.target_type, targetType), eq(ai_suggestions.priority, priority)));
+    } else if (targetType) {
+      return await query.where(eq(ai_suggestions.target_type, targetType));
+    } else if (priority) {
+      return await query.where(eq(ai_suggestions.priority, priority));
     }
     
-    if (priority) {
-      suggestions = suggestions.filter(s => s.priority === priority);
-    }
-    
-    return suggestions.sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+    return await query;
   }
 
   async createAiSuggestion(insertSuggestion: InsertAiSuggestion): Promise<AiSuggestion> {
-    const id = this.currentSuggestionId++;
-    const suggestion: AiSuggestion = {
-      ...insertSuggestion,
-      id,
-      created_at: new Date()
-    };
-    this.aiSuggestions.set(id, suggestion);
+    const [suggestion] = await db
+      .insert(ai_suggestions)
+      .values(insertSuggestion)
+      .returning();
     return suggestion;
   }
 
   async updateAiSuggestion(id: number, updates: Partial<InsertAiSuggestion>): Promise<AiSuggestion | undefined> {
-    const suggestion = this.aiSuggestions.get(id);
-    if (!suggestion) return undefined;
-    
-    const updatedSuggestion = { ...suggestion, ...updates };
-    this.aiSuggestions.set(id, updatedSuggestion);
-    return updatedSuggestion;
+    const [suggestion] = await db
+      .update(ai_suggestions)
+      .set(updates)
+      .where(eq(ai_suggestions.id, id))
+      .returning();
+    return suggestion || undefined;
   }
 
-  // Dashboard Analytics implementation
   async getDashboardStats(): Promise<{
     outstandingInvoices: number;
     overdueCount: number;
@@ -461,32 +272,37 @@ export class DatabaseStorage implements IStorage {
     avgEngagement: number;
     atRiskRenewals: number;
   }> {
-    const invoices = Array.from(this.invoices.values());
-    const clients = Array.from(this.clients.values());
-    const leads = Array.from(this.leads.values());
+    const [outstandingResult] = await db
+      .select({ sum: sql`COALESCE(SUM(CAST(${invoices.amount} AS DECIMAL)), 0)` })
+      .from(invoices)
+      .where(sql`${invoices.payment_status} != 'paid'`);
 
-    const outstandingInvoices = invoices
-      .filter(inv => inv.payment_status !== "paid")
-      .reduce((sum, inv) => sum + parseFloat(inv.amount), 0);
+    const [overdueResult] = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(invoices)
+      .where(eq(invoices.payment_status, "overdue"));
 
-    const overdueCount = invoices.filter(inv => inv.payment_status === "overdue").length;
-    
-    const activeLeads = leads.filter(lead => 
-      ["prospect", "qualified", "proposal"].includes(lead.stage)
-    ).length;
+    const [activeLeadsResult] = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(leads)
+      .where(sql`${leads.stage} IN ('prospect', 'qualified', 'proposal')`);
 
-    const avgEngagement = clients.reduce((sum, client) => 
-      sum + parseFloat(client.engagement_rate || "0"), 0
-    ) / clients.length;
+    const [avgEngagementResult] = await db
+      .select({ avg: sql`COALESCE(AVG(CAST(${clients.engagement_rate} AS DECIMAL)), 0)` })
+      .from(clients)
+      .where(sql`${clients.engagement_rate} IS NOT NULL`);
 
-    const atRiskRenewals = clients.filter(client => client.risk_level === "high").length;
+    const [atRiskResult] = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(clients)
+      .where(eq(clients.risk_level, "high"));
 
     return {
-      outstandingInvoices,
-      overdueCount,
-      activeLeads,
-      avgEngagement,
-      atRiskRenewals
+      outstandingInvoices: Number(outstandingResult.sum) || 0,
+      overdueCount: Number(overdueResult.count) || 0,
+      activeLeads: Number(activeLeadsResult.count) || 0,
+      avgEngagement: Number(avgEngagementResult.avg) || 0,
+      atRiskRenewals: Number(atRiskResult.count) || 0
     };
   }
 }
