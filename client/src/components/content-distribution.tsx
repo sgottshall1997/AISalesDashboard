@@ -79,7 +79,7 @@ export default function ContentDistribution() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append('pdf', file);
-      const response = await fetch('/api/reports/upload', {
+      const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData,
       });
