@@ -96,13 +96,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/invoices/:id", async (req, res) => {
     try {
+      console.log("Update request body:", req.body);
       const updates = insertInvoiceSchema.partial().parse(req.body);
+      console.log("Parsed updates:", updates);
       const invoice = await storage.updateInvoice(parseInt(req.params.id), updates);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
       }
       res.json(invoice);
     } catch (error) {
+      console.error("Validation error:", error);
       res.status(400).json({ message: "Invalid invoice data" });
     }
   });
