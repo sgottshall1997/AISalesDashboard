@@ -901,6 +901,107 @@ ${extractedText.substring(0, 8000)}`
     }
   });
 
+  // AI-powered prospecting intelligence endpoint
+  app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
+    try {
+      const { clientId, prospectingType } = req.body;
+      
+      // Get all reports from database for comprehensive analysis
+      const allReports = await storage.getAllContentReports();
+      const client = clientId ? await storage.getClient(clientId) : null;
+      
+      if (allReports.length === 0) {
+        return res.status(400).json({ error: "No reports available for analysis" });
+      }
+
+      // Compile comprehensive intelligence from all reports
+      const reportIntelligence = allReports.map(report => ({
+        title: report.title,
+        summary: report.content_summary,
+        thesis: report.investment_thesis,
+        insights: report.key_insights,
+        prospects: report.prospecting_points,
+        relevance: report.client_relevance,
+        sectors: report.tags
+      })).filter(r => r.summary || r.thesis); // Only reports with AI analysis
+
+      if (reportIntelligence.length === 0) {
+        return res.status(400).json({ error: "No AI-analyzed reports available for prospecting intelligence" });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const prospectingPrompt = `You are an expert investment advisor specializing in client prospecting and relationship management. 
+
+Analyze the following comprehensive research reports and generate personalized prospecting insights:
+
+${reportIntelligence.map((report, index) => `
+Report ${index + 1}: ${report.title}
+Summary: ${report.summary || 'N/A'}
+Investment Thesis: ${report.thesis || 'N/A'}
+Key Insights: ${report.insights?.join(', ') || 'N/A'}
+Prospecting Points: ${report.prospects?.join(', ') || 'N/A'}
+Target Sectors: ${report.sectors?.join(', ') || 'N/A'}
+`).join('\n')}
+
+${client ? `
+Target Client Profile:
+- Name: ${client.name}
+- Company: ${client.company}
+- Interest Areas: ${client.interest_tags?.join(', ') || 'General investing'}
+- Engagement Level: ${client.engagement_rate || 'Unknown'}
+- Risk Profile: ${client.risk_level || 'Moderate'}
+` : ''}
+
+Generate a comprehensive prospecting strategy response in JSON format:
+{
+  "topOpportunities": ["3-5 specific opportunities based on current market insights"],
+  "personalizedTalkingPoints": ["5-7 conversation starters tailored to client interests"],
+  "marketIntelligence": ["3-4 key market insights from recent reports"],
+  "investmentThemes": ["3-4 recurring themes across reports"],
+  "nextStepRecommendations": ["2-3 specific next steps for client engagement"],
+  "urgencyIndicators": ["1-2 time-sensitive opportunities"],
+  "riskConsiderations": ["2-3 key risks to discuss"],
+  "reportReferences": ["Specific report titles to reference in conversations"]
+}
+
+Focus on actionable intelligence that maximizes prospecting effectiveness and client engagement.`;
+
+      const analysisResponse = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert investment advisor and client relationship manager."
+          },
+          {
+            role: "user",
+            content: prospectingPrompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      });
+
+      const insights = JSON.parse(analysisResponse.choices[0].message.content || '{}');
+      
+      res.json({
+        message: "Prospecting insights generated successfully",
+        insights,
+        reportsAnalyzed: reportIntelligence.length,
+        totalReports: allReports.length
+      });
+
+    } catch (error) {
+      console.error('Prospecting insights error:', error);
+      res.status(500).json({ 
+        message: "Failed to generate prospecting insights",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   return httpServer;
 }
 
