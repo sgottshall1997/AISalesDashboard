@@ -6,6 +6,8 @@ import {
   type AiSuggestion, type InsertAiSuggestion,
   users, type User, type InsertUser
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -57,7 +59,7 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
+export class DatabaseStorage implements IStorage {
   private users: Map<number, User> = new Map();
   private clients: Map<number, Client> = new Map();
   private invoices: Map<number, Invoice> = new Map();
@@ -489,4 +491,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

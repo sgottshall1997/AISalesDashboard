@@ -1,5 +1,6 @@
 import { pgTable, text, serial, integer, boolean, timestamp, decimal, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { relations } from "drizzle-orm";
 import { z } from "zod";
 
 export const users = pgTable("users", {
@@ -130,6 +131,34 @@ export type InsertAiSuggestion = z.infer<typeof insertAiSuggestionSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
+// Relations
+export const clientsRelations = relations(clients, ({ many }) => ({
+  invoices: many(invoices),
+  engagements: many(client_engagements),
+}));
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  client: one(clients, {
+    fields: [invoices.client_id],
+    references: [clients.id],
+  }),
+}));
+
+export const contentReportsRelations = relations(content_reports, ({ many }) => ({
+  engagements: many(client_engagements),
+}));
+
+export const clientEngagementsRelations = relations(client_engagements, ({ one }) => ({
+  client: one(clients, {
+    fields: [client_engagements.client_id],
+    references: [clients.id],
+  }),
+  report: one(content_reports, {
+    fields: [client_engagements.report_id],
+    references: [content_reports.id],
+  }),
+}));
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
