@@ -143,6 +143,9 @@ export const insertEmailHistorySchema = createInsertSchema(email_history).omit({
   id: true,
   created_at: true,
   sent_date: true,
+}).extend({
+  from_email: z.string().optional().default(''),
+  to_email: z.string().optional().default(''),
 });
 
 // Types

@@ -347,7 +347,9 @@ export default function InvoiceDetail() {
         addEmailMutation.mutate({
           subject: email.subject,
           content: email.content,
-          email_type: email.email_type
+          email_type: email.email_type,
+          from_email: email.from_email || '',
+          to_email: email.to_email || ''
         });
       }, index * 500); // Stagger the requests
     });
