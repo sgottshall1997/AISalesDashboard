@@ -107,6 +107,8 @@ export default function InvoiceDetail() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate both the specific invoice and the invoice list
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/invoices'] });
       setIsEditing(false);
       toast({

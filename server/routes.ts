@@ -96,9 +96,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/invoices/:id", async (req, res) => {
     try {
-      console.log("Update request body:", req.body);
       const updates = updateInvoiceSchema.parse(req.body);
-      console.log("Parsed updates:", updates);
       const invoice = await storage.updateInvoice(parseInt(req.params.id), updates);
       if (!invoice) {
         return res.status(404).json({ message: "Invoice not found" });
