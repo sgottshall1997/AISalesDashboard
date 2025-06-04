@@ -65,6 +65,8 @@ export interface IStorage {
   // Email history methods
   getEmailHistory(invoiceId: number): Promise<EmailHistory[]>;
   createEmailHistory(emailData: InsertEmailHistory): Promise<EmailHistory>;
+  deleteEmailHistory(emailId: number): Promise<boolean>;
+  deleteAllEmailHistory(invoiceId: number): Promise<boolean>;
   
   // AI suggestions for invoices
   getInvoiceAISuggestion(invoiceId: number): Promise<any>;
@@ -365,6 +367,20 @@ export class DatabaseStorage implements IStorage {
     return email;
   }
 
+  async deleteEmailHistory(emailId: number): Promise<boolean> {
+    const result = await db
+      .delete(email_history)
+      .where(eq(email_history.id, emailId));
+    return true;
+  }
+
+  async deleteAllEmailHistory(invoiceId: number): Promise<boolean> {
+    const result = await db
+      .delete(email_history)
+      .where(eq(email_history.invoice_id, invoiceId));
+    return true;
+  }
+
   async getInvoiceAISuggestion(invoiceId: number): Promise<any> {
     const invoice = await this.getInvoiceWithClient(invoiceId);
     const emailHistory = await this.getEmailHistory(invoiceId);
@@ -377,14 +393,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any> {
-    const daysOverdue = Math.floor((Date.now() - new Date(invoice.sent_date).getTime()) / (1000 * 60 * 60 * 24));
+    // Fix NaN calculation by using due_date instead of sent_date
+    const daysOverdue = invoice.due_date ? 
+      Math.floor((Date.now() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+    
     const lastEmail = emailHistory[0];
     const daysSinceLastEmail = lastEmail ? 
       Math.floor((Date.now() - new Date(lastEmail.sent_date).getTime()) / (1000 * 60 * 60 * 24)) : null;
 
+    // Format amount with commas and no decimal places for whole numbers
+    const formatAmount = (amount: string) => {
+      const num = parseFloat(amount);
+      return `$${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+    };
+
     let suggestion = {
       subject: `Follow up on Invoice ${invoice.invoice_number}`,
-      body: `Dear ${invoice.client.name},\n\nI hope this message finds you well. I wanted to follow up regarding Invoice ${invoice.invoice_number} for $${invoice.amount}, which was sent on ${new Date(invoice.sent_date).toLocaleDateString()}.`,
+      body: `Dear ${invoice.client.name},\n\nI hope this message finds you well. I wanted to follow up regarding your outstanding invoice (${invoice.client.company} - ${invoice.invoice_number}) for ${formatAmount(invoice.amount)}, which is now ${daysOverdue} days overdue.`,
       reason: `Invoice is ${daysOverdue} days overdue`,
       priority: "medium" as const
     };

@@ -664,6 +664,18 @@ export default function InvoiceDetail() {
                     <Bot className="w-4 h-4 mr-2" />
                     Parse Conversation
                   </Button>
+                  {emailHistory && emailHistory.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => deleteAllEmailsMutation.mutate()}
+                      disabled={deleteAllEmailsMutation.isPending}
+                      className="text-red-600 hover:text-red-700 border-red-200"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete All
+                    </Button>
+                  )}
                   <Button 
                     variant="outline" 
                     size="sm"

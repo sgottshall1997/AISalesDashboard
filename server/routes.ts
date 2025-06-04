@@ -352,6 +352,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/invoices/:id/emails/:emailId", async (req, res) => {
+    try {
+      const emailId = parseInt(req.params.emailId);
+      await storage.deleteEmailHistory(emailId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete email error:", error);
+      res.status(500).json({ error: "Failed to delete email" });
+    }
+  });
+
+  app.delete("/api/invoices/:id/emails", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      await storage.deleteAllEmailHistory(invoiceId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete all emails error:", error);
+      res.status(500).json({ error: "Failed to delete all emails" });
+    }
+  });
+
   // AI follow-up suggestion endpoint
   app.get("/api/invoices/:id/ai-suggestion", async (req, res) => {
     try {
