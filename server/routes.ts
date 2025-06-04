@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Parse CSV file
           await new Promise((resolve, reject) => {
-            fs.createReadStream(file.path)
+            fs.default.createReadStream(file.path)
               .pipe(csv.default())
               .on('data', (data) => results.push(data))
               .on('end', resolve)
@@ -451,7 +451,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
 
           // Clean up uploaded file
-          fs.unlinkSync(file.path);
+          try {
+            fs.default.unlinkSync(file.path);
+          } catch (error) {
+            console.log('File cleanup error:', error);
+          }
 
           res.json({
             success: errors.length === 0,
