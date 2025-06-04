@@ -117,20 +117,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllInvoices(): Promise<(Invoice & { client: Client })[]> {
-    return await db
-      .select({
-        id: invoices.id,
-        client_id: invoices.client_id,
-        invoice_number: invoices.invoice_number,
-        amount: invoices.amount,
-        sent_date: invoices.sent_date,
-        payment_status: invoices.payment_status,
-        last_reminder_sent: invoices.last_reminder_sent,
-        created_at: invoices.created_at,
-        client: clients
-      })
+    const result = await db
+      .select()
       .from(invoices)
       .leftJoin(clients, eq(invoices.client_id, clients.id));
+    
+    return result.map(row => {
+      const invoice = row.invoices;
+      const client = row.clients!;
+      
+      // Calculate days overdue from due date
+      const currentDate = new Date();
+      const dueDate = new Date(invoice.due_date);
+      const timeDiff = currentDate.getTime() - dueDate.getTime();
+      const daysOverdue = Math.floor(timeDiff / (1000 * 3600 * 24));
+      
+      return {
+        ...invoice,
+        payment_status: `${Math.max(0, daysOverdue)} days`,
+        client: client
+      };
+    });
   }
 
   async getInvoicesByClient(clientId: number): Promise<Invoice[]> {

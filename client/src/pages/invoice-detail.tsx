@@ -32,7 +32,7 @@ interface InvoiceWithClient {
   client_id: number;
   invoice_number: string;
   amount: string;
-  sent_date: string;
+  due_date: string;
   payment_status: string;
   last_reminder_sent?: string;
   notes?: string;
@@ -193,14 +193,20 @@ export default function InvoiceDetail() {
     },
   });
 
-  const getStatusColor = (status: string) => {
-    const days = parseInt(status.replace(/\D/g, '')) || 0;
-    
-    if (days <= 29) {
+  const calculateDaysOverdue = (dueDate: string) => {
+    const currentDate = new Date();
+    const due = new Date(dueDate);
+    const timeDiff = currentDate.getTime() - due.getTime();
+    const days = Math.floor(timeDiff / (1000 * 3600 * 24));
+    return Math.max(0, days);
+  };
+
+  const getStatusColor = (daysOverdue: number) => {
+    if (daysOverdue <= 29) {
       return "bg-green-100 text-green-800";
-    } else if (days <= 45) {
+    } else if (daysOverdue <= 45) {
       return "bg-yellow-100 text-yellow-800";
-    } else if (days <= 60) {
+    } else if (daysOverdue <= 60) {
       return "bg-orange-100 text-orange-800";
     } else {
       return "bg-red-100 text-red-800";
@@ -267,7 +273,7 @@ export default function InvoiceDetail() {
                     invoice_number: invoice.invoice_number,
                     amount: invoice.amount,
                     payment_status: invoice.payment_status,
-                    sent_date: invoice.sent_date,
+                    due_date: invoice.due_date,
                     last_reminder_sent: invoice.last_reminder_sent
                   });
                 }}>
@@ -332,11 +338,11 @@ export default function InvoiceDetail() {
                       />
                     </div>
                     <div>
-                      <Label>Sent Date</Label>
+                      <Label>Due Date</Label>
                       <Input
                         type="date"
-                        value={editData.sent_date?.split('T')[0] || ""}
-                        onChange={(e) => setEditData({ ...editData, sent_date: e.target.value })}
+                        value={editData.due_date?.split('T')[0] || ""}
+                        onChange={(e) => setEditData({ ...editData, due_date: e.target.value })}
                       />
                     </div>
                   </div>
@@ -350,17 +356,17 @@ export default function InvoiceDetail() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-gray-600">Status</p>
-                      <Badge className={getStatusColor(invoice.payment_status)}>
-                        {invoice.payment_status}
+                      <Badge className={getStatusColor(calculateDaysOverdue(invoice.due_date))}>
+                        {calculateDaysOverdue(invoice.due_date)} days overdue
                       </Badge>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-600">Sent Date</p>
+                      <p className="text-sm font-medium text-gray-600">Due Date</p>
                       <p className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {new Date(invoice.sent_date).toLocaleDateString()}
+                        {new Date(invoice.due_date).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
