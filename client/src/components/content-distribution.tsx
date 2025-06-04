@@ -416,6 +416,17 @@ export default function ContentDistribution() {
                             {report.engagement_level}
                           </Badge>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => deleteReportMutation.mutate(report.id)}
+                            disabled={deleteReportMutation.isPending}
+                            className="text-red-600 hover:text-red-800 border-red-300 hover:border-red-400"
+                          >
+                            {deleteReportMutation.isPending ? "Deleting..." : "Delete"}
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
