@@ -725,6 +725,18 @@ export default function InvoiceDetail() {
                 </div>
               )}
 
+              {emailSummary && (
+                <div className="mb-6 p-4 border rounded-lg bg-green-50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Bot className="w-5 h-5 text-green-600" />
+                    <h4 className="font-medium text-green-900">AI Conversation Summary</h4>
+                  </div>
+                  <div className="text-sm text-green-800 whitespace-pre-wrap">
+                    {emailSummary}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-3">
                 {emailHistory?.length ? (
                   emailHistory.map((email) => (

@@ -382,6 +382,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI summary of email conversation
+  app.post("/api/invoices/:id/summary", async (req: Request, res: Response) => {
+    try {
+      const { conversation } = req.body;
+      
+      if (!conversation) {
+        return res.status(400).json({ error: "Conversation text is required" });
+      }
+
+      // Generate summary using OpenAI
+      const { generateAIEmail } = await import("./openai");
+      
+      const prompt = `Please provide a brief, professional summary of this email conversation:\n\n${conversation}\n\nFocus on:\n- Key points discussed\n- Client's response and sentiment\n- Next steps or follow-up needed\n- Overall relationship status`;
+      
+      const summary = await generateAIEmail(
+        "conversation_summary",
+        "Email Conversation Summary",
+        prompt,
+        {}
+      );
+
+      res.json({ summary: summary.body });
+    } catch (error) {
+      console.error("Generate summary error:", error);
+      res.status(500).json({ error: "Failed to generate conversation summary" });
+    }
+  });
+
   // Bulk delete endpoints
   app.delete("/api/invoices/all", async (req, res) => {
     try {
