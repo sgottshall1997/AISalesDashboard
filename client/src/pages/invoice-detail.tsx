@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,9 @@ import {
   Clock,
   DollarSign,
   Calendar,
-  Building
+  Building,
+  Trash2,
+  StickyNote
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -70,6 +72,8 @@ export default function InvoiceDetail() {
     email_type: "incoming" as "incoming" | "outgoing"
   });
   const [showAddEmail, setShowAddEmail] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,6 +92,13 @@ export default function InvoiceDetail() {
     queryKey: [`/api/invoices/${invoiceId}/ai-suggestion`],
     enabled: !!invoiceId,
   });
+
+  // Update notes when invoice data loads
+  useEffect(() => {
+    if (invoice) {
+      setNotes(invoice.notes || "");
+    }
+  }, [invoice]);
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async (updates: Partial<InvoiceWithClient>) => {
@@ -131,6 +142,50 @@ export default function InvoiceDetail() {
       toast({
         title: "AI Suggestion Generated",
         description: "New follow-up suggestion has been created.",
+      });
+    },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Invoice deleted",
+        description: "The invoice has been deleted successfully.",
+      });
+      // Navigate back to invoices list
+      window.location.href = "/";
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const saveNotesMutation = useMutation({
+    mutationFn: async (notesText: string) => {
+      const response = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, { notes: notesText });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}`] });
+      setIsEditingNotes(false);
+      toast({
+        title: "Notes saved",
+        description: "Your notes have been saved successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save notes.",
+        variant: "destructive",
       });
     },
   });
