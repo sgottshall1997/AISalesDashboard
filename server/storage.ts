@@ -393,19 +393,75 @@ export class DatabaseStorage implements IStorage {
   }
 
   async generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any> {
-    // Fix NaN calculation by using due_date instead of sent_date
     const daysOverdue = invoice.due_date ? 
       Math.floor((Date.now() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24)) : 0;
-    
-    const lastEmail = emailHistory[0];
-    const daysSinceLastEmail = lastEmail ? 
-      Math.floor((Date.now() - new Date(lastEmail.sent_date).getTime()) / (1000 * 60 * 60 * 24)) : null;
 
     // Format amount with commas and no decimal places for whole numbers
     const formatAmount = (amount: string) => {
       const num = parseFloat(amount);
       return `$${num.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     };
+
+    // If there's email history, analyze it for context
+    if (emailHistory.length > 0) {
+      const conversationText = emailHistory.map(email => {
+        const date = email.sent_date ? new Date(email.sent_date).toLocaleDateString() : 'Unknown date';
+        return `Date: ${date}\n${email.email_type === 'incoming' ? 'From' : 'To'}: ${email.from_email}\nSubject: ${email.subject}\n${email.content}`;
+      }).join('\n\n---\n\n');
+
+      try {
+        const OpenAI = require('openai');
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            {
+              role: "system",
+              content: `You are an expert business communication specialist. Generate a professional follow-up email for an invoice that is ${daysOverdue} days overdue. Use the conversation history to craft a personalized, contextual response that acknowledges previous communications and addresses any concerns raised.`
+            },
+            {
+              role: "user",
+              content: `Generate a follow-up email for:
+- Invoice: ${invoice.invoice_number}
+- Client: ${invoice.client.name} at ${invoice.client.company}
+- Amount: ${formatAmount(invoice.amount)}
+- Days overdue: ${daysOverdue}
+
+Previous conversation history:
+${conversationText}
+
+Please provide:
+1. A professional subject line
+2. A personalized email body that references the conversation history appropriately
+3. An assessment of priority level (low/medium/high)
+4. A brief reason for the follow-up
+
+Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "..."}`
+            }
+          ],
+          max_tokens: 600,
+          temperature: 0.3,
+          response_format: { type: "json_object" }
+        });
+
+        const aiSuggestion = JSON.parse(response.choices[0].message.content || '{}');
+        return {
+          subject: aiSuggestion.subject || `Follow up on Invoice ${invoice.invoice_number}`,
+          body: aiSuggestion.body || `Dear ${invoice.client.name},\n\nI wanted to follow up regarding your outstanding invoice.`,
+          priority: aiSuggestion.priority || "medium",
+          reason: aiSuggestion.reason || `Invoice is ${daysOverdue} days overdue`
+        };
+      } catch (error) {
+        console.error("AI follow-up generation error:", error);
+        // Fall back to basic template if AI fails
+      }
+    }
+
+    // Fallback to basic template when no email history or AI fails
+    const lastEmail = emailHistory[0];
+    const daysSinceLastEmail = lastEmail ? 
+      Math.floor((Date.now() - new Date(lastEmail.sent_date).getTime()) / (1000 * 60 * 60 * 24)) : null;
 
     let suggestion = {
       subject: `Follow up on Invoice ${invoice.invoice_number}`,
