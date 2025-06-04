@@ -1,57 +1,69 @@
-import { BarChart3, DollarSign, FileText, Users, Send, Gauge } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { 
+  BarChart3, 
+  FileText, 
+  TrendingUp, 
+  Users, 
+  Send, 
+  Menu, 
+  X, 
+  User 
+} from "lucide-react";
 
 interface SidebarProps {
   activeSection: string;
-  onSectionChange: (section: "overview" | "invoicing" | "content" | "pipeline" | "followup") => void;
-  isMobile?: boolean;
+  onSectionChange: (section: string) => void;
 }
 
-export default function Sidebar({ activeSection, onSectionChange, isMobile }: SidebarProps) {
+export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   const navigation = [
-    { name: "Overview", id: "overview", icon: Gauge },
-    { name: "Invoicing Assistant", id: "invoicing", icon: DollarSign },
-    { name: "Content Distribution", id: "content", icon: BarChart3 },
-    { name: "Lead Pipeline", id: "pipeline", icon: Users },
-    { name: "Follow-Up Generator", id: "followup", icon: Send },
+    { id: "overview", name: "Overview", icon: BarChart3 },
+    { id: "invoicing", name: "Invoicing Assistant", icon: FileText },
+    { id: "content", name: "Content Distribution", icon: TrendingUp },
+    { id: "pipeline", name: "Lead Pipeline", icon: Users },
+    { id: "followup", name: "Follow-Up Generator", icon: Send },
   ];
 
-  return (
+  const SidebarContent = () => (
     <div className="flex-1 flex flex-col min-h-0 bg-white border-r border-gray-200">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-        {!isMobile && (
-          <div className="flex items-center flex-shrink-0 px-4 mb-8">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">13D</span>
-              </div>
-              <div className="ml-3">
-                <h1 className="text-lg font-semibold text-gray-900">Research Dashboard</h1>
-              </div>
+        <div className="flex items-center flex-shrink-0 px-4 mb-8">
+          <div className="flex items-center">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">13D</span>
+            </div>
+            <div className="ml-3">
+              <h1 className="text-lg font-semibold text-gray-900">Research Dashboard</h1>
             </div>
           </div>
-        )}
+        </div>
         
         {/* Navigation */}
-        <nav className="mt-5 flex-1 px-2 space-y-1">
+        <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
             
             return (
-              <Button
+              <button
                 key={item.id}
-                variant="ghost"
-                className={`w-full justify-start px-2 py-2 text-sm font-medium rounded-md ${
-                  isActive 
-                    ? "bg-blue-600 text-white hover:bg-blue-700" 
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-                onClick={() => onSectionChange(item.id as any)}
+                onClick={() => {
+                  onSectionChange(item.id);
+                  setMobileOpen(false);
+                }}
+                className={`${
+                  isActive
+                    ? 'bg-primary text-white'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full`}
               >
-                <Icon className="mr-3 h-4 w-4" />
+                <Icon className="mr-3 flex-shrink-0 h-5 w-5" />
                 {item.name}
-              </Button>
+              </button>
             );
           })}
         </nav>
@@ -60,7 +72,7 @@ export default function Sidebar({ activeSection, onSectionChange, isMobile }: Si
       <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
         <div className="flex items-center">
           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <Users className="h-4 w-4 text-gray-600" />
+            <User className="h-4 w-4 text-gray-600" />
           </div>
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-700">Sales Manager</p>
@@ -69,5 +81,30 @@ export default function Sidebar({ activeSection, onSectionChange, isMobile }: Si
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+        <SidebarContent />
+      </div>
+
+      {/* Mobile sidebar */}
+      <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="md:hidden fixed bottom-4 right-4 z-50 bg-primary text-white border-primary hover:bg-primary/90"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-64">
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

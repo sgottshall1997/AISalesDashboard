@@ -11,96 +11,126 @@ export const users = pgTable("users", {
 export const clients = pgTable("clients", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  contactEmail: text("contact_email").notNull(),
-  industry: text("industry"),
-  interestTags: json("interest_tags").$type<string[]>().default([]),
-  riskLevel: text("risk_level").$type<"low" | "medium" | "high">().default("medium"),
-  engagementRate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0"),
-  renewalDate: timestamp("renewal_date"),
-  subscriptionValue: decimal("subscription_value", { precision: 10, scale: 2 }),
+  email: text("email").notNull(),
+  company: text("company").notNull(),
+  subscription_type: text("subscription_type").notNull().default("standard"), // standard, premium
+  renewal_date: timestamp("renewal_date"),
+  engagement_rate: decimal("engagement_rate", { precision: 5, scale: 2 }).default("0"),
+  click_rate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
+  interest_tags: json("interest_tags").$type<string[]>().default([]),
+  risk_level: text("risk_level").notNull().default("low"), // low, medium, high
   notes: text("notes"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => clients.id).notNull(),
+  client_id: integer("client_id").references(() => clients.id).notNull(),
+  invoice_number: text("invoice_number").notNull().unique(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  sentDate: timestamp("sent_date").notNull(),
-  dueDate: timestamp("due_date").notNull(),
-  status: text("status").$type<"pending" | "paid" | "overdue">().default("pending"),
-  remindersSent: integer("reminders_sent").default(0),
-  lastReminderDate: timestamp("last_reminder_date"),
+  sent_date: timestamp("sent_date").notNull(),
+  payment_status: text("payment_status").notNull().default("pending"), // pending, paid, overdue
+  last_reminder_sent: timestamp("last_reminder_sent"),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  company: text("company").notNull(),
   email: text("email").notNull(),
-  stage: text("stage").$type<"prospect" | "qualified" | "proposal" | "closed_won" | "closed_lost">().default("prospect"),
-  source: text("source"),
-  interestTags: json("interest_tags").$type<string[]>().default([]),
-  lastContact: timestamp("last_contact"),
-  nextStep: text("next_step"),
-  proposalValue: decimal("proposal_value", { precision: 10, scale: 2 }),
+  company: text("company").notNull(),
+  stage: text("stage").notNull().default("prospect"), // prospect, qualified, proposal, closed_won, closed_lost
+  last_contact: timestamp("last_contact"),
+  next_step: text("next_step"),
   notes: text("notes"),
+  interest_tags: json("interest_tags").$type<string[]>().default([]),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
-export const contentReports = pgTable("content_reports", {
+export const content_reports = pgTable("content_reports", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  publishDate: timestamp("publish_date").notNull(),
-  openRate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
-  clickRate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
-  totalSent: integer("total_sent").default(0),
-  category: text("category"),
+  type: text("type").notNull().default("WILTW"), // WILTW, special_report, etc
+  published_date: timestamp("published_date").notNull(),
+  open_rate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
+  click_rate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
+  engagement_level: text("engagement_level").notNull().default("medium"), // low, medium, high
+  tags: json("tags").$type<string[]>().default([]),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
-export const clientEngagement = pgTable("client_engagement", {
+export const client_engagements = pgTable("client_engagements", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => clients.id).notNull(),
-  reportId: integer("report_id").references(() => contentReports.id).notNull(),
+  client_id: integer("client_id").references(() => clients.id).notNull(),
+  report_id: integer("report_id").references(() => content_reports.id).notNull(),
   opened: boolean("opened").default(false),
   clicked: boolean("clicked").default(false),
-  engagementDate: timestamp("engagement_date"),
+  engagement_date: timestamp("engagement_date").defaultNow(),
 });
 
-export const aiEmails = pgTable("ai_emails", {
+export const ai_suggestions = pgTable("ai_suggestions", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => clients.id),
-  leadId: integer("lead_id").references(() => leads.id),
-  type: text("type").$type<"invoice_reminder" | "content_followup" | "lead_outreach" | "renewal" | "upsell">().notNull(),
-  subject: text("subject").notNull(),
-  body: text("body").notNull(),
-  status: text("status").$type<"draft" | "sent" | "scheduled">().default("draft"),
-  createdAt: timestamp("created_at").defaultNow(),
-  scheduledFor: timestamp("scheduled_for"),
+  type: text("type").notNull(), // follow_up, content_recommendation, lead_action, renewal_strategy
+  target_id: integer("target_id").notNull(), // client_id or lead_id
+  target_type: text("target_type").notNull(), // client, lead
+  suggestion: text("suggestion").notNull(),
+  priority: text("priority").notNull().default("medium"), // low, medium, high
+  status: text("status").notNull().default("pending"), // pending, completed, dismissed
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 // Insert schemas
-export const insertClientSchema = createInsertSchema(clients).omit({ id: true });
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true });
-export const insertLeadSchema = createInsertSchema(leads).omit({ id: true });
-export const insertContentReportSchema = createInsertSchema(contentReports).omit({ id: true });
-export const insertClientEngagementSchema = createInsertSchema(clientEngagement).omit({ id: true });
-export const insertAiEmailSchema = createInsertSchema(aiEmails).omit({ id: true });
+export const insertClientSchema = createInsertSchema(clients).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertContentReportSchema = createInsertSchema(content_reports).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertClientEngagementSchema = createInsertSchema(client_engagements).omit({
+  id: true,
+});
+
+export const insertAiSuggestionSchema = createInsertSchema(ai_suggestions).omit({
+  id: true,
+  created_at: true,
+});
 
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
+
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
-export type ContentReport = typeof contentReports.$inferSelect;
+
+export type ContentReport = typeof content_reports.$inferSelect;
 export type InsertContentReport = z.infer<typeof insertContentReportSchema>;
-export type ClientEngagement = typeof clientEngagement.$inferSelect;
+
+export type ClientEngagement = typeof client_engagements.$inferSelect;
 export type InsertClientEngagement = z.infer<typeof insertClientEngagementSchema>;
-export type AiEmail = typeof aiEmails.$inferSelect;
-export type InsertAiEmail = z.infer<typeof insertAiEmailSchema>;
+
+export type AiSuggestion = typeof ai_suggestions.$inferSelect;
+export type InsertAiSuggestion = z.infer<typeof insertAiSuggestionSchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
