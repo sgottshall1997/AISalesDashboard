@@ -107,6 +107,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/invoices/:id", async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const deleted = await storage.deleteInvoice(invoiceId);
+      if (!deleted) {
+        return res.status(404).json({ message: "Invoice not found" });
+      }
+      res.json({ message: "Invoice deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete invoice" });
+    }
+  });
+
   // Leads routes
   app.get("/api/leads", async (req, res) => {
     try {

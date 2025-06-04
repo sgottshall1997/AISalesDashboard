@@ -172,6 +172,13 @@ export class DatabaseStorage implements IStorage {
     return invoice || undefined;
   }
 
+  async deleteInvoice(id: number): Promise<boolean> {
+    const result = await db
+      .delete(invoices)
+      .where(eq(invoices.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
   async getAllLeads(): Promise<Lead[]> {
     return await db.select().from(leads);
   }
