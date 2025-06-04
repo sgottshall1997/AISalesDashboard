@@ -260,7 +260,14 @@ export default function InvoiceDetail() {
                 </Button>
                 <Button onClick={() => {
                   setIsEditing(true);
-                  setEditData(invoice);
+                  // Only include editable fields, exclude notes and other sensitive data
+                  setEditData({
+                    invoice_number: invoice.invoice_number,
+                    amount: invoice.amount,
+                    payment_status: invoice.payment_status,
+                    sent_date: invoice.sent_date,
+                    last_reminder_sent: invoice.last_reminder_sent
+                  });
                 }}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Invoice
