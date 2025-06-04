@@ -5,7 +5,7 @@ import { generateAIEmail } from "./openai";
 import { 
   insertClientSchema, insertInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  clients, invoices, leads
+  clients, invoices, leads, client_engagements
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -306,7 +306,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/clients/all", async (req, res) => {
     try {
-      const result = await db.delete(clients);
+      // Delete related records first to avoid foreign key constraints
+      await db.delete(client_engagements);
+      await db.delete(invoices);
+      await db.delete(clients);
       res.json({ success: true, message: "All clients deleted" });
     } catch (error) {
       console.error('Delete clients error:', error);
@@ -432,12 +435,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 const currentDate = new Date();
                 const sentDate = new Date(currentDate.getTime() - (daysOverdue * 24 * 60 * 60 * 1000));
                 
-                // Determine payment status based on days overdue
-                let paymentStatus = 'paid';
-                if (daysOverdue > 30) {
+                // All invoices with 0-29 days are pending since 0 means sent before due date
+                let paymentStatus = 'pending';
+                if (daysOverdue >= 30) {
                   paymentStatus = 'overdue';
-                } else if (daysOverdue > 0) {
-                  paymentStatus = 'pending';
                 }
                 
                 const invoiceData = {
@@ -445,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   invoice_number: opportunityName || `INV-${Date.now()}-${index}`,
                   amount: parseFloat(invoiceAmount.toString().replace(/[^0-9.-]/g, '') || '0').toFixed(2),
                   sent_date: sentDate,
-                  payment_status: paymentStatus,
+                  payment_status: `${daysOverdue} days`,
                   last_reminder_sent: null
                 };
 

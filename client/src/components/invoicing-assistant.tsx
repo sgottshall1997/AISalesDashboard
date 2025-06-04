@@ -137,21 +137,28 @@ export default function InvoicingAssistant() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "paid":
-        return "bg-green-100 text-green-800";
-      case "overdue":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-yellow-100 text-yellow-800";
+    // Extract days from status like "15 days"
+    const days = parseInt(status.replace(/\D/g, '')) || 0;
+    
+    if (days <= 29) {
+      return "bg-green-100 text-green-800"; // 0-29 days: green
+    } else if (days <= 45) {
+      return "bg-yellow-100 text-yellow-800"; // 30-45 days: yellow
+    } else if (days <= 60) {
+      return "bg-orange-100 text-orange-800"; // 46-60 days: orange
+    } else {
+      return "bg-red-100 text-red-800"; // 61+ days: red
     }
   };
 
   const outstandingAmount = invoices?.reduce((sum, inv) => 
-    inv.payment_status !== "paid" ? sum + parseFloat(inv.amount) : sum, 0
+    sum + parseFloat(inv.amount), 0
   ) || 0;
 
-  const overdueCount = overdueInvoices?.length || 0;
+  const overdueCount = invoices?.filter(inv => {
+    const days = parseInt(inv.payment_status.replace(/\D/g, '')) || 0;
+    return days >= 30;
+  }).length || 0;
 
   return (
     <div className="py-6">
