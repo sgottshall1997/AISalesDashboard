@@ -376,11 +376,21 @@ export default function LeadPipeline() {
                 <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
-                    <Link href={`/lead/${lead.id}`}>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                        <ExternalLink className="h-3 w-3" />
+                    <div className="flex gap-1">
+                      <Link href={`/lead/${lead.id}`}>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        onClick={() => deleteLeadMutation.mutate(lead.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
-                    </Link>
+                    </div>
                   </div>
                   <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.next_step || "Initial contact"}</p>
@@ -419,11 +429,21 @@ export default function LeadPipeline() {
                 <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start mb-2">
                     <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
-                    <Link href={`/lead/${lead.id}`}>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                        <ExternalLink className="h-3 w-3" />
+                    <div className="flex gap-1">
+                      <Link href={`/lead/${lead.id}`}>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                        onClick={() => deleteLeadMutation.mutate(lead.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
-                    </Link>
+                    </div>
                   </div>
                   <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.next_step || "Schedule call"}</p>

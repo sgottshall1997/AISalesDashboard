@@ -87,6 +87,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/leads", async (req: Request, res: Response) => {
+    try {
+      const lead = await storage.createLead(req.body);
+      res.json(lead);
+    } catch (error) {
+      console.error("Create lead error:", error);
+      res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  app.patch("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.updateLead(id, req.body);
+      if (lead) {
+        res.json(lead);
+      } else {
+        res.status(404).json({ error: "Lead not found" });
+      }
+    } catch (error) {
+      console.error("Update lead error:", error);
+      res.status(500).json({ message: "Failed to update lead" });
+    }
+  });
+
+  app.delete("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Delete all email history for this lead first
+      await storage.deleteAllLeadEmailHistory(id);
+      
+      // Get the lead to check if it exists
+      const lead = await storage.getLead(id);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      // Delete the lead using raw SQL since we don't have a deleteLead method in storage
+      const { db } = await import("./db.js");
+      const { leads } = await import("../shared/schema.js");
+      const { eq } = await import("drizzle-orm");
+      
+      await db.delete(leads).where(eq(leads.id, id));
+      
+      res.json({ message: "Lead deleted successfully" });
+    } catch (error) {
+      console.error("Delete lead error:", error);
+      res.status(500).json({ message: "Failed to delete lead" });
+    }
+  });
+
   // Lead email history endpoints
   app.get("/api/leads/:id/emails", async (req: Request, res: Response) => {
     try {
