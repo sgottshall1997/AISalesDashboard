@@ -113,6 +113,18 @@ export const reading_history = pgTable("reading_history", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+export const lead_email_history = pgTable("lead_email_history", {
+  id: serial("id").primaryKey(),
+  lead_id: integer("lead_id").references(() => leads.id).notNull(),
+  from_email: text("from_email").notNull(),
+  to_email: text("to_email").notNull(),
+  subject: text("subject").notNull(),
+  content: text("content").notNull(),
+  email_type: text("email_type").notNull(), // incoming, outgoing
+  sent_date: timestamp("sent_date").defaultNow(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -168,6 +180,15 @@ export const insertEmailHistorySchema = createInsertSchema(email_history).omit({
   to_email: z.string().optional().default(''),
 });
 
+export const insertLeadEmailHistorySchema = createInsertSchema(lead_email_history).omit({
+  id: true,
+  created_at: true,
+  sent_date: true,
+}).extend({
+  from_email: z.string().optional().default(''),
+  to_email: z.string().optional().default(''),
+});
+
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
@@ -189,6 +210,9 @@ export type InsertAiSuggestion = z.infer<typeof insertAiSuggestionSchema>;
 
 export type EmailHistory = typeof email_history.$inferSelect;
 export type InsertEmailHistory = z.infer<typeof insertEmailHistorySchema>;
+
+export type LeadEmailHistory = typeof lead_email_history.$inferSelect;
+export type InsertLeadEmailHistory = z.infer<typeof insertLeadEmailHistorySchema>;
 
 export const insertReadingHistorySchema = createInsertSchema(reading_history).omit({
   id: true,
