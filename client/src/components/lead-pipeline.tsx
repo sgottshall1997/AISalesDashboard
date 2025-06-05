@@ -423,6 +423,11 @@ export default function LeadPipeline() {
                       {new Date(lead.last_contact).toLocaleDateString()}
                     </p>
                   )}
+                  {lead.how_heard && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      <span className="font-medium">Source:</span> {lead.how_heard.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                  )}
                   <div className="mt-3 flex gap-1">
                     <Link href={`/lead/${lead.id}`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full text-xs">
@@ -480,6 +485,11 @@ export default function LeadPipeline() {
                       ))}
                     </div>
                   )}
+                  {lead.how_heard && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      <span className="font-medium">Source:</span> {lead.how_heard.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                  )}
                   <div className="mt-3 flex gap-1">
                     <Link href={`/lead/${lead.id}`} className="flex-1">
                       <Button size="sm" variant="outline" className="w-full text-xs">
@@ -518,6 +528,11 @@ export default function LeadPipeline() {
                   </div>
                   <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.notes || "Proposal sent"}</p>
+                  {lead.how_heard && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      <span className="font-medium">Source:</span> {lead.how_heard.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400 mt-2">Awaiting response</p>
                   <div className="mt-3 flex gap-1">
                     <Link href={`/lead/${lead.id}`} className="flex-1">
@@ -550,6 +565,11 @@ export default function LeadPipeline() {
                 <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-green-200">
                   <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
                   <p className="text-xs text-gray-500 mt-1">Deal closed</p>
+                  {lead.how_heard && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      <span className="font-medium">Source:</span> {lead.how_heard.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    </p>
+                  )}
                   <p className="text-xs text-green-600 mt-2">Success!</p>
                   <div className="mt-3">
                     <Button 
