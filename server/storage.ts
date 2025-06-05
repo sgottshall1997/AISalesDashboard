@@ -682,18 +682,60 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
       report.tags.some((tag: string) => lead.interest_tags.includes(tag))
     );
 
-    return {
-      subject: `Follow-up: ${lead.company} - Investment Research Opportunities`,
-      body: `Hi ${lead.name},\n\nI wanted to follow up on our previous conversation regarding investment research opportunities for ${lead.company}.\n\nBased on your interests in ${lead.interest_tags?.join(', ')}, I thought you might find our recent research valuable.\n\nBest regards,\nSpencer`,
-      reason: `Lead in ${lead.stage} stage${daysSinceLastContact ? ` with ${daysSinceLastContact} days since last contact` : ''}`,
-      priority: daysSinceLastContact && daysSinceLastContact > 14 ? "high" : "medium",
-      relevantReports: relevantReports.slice(0, 3),
-      suggestedReports: relevantReports.map(report => ({
-        title: report.title,
-        summary: report.content_summary,
-        relevance: `Matches interest in ${report.tags?.filter(tag => lead.interest_tags?.includes(tag)).join(', ')}`
-      }))
-    };
+    // Use AI to generate personalized follow-up based on content reports
+    try {
+      const { generateEmail } = await import('./ai');
+      
+      // Get the most relevant report with full content
+      const primaryReport = relevantReports.length > 0 ? relevantReports[0] : contentReports[0];
+      
+      const aiResponse = await generateEmail({
+        type: "lead_nurture",
+        recipientName: lead.name,
+        recipientCompany: lead.company,
+        context: {
+          stage: lead.stage,
+          interestTags: lead.interest_tags || [],
+          lastInteraction: lead.last_contact,
+          reportTitle: primaryReport?.title,
+          engagementRate: primaryReport ? parseFloat(primaryReport.open_rate || '0') : undefined,
+          reportSummary: primaryReport?.content_summary,
+          reportTags: primaryReport?.tags,
+          reportType: primaryReport?.type
+        }
+      });
+
+      return {
+        subject: aiResponse.subject,
+        body: aiResponse.body,
+        reason: `Lead in ${lead.stage} stage${daysSinceLastContact ? ` with ${daysSinceLastContact} days since last contact` : ''}`,
+        priority: aiResponse.priority,
+        tone: aiResponse.tone,
+        bestSendTime: aiResponse.bestSendTime,
+        relevantReports: relevantReports.slice(0, 3),
+        suggestedReports: relevantReports.map(report => ({
+          title: report.title,
+          summary: report.content_summary,
+          relevance: `Matches interest in ${report.tags?.filter(tag => lead.interest_tags?.includes(tag)).join(', ')}`
+        }))
+      };
+    } catch (error) {
+      console.error('Error generating AI follow-up:', error);
+      
+      // Fallback to template-based response
+      return {
+        subject: `Follow-up: ${lead.company} - Investment Research Opportunities`,
+        body: `Hi ${lead.name},\n\nI wanted to follow up on our previous conversation regarding investment research opportunities for ${lead.company}.\n\nBased on your interests in ${lead.interest_tags?.join(', ')}, I thought you might find our recent research valuable.\n\nBest regards,\nSpencer`,
+        reason: `Lead in ${lead.stage} stage${daysSinceLastContact ? ` with ${daysSinceLastContact} days since last contact` : ''}`,
+        priority: daysSinceLastContact && daysSinceLastContact > 14 ? "high" : "medium",
+        relevantReports: relevantReports.slice(0, 3),
+        suggestedReports: relevantReports.map(report => ({
+          title: report.title,
+          summary: report.content_summary,
+          relevance: `Matches interest in ${report.tags?.filter(tag => lead.interest_tags?.includes(tag)).join(', ')}`
+        }))
+      };
+    }
   }
 }
 

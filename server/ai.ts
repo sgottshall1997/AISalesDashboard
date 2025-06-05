@@ -21,6 +21,9 @@ export interface EmailGenerationRequest {
     reportTitle?: string;
     proposalAmount?: number;
     stage?: string;
+    reportSummary?: string;
+    reportTags?: string[];
+    reportType?: string;
   };
 }
 
@@ -86,7 +89,29 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       break;
       
     case "lead_nurture":
-      basePrompt += `This is for nurturing a lead in the ${context.stage || "prospect"} stage. Interest areas: ${context.interestTags?.join(", ") || "investment research"}. ${context.proposalAmount ? `Proposal amount: $${context.proposalAmount}. ` : ""}Focus on building trust and demonstrating value.`;
+      basePrompt += `This is for nurturing a lead in the ${context.stage || "prospect"} stage. Interest areas: ${context.interestTags?.join(", ") || "investment research"}. ${context.proposalAmount ? `Proposal amount: $${context.proposalAmount}. ` : ""}`;
+      
+      if (context.reportTitle) {
+        basePrompt += `Reference our recent report "${context.reportTitle}" in the email. `;
+        
+        if (context.reportSummary) {
+          basePrompt += `Report summary: "${context.reportSummary}". `;
+        }
+        
+        if (context.reportType) {
+          basePrompt += `This is a ${context.reportType} report. `;
+        }
+        
+        if (context.reportTags && context.reportTags.length > 0) {
+          basePrompt += `Report covers topics: ${context.reportTags.join(", ")}. `;
+        }
+      }
+      
+      if (context.engagementRate && context.engagementRate > 0) {
+        basePrompt += `They have a ${context.engagementRate}% open rate with our content, showing ${context.engagementRate > 30 ? "high" : "moderate"} engagement. `;
+      }
+      
+      basePrompt += `Focus on building trust and demonstrating value through our research insights. Include specific insights from the report content when relevant.`;
       break;
       
     case "upsell":
