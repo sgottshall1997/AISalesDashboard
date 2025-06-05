@@ -60,6 +60,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lead endpoints
+  app.get("/api/leads", async (req: Request, res: Response) => {
+    try {
+      const allLeads = await storage.getAllLeads();
+      res.json(allLeads);
+    } catch (error) {
+      console.error("Get leads error:", error);
+      res.status(500).json({ message: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.getLead(id);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      console.error("Get lead error:", error);
+      res.status(500).json({ message: "Failed to fetch lead" });
+    }
+  });
+
+  // Lead email history endpoints
+  app.get("/api/leads/:id/emails", async (req: Request, res: Response) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const emailHistory = await storage.getLeadEmailHistory(leadId);
+      res.json(emailHistory);
+    } catch (error) {
+      console.error("Get lead email history error:", error);
+      res.status(500).json({ message: "Failed to fetch lead email history" });
+    }
+  });
+
+  app.post("/api/leads/:id/emails", async (req: Request, res: Response) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const emailData = { ...req.body, lead_id: leadId };
+      const email = await storage.createLeadEmailHistory(emailData);
+      res.json(email);
+    } catch (error) {
+      console.error("Create lead email history error:", error);
+      res.status(500).json({ message: "Failed to create lead email history" });
+    }
+  });
+
+  app.delete("/api/leads/:leadId/emails/:emailId", async (req: Request, res: Response) => {
+    try {
+      const emailId = parseInt(req.params.emailId);
+      const success = await storage.deleteLeadEmailHistory(emailId);
+      
+      if (success) {
+        res.json({ message: "Email deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Email not found" });
+      }
+    } catch (error) {
+      console.error("Delete lead email error:", error);
+      res.status(500).json({ message: "Failed to delete email" });
+    }
+  });
+
+  // Lead AI suggestion endpoint
+  app.get("/api/leads/:id/ai-suggestion", async (req: Request, res: Response) => {
+    try {
+      const leadId = parseInt(req.params.id);
+      const suggestion = await storage.getLeadAISuggestion(leadId);
+      res.json(suggestion);
+    } catch (error) {
+      console.error("Get lead AI suggestion error:", error);
+      res.status(500).json({ message: "Failed to generate AI suggestion" });
+    }
+  });
+
   // Content reports endpoints
   app.get("/api/content-reports", async (req: Request, res: Response) => {
     try {
@@ -285,6 +364,147 @@ Provide a JSON response with actionable prospecting insights:
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
+    }
+  });
+
+  // AI email generation for leads
+  app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
+    try {
+      const { lead, emailHistory, contentReports } = req.body;
+      
+      if (!lead) {
+        return res.status(400).json({ error: "Lead data is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
+        });
+      }
+
+      // Find relevant reports based on lead's interests
+      const relevantReports = contentReports.filter((report: any) => 
+        report.tags && lead.interest_tags && 
+        report.tags.some((tag: string) => lead.interest_tags.includes(tag))
+      );
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const emailPrompt = `You are an expert investment advisor writing a personalized follow-up email.
+
+Lead Information:
+- Name: ${lead.name}
+- Company: ${lead.company}
+- Stage: ${lead.stage}
+- Interest Areas: ${lead.interest_tags?.join(', ') || 'General investing'}
+
+Recent Email History:
+${emailHistory && emailHistory.length > 0 ? 
+  emailHistory.slice(-3).map((email: any) => 
+    `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name}: ${email.subject}\n${email.content.slice(0, 200)}...`
+  ).join('\n\n') : 'No recent email history'}
+
+Available Reports to Reference:
+${relevantReports.slice(0, 3).map((report: any, i: number) => 
+  `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 150) + '...' : ''}`
+).join('\n')}
+
+Write a personalized follow-up email that:
+1. References their specific interests
+2. Mentions 1-2 relevant reports from the list above
+3. Provides value with specific insights
+4. Has a clear call-to-action
+5. Maintains a professional but friendly tone
+
+Format as a complete email ready to send.`;
+
+      const emailResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert investment advisor and relationship manager. Write personalized, value-driven emails that build trust and drive engagement."
+          },
+          {
+            role: "user",
+            content: emailPrompt
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.7
+      });
+
+      const emailSuggestion = emailResponse.choices[0].message.content;
+      
+      res.json({ emailSuggestion });
+    } catch (error) {
+      console.error("Generate lead email error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate AI email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // AI email summarization
+  app.post("/api/ai/summarize-emails", async (req: Request, res: Response) => {
+    try {
+      const { emails, leadName, company } = req.body;
+      
+      if (!emails || !Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).json({ error: "Emails array is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email summarization." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const conversationText = emails.map((email: any) => 
+        `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${leadName || 'Lead'} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}\n---`
+      ).join('\n\n');
+
+      const summaryPrompt = `Summarize this email conversation between our investment firm and ${leadName} from ${company}:
+
+${conversationText}
+
+Provide a concise summary that includes:
+1. Main topics discussed
+2. Lead's key interests and concerns
+3. Any commitments or next steps mentioned
+4. Overall relationship status and sentiment
+5. Recommended follow-up actions
+
+Keep the summary under 200 words and focus on actionable insights.`;
+
+      const summaryResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert at analyzing business communications and extracting key insights for relationship management."
+          },
+          {
+            role: "user",
+            content: summaryPrompt
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.3
+      });
+
+      const summary = summaryResponse.choices[0].message.content;
+      
+      res.json({ summary });
+    } catch (error) {
+      console.error("Summarize emails error:", error);
+      res.status(500).json({ 
+        message: "Failed to summarize emails",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

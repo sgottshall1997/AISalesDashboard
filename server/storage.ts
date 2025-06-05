@@ -623,6 +623,78 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
       return false;
     }
   }
+
+  async getLeadEmailHistory(leadId: number): Promise<LeadEmailHistory[]> {
+    return await db
+      .select()
+      .from(lead_email_history)
+      .where(eq(lead_email_history.lead_id, leadId))
+      .orderBy(desc(lead_email_history.sent_date));
+  }
+
+  async createLeadEmailHistory(emailData: InsertLeadEmailHistory): Promise<LeadEmailHistory> {
+    const [email] = await db
+      .insert(lead_email_history)
+      .values(emailData)
+      .returning();
+    return email;
+  }
+
+  async deleteLeadEmailHistory(emailId: number): Promise<boolean> {
+    try {
+      await db.delete(lead_email_history).where(eq(lead_email_history.id, emailId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting lead email history:', error);
+      return false;
+    }
+  }
+
+  async deleteAllLeadEmailHistory(leadId: number): Promise<boolean> {
+    try {
+      await db.delete(lead_email_history).where(eq(lead_email_history.lead_id, leadId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting all lead email history:', error);
+      return false;
+    }
+  }
+
+  async getLeadAISuggestion(leadId: number): Promise<any> {
+    const lead = await this.getLead(leadId);
+    const emailHistory = await this.getLeadEmailHistory(leadId);
+    const contentReports = await this.getRecentReports(5);
+    
+    if (!lead) {
+      return null;
+    }
+
+    return this.generateLeadFollowUp(lead, emailHistory, contentReports);
+  }
+
+  async generateLeadFollowUp(lead: any, emailHistory: LeadEmailHistory[], contentReports: ContentReport[]): Promise<any> {
+    const daysSinceLastContact = lead.last_contact ? 
+      Math.floor((Date.now() - new Date(lead.last_contact).getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+    // Find relevant content based on lead's interest tags
+    const relevantReports = contentReports.filter(report => 
+      report.tags && lead.interest_tags && 
+      report.tags.some((tag: string) => lead.interest_tags.includes(tag))
+    );
+
+    return {
+      subject: `Follow-up: ${lead.company} - Investment Research Opportunities`,
+      body: `Hi ${lead.name},\n\nI wanted to follow up on our previous conversation regarding investment research opportunities for ${lead.company}.\n\nBased on your interests in ${lead.interest_tags?.join(', ')}, I thought you might find our recent research valuable.\n\nBest regards,\nSpencer`,
+      reason: `Lead in ${lead.stage} stage${daysSinceLastContact ? ` with ${daysSinceLastContact} days since last contact` : ''}`,
+      priority: daysSinceLastContact && daysSinceLastContact > 14 ? "high" : "medium",
+      relevantReports: relevantReports.slice(0, 3),
+      suggestedReports: relevantReports.map(report => ({
+        title: report.title,
+        summary: report.content_summary,
+        relevance: `Matches interest in ${report.tags?.filter(tag => lead.interest_tags?.includes(tag)).join(', ')}`
+      }))
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
