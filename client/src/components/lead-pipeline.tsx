@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,8 @@ import {
   Clock, 
   TrendingUp,
   Edit,
-  Bot
+  Bot,
+  ExternalLink
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -185,22 +187,34 @@ export default function LeadPipeline() {
             </h3>
             <div className="space-y-3">
               {getLeadsByStage("prospect").map((lead) => (
-                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
+                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
+                    <Link href={`/lead/${lead.id}`}>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.next_step || "Initial contact"}</p>
                   {lead.last_contact && (
                     <p className="text-xs text-gray-400 mt-2">
                       {new Date(lead.last_contact).toLocaleDateString()}
                     </p>
                   )}
-                  <div className="mt-3">
+                  <div className="mt-3 flex gap-1">
+                    <Link href={`/lead/${lead.id}`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full text-xs">
+                        View Details
+                      </Button>
+                    </Link>
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="w-full text-xs"
+                      className="text-xs px-2"
                       onClick={() => handleGenerateEmail(lead)}
                     >
-                      Send intro email
+                      <Bot className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -216,10 +230,18 @@ export default function LeadPipeline() {
             </h3>
             <div className="space-y-3">
               {getLeadsByStage("qualified").map((lead) => (
-                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-blue-200">
-                  <h4 className="font-medium text-gray-900 text-sm">{lead.name} - {lead.company}</h4>
+                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
+                    <Link href={`/lead/${lead.id}`}>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.next_step || "Schedule call"}</p>
-                  {lead.interest_tags.length > 0 && (
+                  {lead.interest_tags && lead.interest_tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {lead.interest_tags.slice(0, 2).map((tag, index) => (
                         <Badge key={index} className={getTagColor(tag)} variant="secondary">
@@ -228,14 +250,18 @@ export default function LeadPipeline() {
                       ))}
                     </div>
                   )}
-                  <div className="mt-3">
+                  <div className="mt-3 flex gap-1">
+                    <Link href={`/lead/${lead.id}`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full text-xs">
+                        View Details
+                      </Button>
+                    </Link>
                     <Button 
                       size="sm" 
-                      className="w-full text-xs"
+                      className="text-xs px-2"
                       onClick={() => handleGenerateEmail(lead)}
                     >
-                      <Bot className="h-3 w-3 mr-1" />
-                      Generate Outreach
+                      <Bot className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
@@ -251,17 +277,31 @@ export default function LeadPipeline() {
             </h3>
             <div className="space-y-3">
               {getLeadsByStage("proposal").map((lead) => (
-                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-yellow-200">
-                  <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
+                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-yellow-200 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
+                    <Link href={`/lead/${lead.id}`}>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <ExternalLink className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
                   <p className="text-xs text-gray-500 mt-1">{lead.notes || "Proposal sent"}</p>
                   <p className="text-xs text-gray-400 mt-2">Awaiting response</p>
-                  <div className="mt-3">
+                  <div className="mt-3 flex gap-1">
+                    <Link href={`/lead/${lead.id}`} className="flex-1">
+                      <Button size="sm" variant="outline" className="w-full text-xs">
+                        View Details
+                      </Button>
+                    </Link>
                     <Button 
                       size="sm" 
-                      variant="outline" 
-                      className="w-full text-xs border-amber-300 text-amber-700"
+                      className="text-xs px-2 border-amber-300 text-amber-700"
+                      variant="outline"
+                      onClick={() => handleGenerateEmail(lead)}
                     >
-                      Send reminder
+                      <Bot className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
