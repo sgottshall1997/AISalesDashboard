@@ -458,15 +458,17 @@ ${emailHistory && emailHistory.length > 0 ?
 
 Available Reports to Reference:
 ${relevantReports.slice(0, 3).map((report: any, i: number) => 
-  `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 150) + '...' : ''}`
+  `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 200) + '...' : ''}`
 ).join('\n')}
 
-Write a personalized follow-up email that:
-1. References their specific interests
-2. Mentions 1-2 relevant reports from the list above
-3. Provides value with specific insights
-4. Has a clear call-to-action
-5. Maintains a professional but friendly tone
+Write a personalized follow-up email that follows this specific format:
+
+1. Brief personal greeting
+2. Report reference with title and key highlights from the summary
+3. Explain how the report would be helpful for their company and investing style based on their interests
+4. End with: "I'd be happy to search for any other relevant reports you may be interested in."
+
+Use proper line breaks and spacing for readability. Reference specific content from the report summaries when available. Make it personal and valuable.
 
 Format as a complete email ready to send.`;
 

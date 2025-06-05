@@ -111,7 +111,14 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
         basePrompt += `They have a ${context.engagementRate}% open rate with our content, showing ${context.engagementRate > 30 ? "high" : "moderate"} engagement. `;
       }
       
-      basePrompt += `Focus on building trust and demonstrating value through our research insights. Include specific insights from the report content when relevant.`;
+      basePrompt += `Structure the email with proper spacing and follow this format:
+
+1. Brief personal greeting
+2. Report reference with title and key highlights
+3. Explain how the report would be helpful for their company and investing style
+4. End with: "I'd be happy to search for any other relevant reports you may be interested in."
+
+Use proper line breaks and spacing for readability. Focus on building trust and demonstrating value through our research insights.`;
       break;
       
     case "upsell":

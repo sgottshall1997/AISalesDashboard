@@ -741,10 +741,8 @@ export default function LeadDetail() {
                   
                   <div>
                     <span className="text-sm font-medium text-gray-600">Message:</span>
-                    <div className="text-sm mt-1 bg-gray-50 p-3 rounded border">
-                      {aiSuggestion.body.split('\n').map((line, idx) => (
-                        <div key={idx}>{line}</div>
-                      ))}
+                    <div className="text-sm mt-1 bg-gray-50 p-3 rounded border whitespace-pre-line leading-relaxed">
+                      {aiSuggestion.body}
                     </div>
                   </div>
 
