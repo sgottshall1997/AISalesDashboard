@@ -288,6 +288,121 @@ Provide a JSON response with actionable prospecting insights:
     }
   });
 
+  // CSV Upload endpoint for prospects and invoices
+  app.post("/api/upload/csv", upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      const file = req.file;
+      const type = req.body.type;
+
+      if (!file) {
+        return res.status(400).json({ error: 'No CSV file uploaded' });
+      }
+
+      const results: any[] = [];
+      const errors: string[] = [];
+      let processed = 0;
+      let duplicates = 0;
+
+      // Parse CSV file
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(file.path)
+          .pipe(csv())
+          .on('data', (data) => results.push(data))
+          .on('end', resolve)
+          .on('error', reject);
+      });
+
+      if (type === 'prospects') {
+        // Process prospects with new column format
+        for (const row of results) {
+          try {
+            const leadData = {
+              name: row['Lead Name'] || row['name'],
+              email: row['Email'] || row['email'],
+              company: row['Company / Account'] || row['Company/Account'] || row['company'],
+              stage: 'prospect',
+              interest_tags: row['Web Interests'] ? [row['Web Interests']] : ['general'],
+              notes: [
+                row['Title'] ? `Title: ${row['Title']}` : '',
+                row['How did you hear about 13D'] ? `Source: ${row['How did you hear about 13D']}` : '',
+                row['Lead Notes'] ? `Notes: ${row['Lead Notes']}` : ''
+              ].filter(Boolean).join('\n'),
+              created_at: row['Create Date'] ? new Date(row['Create Date']) : new Date()
+            };
+
+            if (!leadData.name || !leadData.email) {
+              errors.push(`Row ${processed + 1}: Missing required fields (Lead Name or Email)`);
+              continue;
+            }
+
+            // Check for duplicates
+            const allLeads = await storage.getAllLeads();
+            const isDuplicate = allLeads.some(lead => 
+              lead.email.toLowerCase() === leadData.email.toLowerCase()
+            );
+
+            if (isDuplicate) {
+              duplicates++;
+              continue;
+            }
+
+            await storage.createLead(leadData);
+            processed++;
+
+          } catch (error) {
+            errors.push(`Row ${processed + 1}: ${error instanceof Error ? error.message : 'Processing error'}`);
+          }
+        }
+      } else if (type === 'invoices') {
+        // Process invoices with existing format
+        for (const row of results) {
+          try {
+            const invoiceData = {
+              client_id: parseInt(row['Client ID']) || 1,
+              invoice_number: row['Invoice Number'] || `INV-${Date.now()}`,
+              amount: row['Amount'] || row['Invoice Amount'] || '0',
+              due_date: row['Due Date'] ? new Date(row['Due Date']) : new Date(),
+              payment_status: row['Status'] || 'pending',
+              notes: row['Notes'] || ''
+            };
+
+            if (!invoiceData.invoice_number || !invoiceData.amount) {
+              errors.push(`Row ${processed + 1}: Missing required fields`);
+              continue;
+            }
+
+            await storage.createInvoice(invoiceData);
+            processed++;
+
+          } catch (error) {
+            errors.push(`Row ${processed + 1}: ${error instanceof Error ? error.message : 'Processing error'}`);
+          }
+        }
+      }
+
+      // Clean up uploaded file
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+
+      res.json({
+        success: true,
+        processed,
+        errors,
+        duplicates,
+        total: results.length
+      });
+
+    } catch (error) {
+      console.error('CSV upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to process CSV file",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

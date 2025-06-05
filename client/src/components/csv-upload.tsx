@@ -134,9 +134,9 @@ export default function CsvUpload() {
   };
 
   const sampleProspectFormat = [
-    "Name,Email,Company,Phone,Stage,Interest Tags",
-    "John Doe,john@example.com,Acme Corp,(555) 123-4567,qualified,technology;fintech",
-    "Jane Smith,jane@example.com,Tech Solutions,(555) 987-6543,proposal,healthcare;AI"
+    "Lead Name,Title,Company / Account,Email,Web Interests,How did you hear about 13D,Lead Notes,Create Date",
+    "John Doe,Portfolio Manager,Acme Investment Fund,john@acme.com,ESG Investing,Conference 2024,High net worth client,2024-01-15",
+    "Jane Smith,Chief Investment Officer,Tech Capital Partners,jane@techcap.com,AI & Technology,Referral,Interested in Q4 outlook,2024-01-20"
   ];
 
   const sampleInvoiceFormat = [
@@ -224,12 +224,14 @@ export default function CsvUpload() {
                   ))}
                 </div>
                 <div className="mt-4 space-y-2 text-sm">
-                  <p><strong>Name:</strong> Full name of the prospect</p>
+                  <p><strong>Lead Name:</strong> Full name of the prospect (required)</p>
+                  <p><strong>Title:</strong> Job title or position</p>
+                  <p><strong>Company / Account:</strong> Company or account name</p>
                   <p><strong>Email:</strong> Email address (required for deduplication)</p>
-                  <p><strong>Company:</strong> Company name</p>
-                  <p><strong>Phone:</strong> Contact phone number</p>
-                  <p><strong>Stage:</strong> Pipeline stage (new, qualified, proposal, etc.)</p>
-                  <p><strong>Interest Tags:</strong> Semicolon-separated tags</p>
+                  <p><strong>Web Interests:</strong> Investment interests or focus areas</p>
+                  <p><strong>How did you hear about 13D:</strong> Lead source or referral</p>
+                  <p><strong>Lead Notes:</strong> Additional notes or comments</p>
+                  <p><strong>Create Date:</strong> Date when lead was created (YYYY-MM-DD format)</p>
                 </div>
               </CardContent>
             </Card>
