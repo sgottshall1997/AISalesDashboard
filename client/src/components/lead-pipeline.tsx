@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Target, 
   Lightbulb, 
@@ -14,7 +16,9 @@ import {
   TrendingUp,
   Edit,
   Bot,
-  ExternalLink
+  ExternalLink,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +44,16 @@ export default function LeadPipeline() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newLead, setNewLead] = useState({
+    name: "",
+    email: "",
+    company: "",
+    stage: "prospect",
+    next_step: "",
+    notes: "",
+    interest_tags: ""
+  });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -84,6 +98,61 @@ export default function LeadPipeline() {
       toast({
         title: "Lead Updated",
         description: "Lead has been updated successfully.",
+      });
+    },
+  });
+
+  const createLeadMutation = useMutation({
+    mutationFn: async (leadData: typeof newLead) => {
+      const response = await apiRequest("POST", "/api/leads", {
+        ...leadData,
+        interest_tags: leadData.interest_tags.split(",").map(tag => tag.trim()).filter(tag => tag)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      setIsAddDialogOpen(false);
+      setNewLead({
+        name: "",
+        email: "",
+        company: "",
+        stage: "prospect",
+        next_step: "",
+        notes: "",
+        interest_tags: ""
+      });
+      toast({
+        title: "Lead created",
+        description: "New lead has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create lead. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const response = await apiRequest("DELETE", `/api/leads/${leadId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Lead deleted",
+        description: "Lead has been removed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -133,9 +202,126 @@ export default function LeadPipeline() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Pipeline Assistant</h2>
-          <p className="text-gray-600">Manage prospects and automate next-step recommendations</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Pipeline Assistant</h2>
+            <p className="text-gray-600">Manage prospects and automate next-step recommendations</p>
+          </div>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Add Lead
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Lead</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="name" className="text-right">
+                    Name
+                  </Label>
+                  <Input
+                    id="name"
+                    value={newLead.name}
+                    onChange={(e) => setNewLead({...newLead, name: e.target.value})}
+                    className="col-span-3"
+                    placeholder="Contact name"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="email" className="text-right">
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({...newLead, email: e.target.value})}
+                    className="col-span-3"
+                    placeholder="email@company.com"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="company" className="text-right">
+                    Company
+                  </Label>
+                  <Input
+                    id="company"
+                    value={newLead.company}
+                    onChange={(e) => setNewLead({...newLead, company: e.target.value})}
+                    className="col-span-3"
+                    placeholder="Company name"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="stage" className="text-right">
+                    Stage
+                  </Label>
+                  <Select value={newLead.stage} onValueChange={(value) => setNewLead({...newLead, stage: value})}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="prospect">Prospect</SelectItem>
+                      <SelectItem value="qualified">Qualified</SelectItem>
+                      <SelectItem value="proposal">Proposal</SelectItem>
+                      <SelectItem value="closed_won">Closed Won</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="next_step" className="text-right">
+                    Next Step
+                  </Label>
+                  <Input
+                    id="next_step"
+                    value={newLead.next_step}
+                    onChange={(e) => setNewLead({...newLead, next_step: e.target.value})}
+                    className="col-span-3"
+                    placeholder="What's the next action?"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="interest_tags" className="text-right">
+                    Interests
+                  </Label>
+                  <Input
+                    id="interest_tags"
+                    value={newLead.interest_tags}
+                    onChange={(e) => setNewLead({...newLead, interest_tags: e.target.value})}
+                    className="col-span-3"
+                    placeholder="tech, finance, healthcare (comma separated)"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="notes" className="text-right">
+                    Notes
+                  </Label>
+                  <Textarea
+                    id="notes"
+                    value={newLead.notes}
+                    onChange={(e) => setNewLead({...newLead, notes: e.target.value})}
+                    className="col-span-3"
+                    placeholder="Additional notes..."
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => createLeadMutation.mutate(newLead)}
+                  disabled={!newLead.name || !newLead.email || !newLead.company || createLeadMutation.isPending}
+                >
+                  {createLeadMutation.isPending ? "Creating..." : "Create Lead"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Pipeline Overview */}
