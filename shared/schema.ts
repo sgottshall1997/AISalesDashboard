@@ -46,6 +46,7 @@ export const leads = pgTable("leads", {
   next_step: text("next_step"),
   notes: text("notes"),
   interest_tags: json("interest_tags").$type<string[]>().default([]),
+  how_heard: text("how_heard"),
   created_at: timestamp("created_at").defaultNow(),
 });
 

@@ -33,6 +33,7 @@ interface Lead {
   next_step?: string;
   notes?: string;
   interest_tags: string[];
+  how_heard?: string;
 }
 
 interface AIEmailResponse {
@@ -52,7 +53,8 @@ export default function LeadPipeline() {
     stage: "prospect",
     next_step: "",
     notes: "",
-    interest_tags: ""
+    interest_tags: "",
+    how_heard: ""
   });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -120,7 +122,8 @@ export default function LeadPipeline() {
         stage: "prospect",
         next_step: "",
         notes: "",
-        interest_tags: ""
+        interest_tags: "",
+        how_heard: ""
       });
       toast({
         title: "Lead created",
@@ -295,6 +298,27 @@ export default function LeadPipeline() {
                     className="col-span-3"
                     placeholder="tech, finance, healthcare (comma separated)"
                   />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="how_heard" className="text-right">
+                    How did you hear about 13D
+                  </Label>
+                  <Select value={newLead.how_heard} onValueChange={(value) => setNewLead({...newLead, how_heard: value})}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
+                      <SelectItem value="conference">Conference/Event</SelectItem>
+                      <SelectItem value="newsletter">Newsletter</SelectItem>
+                      <SelectItem value="search_engine">Search Engine</SelectItem>
+                      <SelectItem value="existing_client">Existing Client</SelectItem>
+                      <SelectItem value="direct_outreach">Direct Outreach</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="notes" className="text-right">
