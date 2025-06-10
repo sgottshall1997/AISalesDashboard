@@ -21,16 +21,12 @@ export default function TaskTracker() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
   });
 
   const createTaskMutation = useMutation({
-    mutationFn: (taskData: InsertTask) => apiRequest("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(taskData),
-    }),
+    mutationFn: (taskData: InsertTask) => apiRequest("/api/tasks", "POST", taskData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       setDialogOpen(false);
@@ -50,11 +46,7 @@ export default function TaskTracker() {
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ id, updates }: { id: number; updates: Partial<InsertTask> }) =>
-      apiRequest(`/api/tasks/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      }),
+      apiRequest(`/api/tasks/${id}`, "PATCH", updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({
@@ -65,7 +57,7 @@ export default function TaskTracker() {
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/tasks/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) => apiRequest(`/api/tasks/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
       toast({

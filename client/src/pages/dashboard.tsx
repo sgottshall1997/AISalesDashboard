@@ -4,7 +4,7 @@ import Overview from "@/components/overview";
 import InvoicingAssistant from "@/components/invoicing-assistant";
 import { ContentDistribution } from "@/components/dashboard/content-distribution";
 import LeadPipeline from "@/components/lead-pipeline";
-import FollowUpGenerator from "@/components/follow-up-generator";
+import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function Dashboard() {
       case "pipeline":
         return <LeadPipeline />;
       case "followup":
-        return <FollowUpGenerator />;
+        return <TaskTracker />;
       case "upload":
         return <CsvUpload />;
       default:
