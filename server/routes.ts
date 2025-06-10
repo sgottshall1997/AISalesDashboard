@@ -820,7 +820,16 @@ Provide a JSON response with actionable prospecting insights:
       let reportTags = '';
       let reportArticles = [];
       if (primaryReport) {
-        const contentReport = (contentReports || []).find(report => report.id === primaryReport.content_report_id);
+        // Get the content report from database if not provided
+        let contentReport = null;
+        if (contentReports && contentReports.length > 0) {
+          contentReport = contentReports.find((report: any) => report.id === primaryReport.content_report_id);
+        } else {
+          // Fetch from database if not provided
+          const allReports = await storage.getAllContentReports();
+          contentReport = allReports.find(report => report.id === primaryReport.content_report_id);
+        }
+        
         reportTitle = contentReport?.title || 'Recent 13D Report';
         reportTags = contentReport?.tags?.join(', ') || '';
         
