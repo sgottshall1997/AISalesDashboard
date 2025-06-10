@@ -880,9 +880,18 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
 
+      // Filter out Article 1 content from summary
+      let filteredSummary = reportSummary;
+      if (reportSummary && reportSummary.includes('ARTICLE')) {
+        filteredSummary = reportSummary
+          .split('ARTICLE ')
+          .filter(article => !article.includes('1 – Strategy & Asset Allocation') && !article.includes('1: Strategy & Asset Allocation'))
+          .join('ARTICLE ');
+      }
+
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
@@ -970,6 +979,25 @@ Spencer`;
       });
 
       let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
+      
+      // Red flag safeguard: Check for Article 1 content leakage
+      const article1Indicators = [
+        'gold miners',
+        'major U.S. stock indices',
+        'major U.S. indices',
+        'outperform.*U.S. indices',
+        'strategy.*asset allocation',
+        'high conviction ideas'
+      ];
+      
+      const hasArticle1Content = article1Indicators.some(indicator => 
+        new RegExp(indicator, 'i').test(emailSuggestion)
+      );
+      
+      if (hasArticle1Content) {
+        console.warn('⚠️ Article 1 content may have leaked into the email. Check prompt filtering.');
+        console.warn('Email content:', emailSuggestion.substring(0, 200) + '...');
+      }
       
       // Enforce strict 280-word limit with post-processing
       const words = emailSuggestion.split(/\s+/);
