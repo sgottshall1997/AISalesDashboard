@@ -159,68 +159,117 @@ export default function ContentSection() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>AI Content Suggestions</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Email Topic Suggestions</CardTitle>
+              <Button 
+                size="sm" 
+                onClick={() => refetchSuggestions()}
+                disabled={suggestionsLoading}
+                className="ml-2"
+              >
+                {suggestionsLoading ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Bot className="h-4 w-4" />
+                )}
+                {suggestionsLoading ? "Analyzing..." : "Generate Ideas"}
+              </Button>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Bot className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-blue-800">High Interest in Tech Trends</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        5 clients clicked multiple links in WILTW #66. Consider creating follow-up content on semiconductor supply chains.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          Create Follow-up
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+              {!suggestions && !suggestionsLoading && (
+                <div className="text-center py-8 text-gray-500">
+                  <FileText className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                  <p>Click "Generate Ideas" to analyze your reports and suggest email topics based on frequent themes.</p>
                 </div>
+              )}
+              
+              {suggestionsLoading && (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-20 bg-gray-200 rounded-lg"></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {suggestions && suggestions.length > 0 && (
+                <div className="space-y-4">
+                  {suggestions.map((suggestion: any, index: number) => {
+                    const getTypeIcon = (type: string) => {
+                      switch (type) {
+                        case "frequent_theme": return <TrendingUp className="h-5 w-5" />;
+                        case "emerging_trend": return <Target className="h-5 w-5" />;
+                        case "cross_sector": return <BarChart3 className="h-5 w-5" />;
+                        case "deep_dive": return <FileText className="h-5 w-5" />;
+                        default: return <Bot className="h-5 w-5" />;
+                      }
+                    };
 
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Lightbulb className="h-5 w-5 text-green-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-green-800">Energy Sector Opportunity</p>
-                      <p className="text-sm text-green-700 mt-1">
-                        Beta Fund and 3 other clients highly engaged with AI & Energy report. Perfect timing for renewal discussions.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                          Draft Outreach
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    const getTypeColor = (type: string) => {
+                      switch (type) {
+                        case "frequent_theme": return "blue";
+                        case "emerging_trend": return "green";
+                        case "cross_sector": return "purple";
+                        case "deep_dive": return "orange";
+                        default: return "gray";
+                      }
+                    };
 
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <TrendingUp className="h-5 w-5 text-yellow-600" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-yellow-800">Healthcare Content Underperformed</p>
-                      <p className="text-sm text-yellow-700 mt-1">
-                        Only 45% open rate on healthcare report. Consider more targeted distribution or topic refinement.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700">
-                          Analyze Audience
-                        </Button>
+                    const color = getTypeColor(suggestion.type);
+                    
+                    return (
+                      <div key={index} className={`bg-${color}-50 border border-${color}-200 rounded-lg p-4`}>
+                        <div className="flex items-start">
+                          <div className={`flex-shrink-0 text-${color}-600`}>
+                            {getTypeIcon(suggestion.type)}
+                          </div>
+                          <div className="ml-3 flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className={`text-sm font-medium text-${color}-800`}>{suggestion.title}</p>
+                              <Badge variant={suggestion.priority === "high" ? "destructive" : suggestion.priority === "medium" ? "default" : "secondary"}>
+                                {suggestion.priority}
+                              </Badge>
+                            </div>
+                            <p className={`text-sm text-${color}-700 mb-2`}>
+                              {suggestion.description}
+                            </p>
+                            <p className={`text-xs text-${color}-600 mb-2 font-medium`}>
+                              Email angle: {suggestion.emailAngle}
+                            </p>
+                            {suggestion.keyPoints && suggestion.keyPoints.length > 0 && (
+                              <div className="mb-3">
+                                <p className={`text-xs text-${color}-600 font-medium mb-1`}>Key points to cover:</p>
+                                <ul className={`text-xs text-${color}-600 space-y-1`}>
+                                  {suggestion.keyPoints.slice(0, 3).map((point: string, idx: number) => (
+                                    <li key={idx}>• {point}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
+                              <p className={`text-xs text-${color}-600 mb-3`}>
+                                Supporting reports: {suggestion.supportingReports.slice(0, 2).join(", ")}
+                                {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
+                              </p>
+                            )}
+                            <Button size="sm" className={`bg-${color}-600 hover:bg-${color}-700 text-white`}>
+                              Build Email
+                            </Button>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
+              
+              {suggestions && suggestions.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  <Bot className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                  <p>No email themes found. Upload more reports to get better suggestions.</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
