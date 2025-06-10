@@ -108,6 +108,16 @@ export default function LeadPipeline() {
     },
   });
 
+  const updateLikelihoodMutation = useMutation({
+    mutationFn: async ({ leadId, likelihood }: { leadId: number; likelihood: string }) => {
+      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { likelihood_of_closing: likelihood });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
+  });
+
   const createLeadMutation = useMutation({
     mutationFn: async (leadData: typeof newLead) => {
       const response = await apiRequest("POST", "/api/leads", {
@@ -386,122 +396,134 @@ export default function LeadPipeline() {
           </div>
         </div>
 
-        {/* Pipeline Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-600">Prospects</p>
-                <p className="text-2xl font-bold text-gray-400">{stageStats.prospects}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-600">Qualified Leads</p>
-                <p className="text-2xl font-bold text-primary">{stageStats.qualified}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-600">Proposals</p>
-                <p className="text-2xl font-bold text-amber-500">{stageStats.proposals}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="text-center">
-                <p className="text-sm font-medium text-gray-600">Closed Won</p>
-                <p className="text-2xl font-bold text-green-600">{stageStats.closed_won}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Pipeline Board */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          {/* Prospects Column */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-4 flex items-center">
-              <span className="w-3 h-3 bg-gray-400 rounded-full mr-2"></span>
-              Prospects ({stageStats.prospects})
-            </h3>
-            <div className="space-y-3">
-              {getLeadsByStage("prospect").map((lead) => (
-                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
-                    <div className="flex gap-1">
-                      <Link href={`/lead/${lead.id}`}>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </Link>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                        onClick={() => deleteLeadMutation.mutate(lead.id)}
-                      >
-                        <Trash2 className="h-3 w-3" />
+        {/* Clean Vertical Pipeline Layout */}
+        <div className="space-y-4">
+          {["prospect", "qualified", "proposal", "closed_won"].map((stage) => {
+            const stageLeads = getLeadsByStage(stage);
+            const stageLabels = {
+              prospect: "Prospects",
+              qualified: "Qualified Leads", 
+              proposal: "Proposals",
+              closed_won: "Closed Won"
+            };
+            const isCollapsed = collapsedStages[stage];
+            
+            return (
+              <Card key={stage} className="w-full">
+                <CardHeader 
+                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setCollapsedStages(prev => ({...prev, [stage]: !prev[stage]}))}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-lg">{stageLabels[stage]}</CardTitle>
+                      <Badge variant="secondary" className={getStageColor(stage)}>
+                        {stageLeads.length}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isCollapsed && stageLeads.length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'high').length} high • {' '}
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'medium').length} med • {' '}
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'low').length} low
+                        </span>
+                      )}
+                      <Button variant="ghost" size="sm">
+                        {isCollapsed ? "▼" : "▲"}
                       </Button>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-600 mb-1">{lead.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{lead.next_step || "Initial contact"}</p>
-                  {lead.last_contact && (
-                    <p className="text-xs text-gray-400 mt-2">
-                      {new Date(lead.last_contact).toLocaleDateString()}
-                    </p>
-                  )}
-                  {lead.how_heard && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      <span className="font-medium">Source:</span> {lead.how_heard.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                    </p>
-                  )}
-                  <div className="mt-3 flex gap-1">
-                    <Link href={`/lead/${lead.id}`} className="flex-1">
-                      <Button size="sm" variant="outline" className="w-full text-xs">
-                        View Details
-                      </Button>
-                    </Link>
-                    <Button 
-                      size="sm" 
-                      className="text-xs px-2"
-                      onClick={() => handleGenerateEmail(lead)}
-                    >
-                      <Bot className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Qualified Leads Column */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="font-medium text-gray-900 mb-4 flex items-center">
-              <span className="w-3 h-3 bg-primary rounded-full mr-2"></span>
-              Qualified ({stageStats.qualified})
-            </h3>
-            <div className="space-y-3">
-              {getLeadsByStage("qualified").map((lead) => (
-                <div key={lead.id} className="bg-white p-4 rounded-lg shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="font-medium text-gray-900 text-sm">{lead.company}</h4>
-                    <div className="flex gap-1">
-                      <Link href={`/lead/${lead.id}`}>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </Link>
+                </CardHeader>
+                
+                {!isCollapsed && (
+                  <CardContent className="pt-0">
+                    {stageLeads.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        No {stageLabels[stage].toLowerCase()} yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {stageLeads.map((lead) => (
+                          <div key={lead.id} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h4 className="font-medium text-gray-900">{lead.name}</h4>
+                                  <Badge variant="outline" className="text-xs">
+                                    {lead.company}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center gap-4 mb-3">
+                                  <span className="text-sm text-gray-600">{lead.email}</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-xs text-gray-500">Likelihood:</span>
+                                    <Select 
+                                      value={lead.likelihood_of_closing || "medium"} 
+                                      onValueChange={(value) => updateLikelihoodMutation.mutate({leadId: lead.id, likelihood: value})}
+                                    >
+                                      <SelectTrigger className="w-20 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Med</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                                
+                                {lead.interest_tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {lead.interest_tags.map((tag, index) => (
+                                      <Badge key={index} variant="outline" className={`text-xs ${getTagColor(tag)}`}>
+                                        {tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {lead.next_step && (
+                                  <p className="text-sm text-gray-600">
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    Next: {lead.next_step}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2 ml-4">
+                                <Link to={`/leads/${lead.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    View
+                                  </Button>
+                                </Link>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => deleteLeadMutation.mutate(lead.id)}
+                                  disabled={deleteLeadMutation.isPending}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
                       <Button 
                         variant="ghost" 
                         size="sm" 

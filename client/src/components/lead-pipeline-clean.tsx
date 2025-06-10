@@ -1,0 +1,483 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Target, 
+  Lightbulb, 
+  Clock, 
+  TrendingUp,
+  Edit,
+  Bot,
+  ExternalLink,
+  Plus,
+  Trash2,
+  Search
+} from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+
+interface Lead {
+  id: number;
+  name: string;
+  email: string;
+  company: string;
+  stage: string;
+  likelihood_of_closing?: string;
+  last_contact?: string;
+  next_step?: string;
+  notes?: string;
+  interest_tags: string[];
+  how_heard?: string;
+}
+
+interface AIEmailResponse {
+  subject: string;
+  body: string;
+}
+
+export default function LeadPipeline() {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>({});
+  const [newLead, setNewLead] = useState({
+    name: "",
+    email: "",
+    company: "",
+    stage: "prospect",
+    next_step: "",
+    notes: "",
+    interest_tags: "",
+    how_heard: ""
+  });
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: leads } = useQuery<Lead[]>({
+    queryKey: ["/api/leads"],
+  });
+
+  const generateEmailMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const response = await apiRequest("POST", "/api/ai/generate-email", {
+        type: "lead_outreach",
+        leadId,
+        context: { stage: selectedLead?.stage }
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setAiEmail(data);
+      setIsGeneratingEmail(false);
+      toast({
+        title: "AI Email Generated",
+        description: "Outreach email has been generated successfully.",
+      });
+    },
+    onError: () => {
+      setIsGeneratingEmail(false);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateLeadMutation = useMutation({
+    mutationFn: async ({ leadId, updates }: { leadId: number; updates: any }) => {
+      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Lead Updated",
+        description: "Lead has been updated successfully.",
+      });
+    },
+  });
+
+  const updateLikelihoodMutation = useMutation({
+    mutationFn: async ({ leadId, likelihood }: { leadId: number; likelihood: string }) => {
+      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { likelihood_of_closing: likelihood });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
+  });
+
+  const createLeadMutation = useMutation({
+    mutationFn: async (leadData: typeof newLead) => {
+      const response = await apiRequest("POST", "/api/leads", {
+        ...leadData,
+        interest_tags: leadData.interest_tags.split(',').map(tag => tag.trim()).filter(Boolean)
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      setIsAddDialogOpen(false);
+      setNewLead({
+        name: "",
+        email: "",
+        company: "",
+        stage: "prospect",
+        next_step: "",
+        notes: "",
+        interest_tags: "",
+        how_heard: ""
+      });
+      toast({
+        title: "Lead created",
+        description: "New lead has been added successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create lead. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: number) => {
+      const response = await apiRequest("DELETE", `/api/leads/${leadId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Lead deleted",
+        description: "Lead has been removed successfully.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete lead. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getLeadsByStage = (stage: string) => {
+    if (!leads) return [];
+    
+    let filteredLeads = leads.filter(lead => lead.stage === stage);
+    
+    if (searchTerm.trim()) {
+      filteredLeads = filteredLeads.filter(lead =>
+        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.interest_tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    return filteredLeads;
+  };
+
+  const handleGenerateEmail = (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsGeneratingEmail(true);
+    generateEmailMutation.mutate(lead.id);
+  };
+
+  const getStageColor = (stage: string) => {
+    switch (stage) {
+      case "prospect":
+        return "bg-gray-100 text-gray-800";
+      case "qualified":
+        return "bg-blue-100 text-blue-800";
+      case "proposal":
+        return "bg-yellow-100 text-yellow-800";
+      case "closed_won":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getTagColor = (tag: string) => {
+    const colors = [
+      "bg-blue-100 text-blue-800",
+      "bg-green-100 text-green-800",
+      "bg-purple-100 text-purple-800",
+      "bg-orange-100 text-orange-800",
+    ];
+    return colors[tag.length % colors.length];
+  };
+
+  const getLikelihoodColor = (likelihood: string) => {
+    switch (likelihood) {
+      case "high":
+        return "bg-green-100 text-green-800";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800";
+      case "low":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  return (
+    <div className="py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">AI-Powered Sales Dashboard</h2>
+              <p className="text-gray-600">Manage prospects and automate next-step recommendations</p>
+            </div>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Lead
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Lead</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">Name</Label>
+                    <Input
+                      id="name"
+                      value={newLead.name}
+                      onChange={(e) => setNewLead({...newLead, name: e.target.value})}
+                      className="col-span-3"
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newLead.email}
+                      onChange={(e) => setNewLead({...newLead, email: e.target.value})}
+                      className="col-span-3"
+                      placeholder="email@company.com"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="company" className="text-right">Company</Label>
+                    <Input
+                      id="company"
+                      value={newLead.company}
+                      onChange={(e) => setNewLead({...newLead, company: e.target.value})}
+                      className="col-span-3"
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="stage" className="text-right">Stage</Label>
+                    <Select value={newLead.stage} onValueChange={(value) => setNewLead({...newLead, stage: value})}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="prospect">Prospect</SelectItem>
+                        <SelectItem value="qualified">Qualified</SelectItem>
+                        <SelectItem value="proposal">Proposal</SelectItem>
+                        <SelectItem value="closed_won">Closed Won</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="interest_tags" className="text-right">Interests</Label>
+                    <Input
+                      id="interest_tags"
+                      value={newLead.interest_tags}
+                      onChange={(e) => setNewLead({...newLead, interest_tags: e.target.value})}
+                      className="col-span-3"
+                      placeholder="tech, finance, healthcare (comma separated)"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={() => createLeadMutation.mutate(newLead)}
+                    disabled={!newLead.name || !newLead.email || !newLead.company || createLeadMutation.isPending}
+                  >
+                    {createLeadMutation.isPending ? "Creating..." : "Create Lead"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search prospects by name, company, email, or interests..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full"
+              />
+            </div>
+            {searchTerm && (
+              <p className="text-sm text-gray-600 mt-2">
+                Showing results for "{searchTerm}"
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Clean Vertical Pipeline Layout */}
+        <div className="space-y-4">
+          {["prospect", "qualified", "proposal", "closed_won"].map((stage) => {
+            const stageLeads = getLeadsByStage(stage);
+            const stageLabels: Record<string, string> = {
+              prospect: "Prospects",
+              qualified: "Qualified Leads", 
+              proposal: "Proposals",
+              closed_won: "Closed Won"
+            };
+            const isCollapsed = collapsedStages[stage];
+            
+            return (
+              <Card key={stage} className="w-full">
+                <CardHeader 
+                  className="cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => setCollapsedStages(prev => ({...prev, [stage]: !prev[stage]}))}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <CardTitle className="text-lg">{stageLabels[stage]}</CardTitle>
+                      <Badge variant="secondary" className={getStageColor(stage)}>
+                        {stageLeads.length}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!isCollapsed && stageLeads.length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'high').length} high • {' '}
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'medium').length} med • {' '}
+                          {stageLeads.filter(lead => lead.likelihood_of_closing === 'low').length} low
+                        </span>
+                      )}
+                      <Button variant="ghost" size="sm">
+                        {isCollapsed ? "▼" : "▲"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                {!isCollapsed && (
+                  <CardContent className="pt-0">
+                    {stageLeads.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        No {stageLabels[stage].toLowerCase()} yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {stageLeads.map((lead) => (
+                          <div key={lead.id} className="border rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h4 className="font-medium text-gray-900">{lead.name}</h4>
+                                  <Badge variant="outline" className="text-xs">
+                                    {lead.company}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center gap-4 mb-3">
+                                  <span className="text-sm text-gray-600">{lead.email}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Likelihood:</span>
+                                    <Select 
+                                      value={lead.likelihood_of_closing || "medium"} 
+                                      onValueChange={(value) => updateLikelihoodMutation.mutate({leadId: lead.id, likelihood: value})}
+                                    >
+                                      <SelectTrigger className="w-24 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="low">Low</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="high">High</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${getLikelihoodColor(lead.likelihood_of_closing || 'medium')}`}
+                                    >
+                                      {lead.likelihood_of_closing || 'medium'}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                
+                                {lead.interest_tags.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {lead.interest_tags.map((tag, index) => (
+                                      <Badge key={index} variant="outline" className={`text-xs ${getTagColor(tag)}`}>
+                                        {tag}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {lead.next_step && (
+                                  <p className="text-sm text-gray-600">
+                                    <Clock className="w-3 h-3 inline mr-1" />
+                                    Next: {lead.next_step}
+                                  </p>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-2 ml-4">
+                                <Link to={`/leads/${lead.id}`}>
+                                  <Button variant="outline" size="sm">
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    View
+                                  </Button>
+                                </Link>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => deleteLeadMutation.mutate(lead.id)}
+                                  disabled={deleteLeadMutation.isPending}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
