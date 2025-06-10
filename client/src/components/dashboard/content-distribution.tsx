@@ -31,7 +31,7 @@ export function ContentDistribution() {
   const [reportType, setReportType] = useState<string>("wiltw");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
     queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
@@ -71,16 +71,16 @@ export function ContentDistribution() {
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('reportType', reportType);
-      
+
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         throw new Error('Upload failed');
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -240,6 +240,9 @@ export function ContentDistribution() {
     }
   };
 
+  // Safely handle undefined reports array
+  const safeReports = reports || [];
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -271,7 +274,7 @@ export function ContentDistribution() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label htmlFor="pdf-upload" className="block text-sm font-medium mb-2">
                 Select PDF Report
@@ -285,7 +288,7 @@ export function ContentDistribution() {
               />
             </div>
           </div>
-          
+
           {selectedFile && (
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2">
@@ -415,7 +418,7 @@ export function ContentDistribution() {
                     if (selectedReport) {
                       try {
                         const response = await fetch(`/api/ai/load-summary/${selectedReport}`);
-                        
+
                         if (response.ok) {
                           const data = await response.json();
                           setReportSummary(data.summary);
@@ -468,7 +471,8 @@ export function ContentDistribution() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {reports.slice(0, 3).map((report) => (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {safeReports.slice(0, 6).map((report: any) => (
                 <div key={report.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -507,6 +511,7 @@ export function ContentDistribution() {
                   </div>
                 </div>
               ))}
+            </div>
             </div>
           </CardContent>
         </Card>
