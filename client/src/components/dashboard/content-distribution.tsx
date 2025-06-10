@@ -414,35 +414,11 @@ export function ContentDistribution() {
                   onClick={async () => {
                     if (selectedReport) {
                       try {
-                        const response = await fetch(`/api/report-summaries`);
-                        const summaries = await response.json();
-                        const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+                        const response = await fetch(`/api/ai/load-summary/${selectedReport}`);
                         
-                        console.log('Load saved summary debug:', {
-                          selectedReport,
-                          selectedReportType: typeof selectedReport,
-                          foundSummary: reportSummary ? {
-                            id: reportSummary.id,
-                            content_report_id: reportSummary.content_report_id,
-                            summaryLength: reportSummary.parsed_summary?.length,
-                            summaryPreview: reportSummary.parsed_summary?.substring(0, 200),
-                            summaryEnd: reportSummary.parsed_summary?.substring(-100)
-                          } : null,
-                          allSummaries: summaries.map((s: any) => ({
-                            id: s.id,
-                            content_report_id: s.content_report_id,
-                            summaryLength: s.parsed_summary?.length,
-                            preview: s.parsed_summary?.substring(0, 100)
-                          }))
-                        });
-                        
-                        if (reportSummary) {
-                          console.log('Setting summary content:', {
-                            summaryId: reportSummary.id,
-                            contentLength: reportSummary.parsed_summary?.length,
-                            firstLine: reportSummary.parsed_summary?.split('\n')[0]
-                          });
-                          setReportSummary(reportSummary.parsed_summary);
+                        if (response.ok) {
+                          const data = await response.json();
+                          setReportSummary(data.summary);
                           toast({
                             title: "Summary Loaded",
                             description: "Previously saved summary loaded successfully.",
@@ -450,7 +426,7 @@ export function ContentDistribution() {
                         } else {
                           toast({
                             title: "No Saved Summary",
-                            description: "No previously saved summary found. Try parsing the report first.",
+                            description: "No previously saved summary found. Parse the report first.",
                             variant: "destructive",
                           });
                         }

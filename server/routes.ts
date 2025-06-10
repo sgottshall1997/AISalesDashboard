@@ -807,7 +807,33 @@ Format as a complete email ready to send.`;
     }
   });
 
-  // AI report summarization with WILTW Article Parser
+  // Load existing stored summary
+  app.get("/api/ai/load-summary/:reportId", async (req: Request, res: Response) => {
+    try {
+      const { reportId } = req.params;
+      
+      const existingSummary = await storage.getReportSummary(parseInt(reportId));
+      
+      if (!existingSummary) {
+        return res.status(404).json({ 
+          error: "No saved summary found for this report." 
+        });
+      }
+      
+      res.json({ 
+        summary: existingSummary.parsed_summary,
+        summaryType: existingSummary.summary_type,
+        reportId: existingSummary.content_report_id
+      });
+    } catch (error) {
+      console.error("Load summary error:", error);
+      res.status(500).json({ 
+        error: "Failed to load saved summary." 
+      });
+    }
+  });
+
+  // AI report summarization with WILTW Article Parser - generates NEW summary
   app.post("/api/ai/summarize-report", async (req: Request, res: Response) => {
     try {
       const { reportId, title, content, promptType } = req.body;
@@ -822,7 +848,7 @@ Format as a complete email ready to send.`;
       const reports = await storage.getAllContentReports();
       const report = reports.find(r => r.id.toString() === reportId);
       
-      console.log('Summarization debug:', {
+      console.log('Parsing debug - using original PDF content:', {
         requestedReportId: reportId,
         availableReports: reports.map(r => ({ id: r.id, title: r.title, hasContent: !!r.full_content })),
         foundReport: report ? { 
@@ -839,7 +865,7 @@ Format as a complete email ready to send.`;
         });
       }
 
-      // Use full_content if available, otherwise fall back to content summary or generate sample content
+      // ALWAYS use the original PDF content for parsing
       let actualContent = report.full_content;
       
       console.log('Full content check:', {
@@ -870,82 +896,11 @@ Format as a complete email ready to send.`;
         }
       });
       
-      // CRITICAL: Only use sample content if we have NO actual PDF content
+      // Ensure we have actual PDF content - no fallbacks
       if (!actualContent || actualContent.length < 100) {
-        console.log('WARNING: No actual PDF content found, using sample content as fallback');
-        // Generate sample content based on report type for demonstration
-        const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
-        
-        if (isWATMTU) {
-          actualContent = `WATMTU Market Analysis Report
-        
-Market Overview:
-Gold and silver continue to show strong momentum with mining sector outperformance across all major indices. Technical breakouts are evident in precious metals with expanding market breadth.
-
-Key Findings:
-- Gold mining stocks showing 15-20% gains over the past month
-- Silver breaking through key resistance levels at $31/oz
-- Junior mining companies hitting new 52-week highs
-- Commodity complex rotation accelerating
-
-Portfolio Allocation Recommendations:
-- Increase precious metals allocation to 35-40% of portfolio
-- Focus on established gold producers and silver miners
-- Consider junior exploration companies for higher risk/reward exposure
-- Maintain commodity-focused ETFs for diversification
-
-Technical Analysis:
-- Gold futures breaking above $2,100 resistance
-- Silver showing cup-and-handle pattern completion
-- Mining sector relative strength vs S&P 500 at 18-month highs
-- Volume expansion confirming breakout moves
-
-Risk Factors:
-- Dollar strength could pressure metals
-- Economic policy changes may impact demand
-- Geopolitical tensions affecting supply chains`;
-        } else {
-          // Generate unique content based on report title/date for different WILTW reports
-          const reportDate = report.title.includes('2025-06-05') ? '2025-06-05' : 
-                           report.title.includes('2025-05-29') ? '2025-05-29' : 
-                           'current';
-          
-          console.log('Content generation debug:', {
-            reportTitle: report.title,
-            reportId: report.id,
-            detectedDate: reportDate,
-            includes05: report.title.includes('2025-06-05'),
-            includes29: report.title.includes('2025-05-29')
-          });
-          
-          if (false) { // Disabled sample content - always use actual PDF content
-            // Default content for other WILTW reports
-            actualContent = `WILTW Weekly Report - Investment Research Insights
-
-Table of Contents:
-01 Federal Reserve Policy Update and Interest Rate Outlook
-02 Technology Sector Earnings Analysis and Forward Guidance
-03 Healthcare Innovation and Biotech Investment Opportunities
-04 Real Estate Market Dynamics and REIT Performance
-05 Energy Transition and Clean Technology Investments
-06 International Trade Relations and Global Supply Chains
-
-Article 1: Federal Reserve Policy Update
-Federal Reserve maintains dovish stance with potential rate cuts on horizon. Inflation data showing consistent decline toward 2% target. Employment market cooling gradually with jobless claims trending higher. Bond yields reflecting market expectations of policy normalization.
-
-Article 2: Technology Sector Analysis
-Mega-cap technology stocks showing mixed earnings results with cloud growth slowing. Artificial intelligence investments driving capex increases across sector. Cybersecurity demand remains strong amid increasing threat landscape. Semiconductor cycle showing signs of stabilization.
-
-Article 3: Healthcare Innovation Focus
-Breakthrough obesity treatments expanding addressable market significantly. Gene therapy approvals accelerating with improved safety profiles. Healthcare AI applications gaining regulatory approval faster than expected. Aging demographics driving medical device demand globally.
-
-Investment Implications:
-- Quality dividend growth stocks in defensive sectors
-- Technology infrastructure plays benefiting from AI adoption
-- Healthcare innovation leaders with strong pipelines
-- Real estate exposure through diversified REIT portfolios`;
-          }
-        }
+        return res.status(400).json({ 
+          error: "No PDF content found. Please re-upload the PDF file to analyze authentic document content." 
+        });
       }
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
