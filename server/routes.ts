@@ -409,18 +409,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Process PDF buffer to extract readable text content
-        const bufferText = file.buffer.toString('utf8');
-        // Extract readable text fragments from the PDF buffer
-        const textMatches = bufferText.match(/[A-Za-z0-9\s\.,;:!?\-'"()]+/g);
+        // Extract text content from PDF buffer using multiple encoding approaches
+        let bufferText = '';
+        
+        // Try different encoding methods to extract readable text
+        try {
+          // Method 1: UTF-8 with filtering
+          bufferText = file.buffer.toString('utf8');
+        } catch {
+          // Method 2: Binary with filtering
+          bufferText = file.buffer.toString('binary');
+        }
+        
+        // Extract readable text patterns from PDF content
+        const textMatches = bufferText.match(/[A-Za-z0-9\s\.,;:!?\-'"()%$]+/g);
         
         if (textMatches) {
           extractedText = textMatches
-            .filter(text => text.length > 10)
+            .filter(text => text.trim().length > 5)
+            .filter(text => !/^(obj|endobj|stream|endstream|xref|trailer)$/.test(text.trim()))
+            .filter(text => !text.match(/^\d+\s+\d+\s+obj$/))
+            .filter(text => text.match(/[A-Za-z]/))
             .join(' ')
             .replace(/\s+/g, ' ')
+            .replace(/[^\w\s\.,;:!?\-'"()%$]/g, ' ')
             .trim();
         }
+        
+        // Clean up common PDF artifacts
+        extractedText = extractedText
+          .replace(/\b(FlateDecode|FormType|Resources|Font|Length|endstream|endobj)\b/g, '')
+          .replace(/\b\d{1,3}\s+0\s+R\b/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
         
         // Ensure we have substantial content
         if (!extractedText || extractedText.length < 100) {
