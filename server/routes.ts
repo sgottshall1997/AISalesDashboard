@@ -929,7 +929,8 @@ ${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior rela
 
 ${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
 
-MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
+${selectedReportIds && selectedReportIds.length > 1 ? 
+`MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
 
 The report contains these article numbers - use them:
 Article 2 = Critical minerals supply chain
@@ -945,7 +946,8 @@ Example format (MANDATORY - notice 3 DIFFERENT articles):
 • Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (Article 4).
 • Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (Article 7).
 
-CRITICAL: Each bullet point MUST reference a DIFFERENT article number. Never use the same article twice in one email.` : ''}
+CRITICAL: Each bullet point MUST reference a DIFFERENT article number. Never use the same article twice in one email.` :
+`IMPORTANT: Since only one report is selected, DO NOT include article citations or reference numbers. Present the insights naturally without any (Article X) citations.`}` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro that references any prior context appropriately
