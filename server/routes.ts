@@ -830,8 +830,17 @@ Format as a complete email ready to send.`;
         reportTitle: report.title,
         hasFullContent: !!report.full_content,
         fullContentLength: report.full_content?.length,
-        fullContentPreview: report.full_content?.substring(0, 150),
+        fullContentPreview: report.full_content?.substring(0, 300),
+        containsChina: report.full_content?.includes('China'),
+        containsCriticalMinerals: report.full_content?.includes('critical-minerals'),
+        containsMining: report.full_content?.includes('mining'),
         willUsePDFContent: report.full_content && report.full_content.length >= 500
+      });
+
+      console.log('Content being sent to AI:', {
+        contentLength: actualContent?.length,
+        contentPreview: actualContent?.substring(0, 500),
+        isUsingFullContent: actualContent === report.full_content
       });
       
       // Use actual PDF content if available, otherwise use date-specific sample content
@@ -998,7 +1007,13 @@ Separate each article analysis with a horizontal line (---) and maintain consist
 
 ${actualContent}
 
-IMPORTANT: Analyze ALL articles found in the actual report content. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+CRITICAL INSTRUCTIONS:
+1. Analyze ONLY the content provided above - do not create generic investment themes
+2. Extract specific topics mentioned in this report: China's critical minerals supply chain, mining stocks, digital infrastructure, loneliness investment theme
+3. Use actual data, company names, and performance metrics from the provided text
+4. If the report mentions specific articles about "China's weaponization of critical minerals" or "mining stocks outperforming" - analyze those exact topics
+5. Do NOT generate content about generic "high conviction portfolios" unless specifically mentioned in the provided text
+6. Each article analysis must reflect the unique content of this specific report`;
       } else if (promptType === "watmtu_parser") {
         systemPrompt = `You are an expert investment research analyst specializing in market analysis and technical indicators. You've received a WATMTU (What Are The Markets Telling Us) report from 13D Research focusing on market trends, technical analysis, and asset allocation strategies.
 
