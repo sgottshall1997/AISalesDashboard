@@ -1,11 +1,11 @@
 import { 
-  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries,
+  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries, tasks,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
   type AiSuggestion, type InsertAiSuggestion, type EmailHistory, type InsertEmailHistory,
   type ReadingHistory, type InsertReadingHistory, type LeadEmailHistory, type InsertLeadEmailHistory,
-  type ReportSummary, type InsertReportSummary,
+  type ReportSummary, type InsertReportSummary, type Task, type InsertTask,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -763,6 +763,34 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
         relevance: `Matches interest in ${report.tags?.filter(tag => lead.interest_tags?.includes(tag)).join(', ')}`
       }))
     };
+  }
+
+  // Task methods
+  async getAllTasks(): Promise<Task[]> {
+    return await db.select().from(tasks).orderBy(desc(tasks.created_at));
+  }
+
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task || undefined;
+  }
+
+  async createTask(insertTask: InsertTask): Promise<Task> {
+    const [task] = await db.insert(tasks).values(insertTask).returning();
+    return task;
+  }
+
+  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined> {
+    const [task] = await db.update(tasks)
+      .set(updates)
+      .where(eq(tasks.id, id))
+      .returning();
+    return task || undefined;
+  }
+
+  async deleteTask(id: number): Promise<boolean> {
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
