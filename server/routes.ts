@@ -665,23 +665,23 @@ ${relevantReports.slice(0, 3).map((report: any, i: number) =>
   `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 200) + '...' : ''}`
 ).join('\n')}
 
-Write a highly detailed and personalized follow-up email that demonstrates deep knowledge of the selected report content. Follow this specific format:
+Write a highly detailed and personalized follow-up email that demonstrates deep knowledge of the selected report content. ${selectedReportSummaries.length > 1 ? 'Reference ALL selected reports' : 'Reference the selected report'} comprehensively. Follow this specific format:
 
 1. Brief personal greeting referencing their company and interests
-2. Reference the specific report title and mention 2-3 SPECIFIC articles/sections from the report by name or topic
-3. For each article mentioned, provide concrete details about:
+${selectedReportSummaries.length > 1 ? `2. Reference ALL ${selectedReportSummaries.length} selected reports by title, mentioning 2-3 SPECIFIC articles/sections from EACH report` : '2. Reference the specific report title and mention 2-3 SPECIFIC articles/sections from the report by name or topic'}
+3. For each article/section mentioned from ${selectedReportSummaries.length > 1 ? 'each report' : 'the report'}, provide concrete details about:
    - The specific thesis or finding
    - Relevant data points, names, or examples mentioned
    - Direct implications for their investment focus areas
-4. Connect each article to their specific interests (${lead.interest_tags?.join(', ')}) with actionable insights
+4. Connect insights from ${selectedReportSummaries.length > 1 ? 'all reports' : 'the report'} to their specific interests (${lead.interest_tags?.join(', ')}) with actionable insights
 5. End with: "I'd be happy to search for any other relevant reports you may be interested in."
 
-CRITICAL: Be extremely specific. Instead of saying "the report covers geopolitics," say things like:
+CRITICAL: Be extremely specific with data from ${selectedReportSummaries.length > 1 ? 'ALL selected reports' : 'the selected report'}. Instead of saying "the report covers geopolitics," say things like:
 - "Article 2 details our recent China visit where we met with 150 people including central bank members and mayors"
-- "The analysis of Gen Z religious resurgence shows specific demographic trends"
+- "The WATMTU analysis shows precious metals breaking out with specific percentage gains"
 - "The USD index risks section highlights the 'revenge tax' scenario on foreign asset holders"
 
-Extract specific company names, data points, percentages, or concrete examples from the report summary. Make each point actionable for their portfolio strategy.
+Extract specific company names, data points, percentages, ETF symbols, or concrete examples from ${selectedReportSummaries.length > 1 ? 'each report summary' : 'the report summary'}. Make each point actionable for their portfolio strategy.
 
 Use proper line breaks and spacing. Write as a senior investment advisor who has thoroughly studied the report.
 
