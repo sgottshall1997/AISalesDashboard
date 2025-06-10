@@ -412,38 +412,49 @@ export default function ContentSection() {
                                   e.stopPropagation();
                                   console.log('=== BUTTON CLICKED ===');
                                   console.log('Button clicked for:', suggestion.title, suggestion.type);
-                                  console.log('Full suggestion object:', suggestion);
-                                  alert('Button clicked! Check console for details.');
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
                                 disabled={generateEmailMutation.isPending}
                                 style={{
-                                  backgroundColor: testColor,
+                                  backgroundColor: generateEmailMutation.isPending && currentSuggestion === suggestion ? "#6b7280" : testColor,
                                   color: "white",
                                   border: "none",
                                   borderRadius: "8px",
                                   padding: "10px 16px",
                                   fontSize: "14px",
                                   fontWeight: "500",
-                                  cursor: "pointer",
+                                  cursor: generateEmailMutation.isPending ? "not-allowed" : "pointer",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: "8px",
-                                  opacity: generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1",
+                                  opacity: generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.8" : "1",
                                   transition: "all 0.2s",
                                   zIndex: "10",
                                   position: "relative"
                                 }}
-                                onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
-                                onMouseOut={(e) => e.currentTarget.style.opacity = generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1"}
+                                onMouseOver={(e) => {
+                                  if (!generateEmailMutation.isPending) {
+                                    e.currentTarget.style.opacity = "0.9";
+                                  }
+                                }}
+                                onMouseOut={(e) => {
+                                  if (!generateEmailMutation.isPending) {
+                                    e.currentTarget.style.opacity = "1";
+                                  }
+                                }}
                               >
                                 {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                  <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    Generating...
+                                  </>
                                 ) : (
-                                  <Mail className="h-4 w-4" />
+                                  <>
+                                    <Mail className="h-4 w-4" />
+                                    Generate Email
+                                  </>
                                 )}
-                                Generate Email
                               </button>
                               
                               {generateEmailMutation.isPending && currentSuggestion === suggestion && (
