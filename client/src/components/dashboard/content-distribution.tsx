@@ -389,7 +389,7 @@ export function ContentDistribution() {
                   <SelectContent>
                     {reports.map((report: any) => (
                       <SelectItem key={report.id} value={report.id.toString()}>
-                        {report.title} - {new Date(report.published_date).toLocaleDateString()}
+                        {report.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
