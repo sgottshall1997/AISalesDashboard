@@ -545,11 +545,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           preview: extractedText.substring(0, 300)
         });
         
-        // Store the original extracted PDF content
-        console.log('Preserving original PDF content:', extractedText.length, 'characters');
-        
-        // Keep the original extracted text for database storage
-        const originalPDFContent = extractedText;
+        // Store the complete original PDF content without any processing
+        console.log('Storing complete original PDF content:', extractedText.length, 'characters');
         
         console.log('PDF processing successful:', {
           filename: file.originalname,
@@ -565,27 +562,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      let parsedData;
-      let reportTitle;
-      let tags: string[] = [];
-      
       // Extract date from filename if available
       const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
       const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
       
+      let reportTitle;
+      let tags: string[] = [];
+      
       if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
-        // Use actual PDF content for WATMTU reports
-        parsedData = parseWATMTUReport(extractedText);
         reportTitle = `WATMTU_${dateStr}`;
         tags = ['watmtu', 'market-analysis', 'precious-metals', 'commodities'];
       } else {
-        // Use actual PDF content for WILTW reports  
-        parsedData = parseWILTWReport(extractedText);
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
       }
 
-      // Create report entry in database
+      // Create report entry in database with only raw PDF content
       const reportData = {
         title: reportTitle,
         type: reportType.toUpperCase() + ' Report',
@@ -594,26 +586,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         click_rate: '0',
         engagement_level: 'medium' as const,
         tags,
-        content_summary: parsedData.summary,
-        key_insights: parsedData.keyInsights,
-        target_audience: parsedData.targetAudience,
-        full_content: extractedText // Store original extracted PDF text content
+        content_summary: '', // Empty - summary only generated when parsing
+        key_insights: [], // Empty - insights only generated when parsing
+        target_audience: 'Investment Professionals',
+        full_content: extractedText // Store complete original extracted PDF text
       };
 
       const report = await storage.createContentReport(reportData);
-      
-      // Generate and store AI summary
-      try {
-        const summaryData = {
-          content_report_id: report.id,
-          summary_type: reportType === 'watmtu' ? 'market_analysis' : 'weekly_insights',
-          parsed_summary: parsedData.summary
-        };
-        
-        await storage.createReportSummary(summaryData);
-      } catch (summaryError) {
-        console.error('Failed to create report summary:', summaryError);
-      }
       
       // Clean up uploaded file
       if (fs.existsSync(file.path)) {
@@ -621,9 +600,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        message: `${reportType.toUpperCase()} report uploaded and processed successfully`,
-        report,
-        parsedData,
+        message: `${reportType.toUpperCase()} report uploaded successfully`,
+        report: {
+          id: report.id,
+          title: report.title,
+          type: report.type,
+          contentLength: extractedText.length
+        },
         reportType
       });
 
