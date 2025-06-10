@@ -89,7 +89,7 @@ export async function generateEmail(request: EmailGenerationRequest): Promise<Em
     // Enforce strict word count for lead nurture emails
     let emailBody = result.body || "Thank you for your continued partnership.";
     if (request.type === "lead_nurture") {
-      emailBody = enforceWordLimit(emailBody, 250);
+      emailBody = enforceWordLimit(emailBody, 170);
     }
     
     return {
@@ -140,33 +140,44 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       
       basePrompt += `
 
-REQUIREMENTS FOR SOPHISTICATED INVESTORS:
-- Maximum 250 words total for entire email body
-- Start with punchy hook - no generic pleasantries
-- Use 2-3 bullet points with specific insights
-- Assume market knowledge - don't over-explain
-- End with clear, direct CTA
-- Be concise but informative
+ULTRA-STRICT REQUIREMENTS - NO EXCEPTIONS:
+- HARD LIMIT: 170 words MAXIMUM for entire email body
+- NO academic phrases like "Article 1," "titled," "the report outlines"
+- NO long paragraphs - use bullet points only
+- NO generic pleasantries or filler
+- Start immediately with relevant market hook
+- 3 bullets maximum, each under 25 words
+- End with simple CTA under 10 words
 
-FORMAT EXAMPLE:
-Subject: Bullish Signals for Gold and Silver Align with Your Strategy
+MANDATORY FORMAT (COPY EXACTLY):
+Subject: [Market insight - max 8 words]
+
+Hi [Name],
+
+[Hook sentence connecting to their focus - max 15 words]:
+
+• [Insight 1 - max 25 words]
+• [Insight 2 - max 25 words] 
+• [Insight 3 - max 25 words]
+
+[CTA - max 10 words]
+
+EXAMPLE (170 words total):
+Subject: Key Shifts in Gold, USD, China
 
 Hi Monica,
 
-I wanted to flag a few insights from recent reports that directly align with your focus on precious metals:
+Given your focus on precious metals and geopolitics, here are timely insights supporting W-GEM's strategy:
 
-• Silver Miners Breaking Out: SIL and SILJ hit new highs, confirming upside momentum in the space you already lean into.
+• Gold/Silver Momentum: Gold-to-CPI ratio broke 45-year downtrend. SIL and SILJ outperforming — bullish for miners.
 
-• Gold-to-CPI Ratio Surges: A major breakout from a 45-year trend suggests inflation-driven upside — a rare technical confirmation.
+• China's Strategic Resilience: Recent trip reveals Beijing diversifying trade relationships, stimulating domestic growth. Chinese equities could lead.
 
-• USD Weakness Builds Case for Hard Assets: Our WILTW piece lays out a scenario where gold is poised to benefit from dollar erosion and global capital shifts.
+• USD Headwinds: Rising inflation, weaker dollar outlook favor hard assets. "Revenge tax" on foreign holders adds urgency.
 
-Happy to send over the full recaps or hop on a quick call to go deeper. Just let me know.
+Let me know if you'd like deeper summaries.
 
-Best,
-[Your Name]
-
-TARGET: Keep under 250 words while being direct and actionable for sophisticated investors.`;
+ENFORCE: Count every word. If over 170 words, CUT content aggressively. NO exceptions.`;
       break;
       
     case "upsell":
