@@ -840,14 +840,40 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
       
-      const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      // Filter out Article 1 content from the summary
+      let reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      if (reportSummary) {
+        // Debug: Log original summary
+        console.log('Original summary:', reportSummary.substring(0, 500));
+        
+        // Remove Article 1 section entirely with multiple patterns
+        reportSummary = reportSummary.replace(/Article 1:[\s\S]*?(?=Article 2:|Article 3:|$)/g, '');
+        reportSummary = reportSummary.replace(/.*Strategy & Asset Allocation.*\n?/gi, '');
+        reportSummary = reportSummary.replace(/.*High Conviction Ideas.*\n?/gi, '');
+        reportSummary = reportSummary.replace(/.*gold miners.*outperforming.*major.*indices.*\n?/gi, '');
+        reportSummary = reportSummary.replace(/.*outperformance.*gold miners.*versus.*major.*stock market.*\n?/gi, '');
+        
+        // Clean up multiple line breaks
+        reportSummary = reportSummary.replace(/\n\n+/g, '\n\n').trim();
+        
+        // Debug: Log filtered summary
+        console.log('Filtered summary:', reportSummary.substring(0, 500));
+      }
 
       // Extract non-market topics from article content
       let nonMarketTopics = '';
       
       if (reportArticles.length > 0) {
-        // Extract non-market topics from article titles
-        const nonMarketArticles = reportArticles.filter((article: any) => {
+        // Filter out Article 1 from reportArticles
+        const filteredArticles = reportArticles.filter((article: any) => {
+          const title = article.title || '';
+          return !title.toLowerCase().includes('strategy & asset allocation') && 
+                 !title.toLowerCase().includes('high conviction ideas') &&
+                 !title.toLowerCase().includes('article 1');
+        });
+        
+        // Extract non-market topics from remaining article titles
+        const nonMarketArticles = filteredArticles.filter((article: any) => {
           const title = article.title.toLowerCase();
           return title.includes('culture') || title.includes('values') || title.includes('philosophy') || 
                  title.includes('leadership') || title.includes('education') || title.includes('history') ||
@@ -882,7 +908,9 @@ Provide a JSON response with actionable prospecting insights:
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.
+
+IMPORTANT: Do **not** draw from Article 1: "Strategy & Asset Allocation & Performance of High Conviction Ideas." Only use content from Articles 2 onward.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
