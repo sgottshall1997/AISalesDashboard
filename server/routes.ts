@@ -781,10 +781,15 @@ Provide a JSON response with actionable prospecting insights:
   // AI email generation for leads
   app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
     try {
-      const { lead, emailHistory, contentReports, selectedReportIds } = req.body;
+      console.log("Starting email generation...");
+      const { lead, selectedReportIds } = req.body;
       
       if (!lead) {
         return res.status(400).json({ error: "Lead data is required" });
+      }
+
+      if (!selectedReportIds || selectedReportIds.length === 0) {
+        return res.status(400).json({ error: "Selected report IDs are required" });
       }
 
       if (!process.env.OPENAI_API_KEY) {
@@ -793,58 +798,30 @@ Provide a JSON response with actionable prospecting insights:
         });
       }
 
+      console.log("Fetching report summaries...");
       // Get stored summaries for all selected reports
       let selectedReportSummaries = [];
-      if (selectedReportIds && selectedReportIds.length > 0) {
-        for (const reportId of selectedReportIds) {
-          const summary = await storage.getReportSummary(reportId);
-          if (summary) {
-            selectedReportSummaries.push(summary);
-          }
+      for (const reportId of selectedReportIds) {
+        const summary = await storage.getReportSummary(reportId);
+        if (summary) {
+          selectedReportSummaries.push(summary);
         }
       }
 
-      // Find relevant reports based on lead's interests
-      const relevantReports = (contentReports || []).filter((report: any) => 
-        report.tags && lead.interest_tags && 
-        report.tags.some((tag: string) => lead.interest_tags.includes(tag))
-      );
+      if (selectedReportSummaries.length === 0) {
+        return res.status(404).json({ error: "No report summaries found for selected reports" });
+      }
 
+      console.log("Initializing OpenAI...");
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Prepare report content for the prompt
-      const primaryReport = selectedReportSummaries.length > 0 ? selectedReportSummaries[0] : null;
-      
-      // Get the actual content report data
-      let reportTitle = 'Recent 13D Report';
-      let reportTags = '';
-      let reportArticles = [];
-      if (primaryReport) {
-        // Get the content report from database if not provided
-        let contentReport = null;
-        if (contentReports && contentReports.length > 0) {
-          contentReport = contentReports.find((report: any) => report.id === primaryReport.content_report_id);
-        } else {
-          // Fetch from database if not provided
-          const allReports = await storage.getAllContentReports();
-          contentReport = allReports.find(report => report.id === primaryReport.content_report_id);
-        }
-        
-        reportTitle = contentReport?.title || 'Recent 13D Report';
-        reportTags = contentReport?.tags?.join(', ') || '';
-        
-        // Extract article information from the full content for WILTW reports
-        if (contentReport && contentReport.full_content && reportTitle.includes('WILTW')) {
-          const parsedData = parseWILTWReport(contentReport.full_content);
-          reportArticles = parsedData.articles || [];
-        }
-      }
-      
-      let reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      console.log("Processing report summary...");
+      const primaryReport = selectedReportSummaries[0];
+      let reportSummary = primaryReport.parsed_summary;
       
       // Filter out Strategy & Asset Allocation content from the summary (equivalent to Article 1)
       if (reportSummary) {
-        // Remove content related to asset allocation, portfolio recommendations, and broad strategy
+        console.log("Applying content filters...");
         reportSummary = reportSummary
           .replace(/- \*\*Core Investment Thesis:\*\*[^-]*(?=- \*\*|$)/g, '')
           .replace(/- \*\*Portfolio Allocation Recommendations:\*\*[^-]*(?=- \*\*|$)/g, '')
@@ -854,117 +831,32 @@ Provide a JSON response with actionable prospecting insights:
           .trim();
       }
 
-      // Extract non-market topics from article content
-      let nonMarketTopics = '';
-      
-      if (reportArticles.length > 0) {
-        // Extract non-market topics from article titles
-        const nonMarketArticles = reportArticles.filter((article: any) => {
-          const title = article.title.toLowerCase();
-          return title.includes('culture') || title.includes('values') || title.includes('philosophy') || 
-                 title.includes('leadership') || title.includes('education') || title.includes('history') ||
-                 title.includes('book') || title.includes('life') || title.includes('wisdom') ||
-                 title.includes('personal') || title.includes('character') || title.includes('principle') ||
-                 title.includes('lesson') || title.includes('story') || title.includes('human') ||
-                 title.includes('society') || title.includes('ethics') || title.includes('moral') ||
-                 title.includes('teenager') || title.includes('phone') || title.includes('school') ||
-                 title.includes('aesop') || title.includes('fable') || title.includes('sustainable') ||
-                 title.includes('remote') || title.includes('loneliness') || title.includes('enduring');
-        });
+      console.log("Building simplified email prompt...");
+      const interestStr = Array.isArray(lead.interest_tags) 
+        ? lead.interest_tags.join(', ') 
+        : lead.interest_tags || 'investment research';
 
-        if (nonMarketArticles.length > 0) {
-          const topics = nonMarketArticles.map((article: any) => {
-            const title = article.title.toLowerCase();
-            if (title.includes('teenager') || title.includes('phone') || title.includes('sustainable')) return 'digital wellness and sustainable living';
-            if (title.includes('aesop') || title.includes('fable') || title.includes('wisdom')) return 'timeless wisdom and moral lessons';
-            if (title.includes('loneliness') || title.includes('human')) return 'social connection and human nature';
-            if (title.includes('culture') || title.includes('values')) return 'cultural insights';
-            if (title.includes('philosophy') || title.includes('enduring')) return 'philosophical perspectives';
-            if (title.includes('leadership') || title.includes('character')) return 'leadership principles';
-            if (title.includes('education') || title.includes('lesson')) return 'educational themes';
-            if (title.includes('book') || title.includes('story')) return 'literary analysis';
-            if (title.includes('history')) return 'historical context';
-            return 'life wisdom';
-          });
-          
-          const uniqueTopics = Array.from(new Set(topics));
-          nonMarketTopics = `The report also explores ${uniqueTopics.slice(0, 2).join(' and ')} to provide readers with perspective beyond the financial world.`;
-        }
-      }
+      const emailPrompt = `Generate a personalized email for ${lead.name} at ${lead.company}. Interests: ${interestStr}.
 
-      const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
+Use this exact format:
+Hope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on ${interestStr}:
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
+• [market insight from report - specific technical pattern or sector performance]
+• [individual stock/ETF performance or breakout]  
+• [concrete market trend observation]
 
-GOALS:
-• Greet the reader warmly with a short intro
-• Acknowledge their stated investment interests (from ${lead.interest_tags?.join(', ') || 'general investment research'}${lead.notes ? ` or Notes: ${lead.notes}` : ''} if applicable)
-• Explain why this specific report is relevant to their strategy
-• Summarize 2–3 high-impact insights using concise bullets
-• End with a conclusion summarizing 13D's market view and how our research helps investors stay ahead
-• Include a clear CTA (e.g., invite to review the full report, book a call)
+More broadly, we're seeing shifts in precious metals and commodity markets. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.
 
-HARD RULES:
-• TOTAL word count must not exceed **280 words**
-• Use **friendly but professional tone**
-• Paragraph format is fine, but use bullets for the insights section
-• DO NOT use phrases like "Article 1," "titled," or "the report outlines"
-• SKIP Article 1 (Strategy & Asset Allocation) - do NOT include it in bullet points, only use insights from Articles 2, 3, 4, etc.
-• Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
+On a different note, the report also explores cultural investment perspectives—an unexpected but thought-provoking angle.
 
-STRUCTURE TO FOLLOW:
-
----
-
-**Subject**: [Natural, conversational subject line – max 8 words]
-
-Hi ${lead.name},
-
-[Natural greeting with seasonal/personal touch] I was going through one of our latest reports and [conversational transition about why this matters to them based on their interests].
-
-[Present 3 market insights as bullet points with detailed analysis and implications]
-
-More broadly, [broader market perspective in casual, natural language].
-
-[If non-market topics exist, weave them in naturally like: "The report also includes an unexpected section on [topic] and how [relevance]—definitely not your typical market writeup, but pretty fascinating."]
-
-Let me know if you'd like me to dig up anything specific or send over past reports that line up with this view.
+Let me know if you'd like me to send over past reports aligned with any of these themes.
 
 Best,
 Spencer
 
----
+Keep under 280 words. Use bullet points. Focus on specific market developments, NOT portfolio allocation percentages.`;
 
-TONE GUIDELINES:
-• Write like Spencer is personally sharing insights with a colleague
-• Use natural, conversational language: "Hope you're doing well", "I was going through", "thought you might find this interesting"
-• Vary sentence structure - mix short punchy statements with longer explanatory ones
-• Include casual transitions: "More broadly", "And", "Plus"
-• Present 3 market insights as clear bullet points with substantive detail
-• End casually: "Let me know if you'd like me to dig up anything specific"
-• Avoid corporate speak - sound human and approachable
-• Use seasonal references: "Hope you're enjoying the start of summer"
-• Include conversational connectors: "And", "Plus", "More broadly"
-• Mix sentence lengths for natural rhythm
-• End with casual helpfulness rather than formal CTAs
-
-EXAMPLE:
-
-**Subject**: Gold, USD Weakness, and China Tailwinds
-
-Hi Monica,
-
-I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
-
-• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges.
-• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool.
-• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities.
-
-We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
-
-Let me know if you would like me to pull some older reports on specific topics of interest.
-
-Spencer`;
+      console.log("Calling OpenAI API...");
 
       const emailResponse = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -979,8 +871,7 @@ Spencer`;
           }
         ],
         max_tokens: 400,
-        temperature: 0.7,
-        timeout: 10000
+        temperature: 0.7
       });
 
       let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
