@@ -842,13 +842,45 @@ Provide a JSON response with actionable prospecting insights:
       
       const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
 
-      // Create article attribution context
+      // Create article attribution context and extract non-market topics
       let articleContext = '';
+      let nonMarketTopics = '';
+      
       if (reportArticles.length > 0) {
         articleContext = `\n\nAVAILABLE ARTICLES for attribution:
 ${reportArticles.map((article: any, index: number) => `Article ${index + 1}: ${article.title}`).join('\n')}
 
 When referencing insights, use format: (Article X in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})`;
+
+        // Extract non-market topics from article titles
+        const nonMarketArticles = reportArticles.filter((article: any) => {
+          const title = article.title.toLowerCase();
+          return title.includes('culture') || title.includes('values') || title.includes('philosophy') || 
+                 title.includes('leadership') || title.includes('education') || title.includes('history') ||
+                 title.includes('book') || title.includes('life') || title.includes('wisdom') ||
+                 title.includes('personal') || title.includes('character') || title.includes('principle') ||
+                 title.includes('lesson') || title.includes('story') || title.includes('human') ||
+                 title.includes('society') || title.includes('ethics') || title.includes('moral') ||
+                 title.includes('teenager') || title.includes('phone') || title.includes('school') ||
+                 title.includes('aesop') || title.includes('fable') || title.includes('sustainable') ||
+                 title.includes('remote') || title.includes('loneliness') || title.includes('enduring');
+        });
+
+        if (nonMarketArticles.length > 0) {
+          const topics = nonMarketArticles.map((article: any) => {
+            const title = article.title.toLowerCase();
+            if (title.includes('culture') || title.includes('values')) return 'cultural insights';
+            if (title.includes('philosophy') || title.includes('wisdom')) return 'philosophical perspectives';
+            if (title.includes('leadership') || title.includes('character')) return 'leadership principles';
+            if (title.includes('education') || title.includes('lesson')) return 'educational themes';
+            if (title.includes('book') || title.includes('story')) return 'literary analysis';
+            if (title.includes('history') || title.includes('human')) return 'historical context';
+            return 'timeless ideas';
+          });
+          
+          const uniqueTopics = Array.from(new Set(topics));
+          nonMarketTopics = `The report also explores ${uniqueTopics.slice(0, 2).join(' and ')} to provide readers with perspective beyond the financial world.`;
+        }
       }
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
@@ -868,7 +900,7 @@ HARD RULES:
 • Use **friendly but professional tone**
 • Paragraph format is fine, but use bullets for the insights section
 • DO NOT use phrases like "Article 1," "titled," or "the report outlines"
-• Include a short paragraph (~30 words) noting that the report also explores important non-market topics — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world
+• Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
 
 STRUCTURE TO FOLLOW:
 
