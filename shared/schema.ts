@@ -215,13 +215,29 @@ export type InsertEmailHistory = z.infer<typeof insertEmailHistorySchema>;
 export type LeadEmailHistory = typeof lead_email_history.$inferSelect;
 export type InsertLeadEmailHistory = z.infer<typeof insertLeadEmailHistorySchema>;
 
+export const report_summaries = pgTable("report_summaries", {
+  id: serial("id").primaryKey(),
+  content_report_id: integer("content_report_id").references(() => content_reports.id).notNull(),
+  parsed_summary: text("parsed_summary").notNull(),
+  summary_type: text("summary_type").notNull().default("wiltw_parser"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const insertReadingHistorySchema = createInsertSchema(reading_history).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertReportSummarySchema = createInsertSchema(report_summaries).omit({
   id: true,
   created_at: true,
 });
 
 export type ReadingHistory = typeof reading_history.$inferSelect;
 export type InsertReadingHistory = z.infer<typeof insertReadingHistorySchema>;
+
+export type ReportSummary = typeof report_summaries.$inferSelect;
+export type InsertReportSummary = z.infer<typeof insertReportSummarySchema>;
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;

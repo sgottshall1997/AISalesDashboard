@@ -1,10 +1,11 @@
 import { 
-  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history,
+  clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
   type AiSuggestion, type InsertAiSuggestion, type EmailHistory, type InsertEmailHistory,
   type ReadingHistory, type InsertReadingHistory, type LeadEmailHistory, type InsertLeadEmailHistory,
+  type ReportSummary, type InsertReportSummary,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -89,11 +90,16 @@ export interface IStorage {
   deleteLeadEmailHistory(emailId: number): Promise<boolean>;
   deleteAllLeadEmailHistory(leadId: number): Promise<boolean>;
   
+  // Report summaries
+  getReportSummary(contentReportId: number): Promise<ReportSummary | undefined>;
+  createReportSummary(summary: InsertReportSummary): Promise<ReportSummary>;
+  getAllReportSummaries(): Promise<(ReportSummary & { report: ContentReport })[]>;
+
   // AI suggestions for invoices and leads
   getInvoiceAISuggestion(invoiceId: number): Promise<any>;
   generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any>;
   getLeadAISuggestion(leadId: number): Promise<any>;
-  generateLeadFollowUp(lead: any, emailHistory: LeadEmailHistory[], contentReports: ContentReport[]): Promise<any>;
+  generateLeadFollowUp(lead: any, emailHistory: LeadEmailHistory[], contentReports: ContentReport[], reportSummaries?: ReportSummary[]): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
