@@ -19,42 +19,44 @@ export async function generateThemeBasedEmailSuggestions(
   reports: any[]
 ): Promise<ContentSuggestion[]> {
   try {
+    if (!reports || reports.length === 0) {
+      return [];
+    }
+
     const reportData = reports.map(report => ({
       title: report.title,
       tags: report.tags || [],
       summary: report.content_summary || '',
-      content: report.full_content ? report.full_content.substring(0, 1500) : '',
+      content: report.full_content ? report.full_content.substring(0, 2000) : '',
       publishedDate: report.published_date
     }));
 
-    const prompt = `Analyze the following 13D Research reports (WILTW & WATMTU) to identify themes and suggest compelling email topics for institutional investors:
+    const prompt = `You are analyzing 13D Research reports to create INVESTMENT-FOCUSED email suggestions. 
 
-Reports: ${JSON.stringify(reportData)}
+STRICT REQUIREMENTS:
+- Do NOT mention client engagement, clicks, or user behavior
+- Focus ONLY on investment themes from the actual report content
+- Create suggestions based on market insights, not marketing metrics
 
-Based on the ACTUAL CONTENT from these reports, identify investment themes and market insights. Focus on:
+Report Data: ${JSON.stringify(reportData)}
 
-1. FREQUENT THEMES - Investment topics that appear across multiple reports (commodities, paradigm shifts, market cycles, asset allocation)
-2. EMERGING TRENDS - New market developments or investment opportunities mentioned in recent reports
-3. CROSS-SECTOR CONNECTIONS - How different markets/sectors relate (precious metals, inflation, bonds, equities)
-4. DEEP DIVE OPPORTUNITIES - Complex investment themes that warrant detailed follow-up analysis
+From these WILTW and WATMTU reports, identify 3-4 investment themes:
 
-IMPORTANT: Base suggestions ONLY on the actual content provided. Look for:
-- Specific investment strategies mentioned
-- Market commentary and predictions
-- Asset allocation recommendations
-- Economic themes and philosophical insights
-- References to specific sectors, commodities, or markets
+1. COMMODITIES & INFLATION - Analysis of precious metals, commodities markets, inflation hedges
+2. MARKET PARADIGM SHIFTS - Discussion of new market leaders, sector rotations, asset allocation changes  
+3. GEOPOLITICAL INVESTMENTS - China markets, contrarian opportunities, global economic themes
+4. DEEP INVESTMENT ANALYSIS - Complex financial strategies, portfolio allocation insights
 
-For each suggestion, provide:
-- type: one of "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
-- title: compelling email subject line focused on investment insights
-- description: what specific investment angle the email would cover
-- emailAngle: unique perspective based on the report content
-- supportingReports: array of specific report titles containing this theme
-- keyPoints: 3-4 specific insights from the reports
-- priority: "high" for major investment themes, "medium" for sector-specific, "low" for general insights
+For each theme found in the reports, create:
+- type: "frequent_theme", "emerging_trend", "cross_sector", or "deep_dive"
+- title: Professional email subject focused on investment opportunity
+- description: Investment angle based on actual report content
+- emailAngle: Specific market perspective from the reports
+- supportingReports: Array of report titles that contain this theme
+- keyPoints: 3-4 actual insights from the report content
+- priority: "high", "medium", or "low"
 
-Return JSON with "suggestions" array containing these objects.`;
+Return only JSON: {"suggestions": [...]}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

@@ -1778,8 +1778,17 @@ Keep the summary under 200 words and focus on actionable insights.`;
         return res.json([]);
       }
 
+      console.log(`Analyzing ${reports.length} reports for theme-based suggestions...`);
+      
       const { generateThemeBasedEmailSuggestions } = await import("./ai");
       const suggestions = await generateThemeBasedEmailSuggestions(reports);
+      
+      console.log(`Generated ${suggestions.length} theme-based suggestions`);
+      
+      // Set headers to prevent caching
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       
       res.json(suggestions);
     } catch (error) {
