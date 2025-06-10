@@ -903,40 +903,37 @@ STRUCTURE TO FOLLOW:
 
 ---
 
-**Subject**: [Concise market insight or theme – max 8 words]  
+**Subject**: [Natural, conversational subject line – max 8 words]
 
 Hi ${lead.name},
 
-I hope you're doing well. Based on [reference to their interests/previous discussion], I wanted to share a few key insights from a report that closely aligns with your strategic focus:
+[Natural greeting with seasonal/personal touch] I was going through one of our latest reports and [conversational transition about why this matters to them based on their interests].
 
-• [Insight 1 – concise market data or trend with specific details]
-• [Insight 2 – another aligned insight with actionable intelligence]
-• [Insight 3 – optional third insight if space allows]  
+[Present insights in a flowing, conversational way - mix of bullets and natural sentences]
 
-We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
+More broadly, [broader market perspective in casual, natural language].
 
-The report also explores important non-market topics — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world.
+[If non-market topics exist, weave them in naturally like: "The report also includes an unexpected section on [topic] and how [relevance]—definitely not your typical market writeup, but pretty fascinating."]
 
-Let me know if you would like me to pull some older reports on specific topics of interest.
+Let me know if you'd like me to dig up anything specific or send over past reports that line up with this view.
 
+Best,
 Spencer
 
 ---
 
 TONE GUIDELINES:
-• Warm and conversational, not robotic
-• Natural flow between sentences  
-• Set up bullet points with a framing sentence
-• Smooth transitions, avoid mechanical phrases
-• End with friendly, clear CTA
-• Sound like a knowledgeable colleague sharing insights
-
-REPORT ATTRIBUTION - MANDATORY:
-• MUST add report title in parentheses after EVERY bullet point
-• Format exactly as: (WILTW) or (WATMTU) or (Report Title)
-• This is REQUIRED - do not skip the parenthetical citations
-• Use the actual report title: ${reportTitle}
-• Example: "Gold prices surged 12% as tensions rose. (${reportTitle})"
+• Write like Spencer is personally sharing insights with a colleague
+• Use natural, conversational language: "Hope you're doing well", "I was going through", "thought you might find this interesting"
+• Vary sentence structure - mix short punchy statements with longer explanatory ones
+• Include casual transitions: "More broadly", "And", "Plus"
+• Weave insights naturally into conversation rather than rigid bullet format
+• End casually: "Let me know if you'd like me to dig up anything specific"
+• Avoid corporate speak - sound human and approachable
+• Use seasonal references: "Hope you're enjoying the start of summer"
+• Include conversational connectors: "And", "Plus", "More broadly"
+• Mix sentence lengths for natural rhythm
+• End with casual helpfulness rather than formal CTAs
 
 EXAMPLE:
 
@@ -961,7 +958,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are an expert email specialist for 13D Research. Generate warm, conversational emails that sound like a knowledgeable colleague sharing insights. CRITICAL: You MUST add report title in parentheses after EVERY bullet point - this is mandatory. Follow the structure provided but prioritize natural flow and human tone. Avoid robotic or mechanical language. Set up bullet points with framing sentences. Use smooth transitions. End with friendly, clear CTAs. Maximum 250 words total."
+            content: "You are Spencer from 13D Research writing a personal email to a colleague. Write in a natural, conversational tone like you're genuinely sharing interesting insights you just discovered. Use casual language, varied sentence structure, and natural transitions. Include seasonal greetings, conversational phrases like 'I was going through' or 'thought you might find this interesting'. Present insights in a flowing conversation rather than rigid bullets. End casually with helpful offers. NO source citations or parenthetical references. Maximum 280 words."
           },
           {
             role: "user",
@@ -974,11 +971,11 @@ Spencer`;
 
       let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
       
-      // Enforce strict 250-word limit with post-processing
+      // Enforce strict 280-word limit with post-processing
       const words = emailSuggestion.split(/\s+/);
-      if (words.length > 250) {
-        // Truncate to 250 words and ensure proper ending
-        const truncated = words.slice(0, 248).join(' ');
+      if (words.length > 280) {
+        // Truncate to 280 words and ensure proper ending
+        const truncated = words.slice(0, 278).join(' ');
         emailSuggestion = truncated + "... Let me know if you'd like to discuss further.";
       }
       
