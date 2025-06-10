@@ -850,40 +850,46 @@ STRUCTURE TO FOLLOW:
 
 **Subject**: [Concise market insight or theme – max 8 words]  
 
-Hi ${lead.name},  
+Hi ${lead.name},
 
-I hope you're doing well. Based on your interest in ${lead.interest_tags?.join(', ') || 'investment research'}, I wanted to share a few key takeaways from our recent report that I believe you'll find highly relevant.  
+I hope you're doing well. Based on [reference to their interests/previous discussion], I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• [Insight 1 – concise market data or trend, max 25 words]  
-• [Insight 2 – another aligned insight, max 25 words]  
-• [Insight 3 – optional, only if still within 190 words]  
+• [Insight 1 – concise market data or trend with specific details]  
+• [Insight 2 – another aligned insight with actionable intelligence]  
+• [Insight 3 – optional third insight if space allows]  
 
-These insights reflect what we're seeing broadly at 13D — a strategic shift toward [summary of market direction]. Our research is designed to help investors like you stay ahead of macroeconomic shifts, policy changes, and long-cycle trends.  
+We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
-Let me know if you would like me to send over some older relevant reports on topics of interest. 
+Let me know if you would like me to pull some older reports on specific topics of interest.
 
-Best regards,  
 Spencer
 
 ---
 
+TONE GUIDELINES:
+• Warm and conversational, not robotic
+• Natural flow between sentences  
+• Set up bullet points with a framing sentence
+• Smooth transitions, avoid mechanical phrases
+• End with friendly, clear CTA
+• Sound like a knowledgeable colleague sharing insights
+
 EXAMPLE:
 
-**Subject**: Gold, Inflation, and the Dollar Shift  
+**Subject**: Gold, USD Weakness, and China Tailwinds
 
-Hi Monica,  
+Hi Monica,
 
-I hope you're doing well. Based on your interest in precious metals and geopolitics, I wanted to share a few quick insights from our latest 13D research that may be timely for your strategy:  
+I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• Gold-to-CPI ratio just broke a 45-year downtrend, suggesting renewed strength in metals.  
-• Silver miners (SIL, SILJ) are outperforming global indices by double digits.  
-• USD under pressure as inflation expectations rise, boosting commodity tailwinds.  
+• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges.
+• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool.
+• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities.
 
-At 13D, we're seeing a broad asset rotation toward hard assets and non-U.S. exposures. Our research provides early intelligence to help position portfolios before these shifts become consensus.  
+We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
-Let me know if you would like me to send over some older relevant reports on topics of interest. 
+Let me know if you would like me to pull some older reports on specific topics of interest.
 
-Best regards,  
 Spencer`;
 
       const emailResponse = await openai.chat.completions.create({
@@ -891,7 +897,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are an expert email specialist for 13D Research. Follow the exact structure and format provided. Generate personalized, concise prospect emails that are friendly but professional. Use the EXACT template structure shown in the prompt. Maximum 250 words total. Focus on relevance to the prospect's specific interests and provide actionable market insights."
+            content: "You are an expert email specialist for 13D Research. Generate warm, conversational emails that sound like a knowledgeable colleague sharing insights. Follow the structure provided but prioritize natural flow and human tone. Avoid robotic or mechanical language. Set up bullet points with framing sentences. Use smooth transitions. End with friendly, clear CTAs. Maximum 250 words total."
           },
           {
             role: "user",
