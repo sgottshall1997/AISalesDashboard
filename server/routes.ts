@@ -57,7 +57,7 @@ Structure your analysis for investment professionals who need to make portfolio 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  insertEmailHistorySchema, clients, invoices, client_engagements, email_history
+  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
 } from "@shared/schema";
 
 // WATMTU Report Parser - For market analysis reports
@@ -261,15 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const stats = await storage.getDashboardStats();
       
-      // Get hot leads count
-      const hotLeads = await db.select({ count: sql`COUNT(*)` }).from(leads)
-        .where(eq(leads.likelihood_of_closing, "high"));
-      
       const overview = {
-        stats: {
-          ...stats,
-          hotLeads: Number(hotLeads[0]?.count || 0)
-        },
+        stats,
         recentActivity: [], // Empty array since we replaced this section
         priorityActions: [
           {
