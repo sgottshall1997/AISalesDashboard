@@ -802,6 +802,30 @@ export default function LeadDetail() {
                   Generate a personalized follow-up email based on recent reports and the lead's interests.
                 </p>
                 
+                {reportSummaries && reportSummaries.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="report-select" className="text-sm font-medium">
+                      Reference Specific Report (Optional)
+                    </Label>
+                    <Select 
+                      value={selectedReportId?.toString() || ""} 
+                      onValueChange={(value) => setSelectedReportId(value ? parseInt(value) : null)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a report to reference..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">No specific report</SelectItem>
+                        {reportSummaries.map((summary: any) => (
+                          <SelectItem key={summary.id} value={summary.content_report_id.toString()}>
+                            {summary.report.title} ({summary.summary_type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                
                 <Button 
                   className="w-full" 
                   onClick={() => {
