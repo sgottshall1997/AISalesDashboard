@@ -24,6 +24,103 @@ interface DashboardStats {
   atRiskRenewals: number;
 }
 
+function SeverelyOverdueInvoices() {
+  const { data: overdueInvoices, isLoading } = useQuery({
+    queryKey: ["/api/invoices/severely-overdue"],
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium text-gray-900">
+            Invoices Over 45 Days Past Due
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!overdueInvoices || overdueInvoices.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium text-gray-900">
+            Invoices Over 45 Days Past Due
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <CircleAlert className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">No severely overdue invoices</p>
+            <p className="text-sm text-gray-400">All invoices are current or within normal payment terms</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const totalOverdueAmount = overdueInvoices.reduce((sum: number, invoice: any) => 
+    sum + parseFloat(invoice.amount), 0
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-medium text-gray-900">
+          Invoices Over 45 Days Past Due
+        </CardTitle>
+        <div className="text-sm text-gray-600">
+          {overdueInvoices.length} invoices • ${totalOverdueAmount.toLocaleString()} total
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {overdueInvoices.slice(0, 5).map((invoice: any) => {
+            const daysOverdue = Math.floor(
+              (new Date().getTime() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            
+            return (
+              <div key={invoice.id} className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <CircleAlert className="h-4 w-4 text-red-500" />
+                    <span className="font-medium text-red-800">{invoice.client?.name || 'Unknown Client'}</span>
+                    <Badge variant="destructive" className="text-xs">
+                      {daysOverdue} days
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-sm text-red-700">
+                    Invoice #{invoice.invoice_number} • ${parseFloat(invoice.amount).toLocaleString()}
+                  </div>
+                </div>
+                <Button variant="destructive" size="sm">
+                  Follow Up
+                </Button>
+              </div>
+            );
+          })}
+          {overdueInvoices.length > 5 && (
+            <div className="text-center pt-2">
+              <Button variant="outline" size="sm">
+                View All {overdueInvoices.length} Overdue
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Overview() {
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
@@ -137,70 +234,9 @@ export default function Overview() {
           </Card>
         </div>
 
-        {/* Recent Activity & Alerts */}
+        {/* Critical Business Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent AI Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flow-root">
-                <ul className="-mb-8 space-y-6">
-                  <li>
-                    <div className="relative flex space-x-3">
-                      <div>
-                        <span className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
-                          <Bot className="h-4 w-4 text-white" />
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                        <div>
-                          <p className="text-sm text-gray-500">AI drafted follow-up email for <span className="font-medium text-gray-900">Acme Corp</span></p>
-                        </div>
-                        <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                          2 hours ago
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                  <li>
-                    <div className="relative flex space-x-3">
-                      <div>
-                        <span className="h-8 w-8 rounded-full bg-primary flex items-center justify-center ring-8 ring-white">
-                          <BarChart className="h-4 w-4 text-white" />
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Updated engagement analytics for Report #66</p>
-                        </div>
-                        <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                          5 hours ago
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                  <li>
-                    <div className="relative flex space-x-3">
-                      <div>
-                        <span className="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center ring-8 ring-white">
-                          <Flag className="h-4 w-4 text-white" />
-                        </span>
-                      </div>
-                      <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                        <div>
-                          <p className="text-sm text-gray-500">Flagged <span className="font-medium text-gray-900">Beta Fund</span> for renewal risk</p>
-                        </div>
-                        <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                          1 day ago
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+          <SeverelyOverdueInvoices />
 
           <Card>
             <CardHeader>
