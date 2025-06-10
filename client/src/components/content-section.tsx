@@ -269,41 +269,91 @@ export default function ContentSection() {
                       }
                     };
 
-                    const getTypeColor = (type: string) => {
+                    const getTypeStyles = (type: string) => {
                       switch (type) {
-                        case "frequent_theme": return "blue";
-                        case "emerging_trend": return "green";
-                        case "cross_sector": return "purple";
-                        case "deep_dive": return "orange";
-                        default: return "gray";
+                        case "frequent_theme": return {
+                          containerClass: "bg-blue-50 border border-blue-200 rounded-lg p-4",
+                          iconClass: "flex-shrink-0 text-blue-600",
+                          titleClass: "text-sm font-medium text-blue-800",
+                          descClass: "text-sm text-blue-700 mb-2",
+                          angleClass: "text-xs text-blue-600 mb-2 font-medium",
+                          pointsClass: "text-xs text-blue-600 space-y-1",
+                          pointsHeaderClass: "text-xs text-blue-600 font-medium mb-1",
+                          reportsClass: "text-xs text-blue-600 mb-3",
+                          buttonClass: "bg-blue-600 hover:bg-blue-700 text-white"
+                        };
+                        case "emerging_trend": return {
+                          containerClass: "bg-green-50 border border-green-200 rounded-lg p-4",
+                          iconClass: "flex-shrink-0 text-green-600",
+                          titleClass: "text-sm font-medium text-green-800",
+                          descClass: "text-sm text-green-700 mb-2",
+                          angleClass: "text-xs text-green-600 mb-2 font-medium",
+                          pointsClass: "text-xs text-green-600 space-y-1",
+                          pointsHeaderClass: "text-xs text-green-600 font-medium mb-1",
+                          reportsClass: "text-xs text-green-600 mb-3",
+                          buttonClass: "bg-green-600 hover:bg-green-700 text-white"
+                        };
+                        case "cross_sector": return {
+                          containerClass: "bg-purple-50 border border-purple-200 rounded-lg p-4",
+                          iconClass: "flex-shrink-0 text-purple-600",
+                          titleClass: "text-sm font-medium text-purple-800",
+                          descClass: "text-sm text-purple-700 mb-2",
+                          angleClass: "text-xs text-purple-600 mb-2 font-medium",
+                          pointsClass: "text-xs text-purple-600 space-y-1",
+                          pointsHeaderClass: "text-xs text-purple-600 font-medium mb-1",
+                          reportsClass: "text-xs text-purple-600 mb-3",
+                          buttonClass: "bg-purple-600 hover:bg-purple-700 text-white"
+                        };
+                        case "deep_dive": return {
+                          containerClass: "bg-orange-50 border border-orange-200 rounded-lg p-4",
+                          iconClass: "flex-shrink-0 text-orange-600",
+                          titleClass: "text-sm font-medium text-orange-800",
+                          descClass: "text-sm text-orange-700 mb-2",
+                          angleClass: "text-xs text-orange-600 mb-2 font-medium",
+                          pointsClass: "text-xs text-orange-600 space-y-1",
+                          pointsHeaderClass: "text-xs text-orange-600 font-medium mb-1",
+                          reportsClass: "text-xs text-orange-600 mb-3",
+                          buttonClass: "bg-orange-600 hover:bg-orange-700 text-white"
+                        };
+                        default: return {
+                          containerClass: "bg-gray-50 border border-gray-200 rounded-lg p-4",
+                          iconClass: "flex-shrink-0 text-gray-600",
+                          titleClass: "text-sm font-medium text-gray-800",
+                          descClass: "text-sm text-gray-700 mb-2",
+                          angleClass: "text-xs text-gray-600 mb-2 font-medium",
+                          pointsClass: "text-xs text-gray-600 space-y-1",
+                          pointsHeaderClass: "text-xs text-gray-600 font-medium mb-1",
+                          reportsClass: "text-xs text-gray-600 mb-3",
+                          buttonClass: "bg-gray-600 hover:bg-gray-700 text-white"
+                        };
                       }
                     };
 
-                    const color = getTypeColor(suggestion.type);
+                    const styles = getTypeStyles(suggestion.type);
                     
                     return (
-                      <div key={index} className={`bg-${color}-50 border border-${color}-200 rounded-lg p-4`}>
+                      <div key={index} className={styles.containerClass}>
                         <div className="flex items-start">
-                          <div className={`flex-shrink-0 text-${color}-600`}>
+                          <div className={styles.iconClass}>
                             {getTypeIcon(suggestion.type)}
                           </div>
                           <div className="ml-3 flex-1">
                             <div className="flex items-center justify-between mb-2">
-                              <p className={`text-sm font-medium text-${color}-800`}>{suggestion.title}</p>
+                              <p className={styles.titleClass}>{suggestion.title}</p>
                               <Badge variant={suggestion.priority === "high" ? "destructive" : suggestion.priority === "medium" ? "default" : "secondary"}>
                                 {suggestion.priority}
                               </Badge>
                             </div>
-                            <p className={`text-sm text-${color}-700 mb-2`}>
+                            <p className={styles.descClass}>
                               {suggestion.description}
                             </p>
-                            <p className={`text-xs text-${color}-600 mb-2 font-medium`}>
+                            <p className={styles.angleClass}>
                               Email angle: {suggestion.emailAngle}
                             </p>
                             {suggestion.keyPoints && suggestion.keyPoints.length > 0 && (
                               <div className="mb-3">
-                                <p className={`text-xs text-${color}-600 font-medium mb-1`}>Key points to cover:</p>
-                                <ul className={`text-xs text-${color}-600 space-y-1`}>
+                                <p className={styles.pointsHeaderClass}>Key points to cover:</p>
+                                <ul className={styles.pointsClass}>
                                   {suggestion.keyPoints.slice(0, 3).map((point: string, idx: number) => (
                                     <li key={idx}>• {point}</li>
                                   ))}
@@ -311,14 +361,14 @@ export default function ContentSection() {
                               </div>
                             )}
                             {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
-                              <p className={`text-xs text-${color}-600 mb-3`}>
+                              <p className={styles.reportsClass}>
                                 Supporting reports: {suggestion.supportingReports.slice(0, 2).join(", ")}
                                 {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
                               </p>
                             )}
                             <Button 
                               size="sm" 
-                              className={`bg-${color}-600 hover:bg-${color}-700 text-white`}
+                              className={styles.buttonClass}
                               onClick={() => {
                                 setCurrentSuggestion(suggestion);
                                 generateEmailMutation.mutate(suggestion);
