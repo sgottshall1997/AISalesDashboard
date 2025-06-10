@@ -407,13 +407,21 @@ export default function ContentSection() {
                             )}
                             <div className="mt-3">
                               <button
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   console.log('=== BUTTON CLICKED ===');
                                   console.log('Button clicked for:', suggestion.title, suggestion.type);
-                                  setCurrentSuggestion(suggestion);
-                                  generateEmailMutation.mutate(suggestion);
+                                  
+                                  // Direct API call test
+                                  try {
+                                    setCurrentSuggestion(suggestion);
+                                    console.log('Starting email generation...');
+                                    await generateEmailMutation.mutateAsync(suggestion);
+                                    console.log('Email generation completed successfully');
+                                  } catch (error) {
+                                    console.error('Button click error:', error);
+                                  }
                                 }}
                                 disabled={generateEmailMutation.isPending}
                                 style={{
