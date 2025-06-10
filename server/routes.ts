@@ -763,50 +763,48 @@ For each article, analyze and format exactly as follows:
 
 Separate each article analysis with a horizontal line (---) and maintain consistent formatting throughout.`;
 
-        // Use actual WILTW content structure
-        const actualWILTWContent = `WHAT I LEARNED THIS WEEK - June 5, 2025
+        userPrompt = `Please analyze this complete WILTW report titled "${title}" and parse ALL articles according to the format specified. Extract all numbered article sections from the actual report content provided:
 
-1. STRATEGY & ASSET ALLOCATION & PERFORMANCE OF HIGH CONVICTION IDEAS
-Since September 2020, we have strongly argued that a classic paradigm shift into new market leaders was starting, featuring commodities, commodity-related and inflation-sensitive sectors. The ratio of gold to the U.S. Consumer Price Index broke-out last September from a 45-year downtrend-line. The outperformance of gold miners versus major U.S. stock market indices is breaking-out. Silver is starting to outperform gold. Agricultural commodities and related-stocks are starting to rise.
+${content}
 
-2. IN THE LAST TWO WEEKS, WE WERE IN CHINA. HERE IS WHAT WE LEARNED.
-We visited Beijing, Shanghai and Hangzhou, meeting with 150 people including central bank members, mayors, economic advisors, entrepreneurs in AI and robotics, venture capitalists, and CEOs. Key takeaways under four umbrellas: Trade and Tariffs, Geopolitics, Technology, and Transportation.
+IMPORTANT: Analyze ALL articles found in the actual report content. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+      } else if (promptType === "watmtu_parser") {
+        systemPrompt = `You are an expert investment research analyst specializing in market analysis and technical indicators. You've received a WATMTU (What Are The Markets Telling Us) report from 13D Research focusing on market trends, technical analysis, and asset allocation strategies.
 
-3. THE RISKS TO THE USD INDEX ARE MOUNTING
-The challenges of weaker growth, rising inflation expectations and higher bond yields are compounded by the possibility that U.S. policymakers may institute a "revenge tax" on foreign holders of U.S. assets. Established gold-mining shares are breaking out, and even junior miners are hitting new highs, suggesting the gold bull market is alive and well.
+Analyze the report and format as follows:
 
-4. GEN Z RELIGIOUS RESURGENCE
-Gen Z, and particularly young men, are leading a religious resurgence in the U.S. "We are seeing an openness to transcendence among young people that we haven't seen for some time."
+**WATMTU Report Analysis: [Report Title]**
 
-5. EU INTER-COUNTRY BARRIERS
-Will the EU cut its inter-country barriers, which are equivalent to tariffs of 45% for manufacturing and 110% for services? The answer is uncertain but the odds are growing that Trump's policies will make Europe great again.
+- **Core Investment Thesis:** Summarize the main market outlook and strategic positioning in 2-3 sentences.
 
-6. TERRORISM AS THE FUTURE OF WAR
-Analysis of whether "Terrorism" represents the future of warfare in modern conflicts.
+- **Key Market Developments:**
+- [Technical breakouts and pattern analysis]
+- [Sector performance and relative strength]
+- [Asset allocation recommendations]
+- [Commodity and precious metals insights]
 
-7. U.S. CRITICAL-MINERAL PARTNERSHIPS
-The U.S. recognizes that global partnerships are vital to meeting its critical-minerals demand. Part I of a series on U.S. critical-mineral partnerships overseas, beginning with the Gulf states.
+- **Specific Investment Opportunities:**
+- [ETFs, indices, and specific sectors mentioned]
+- [Performance metrics and percentages]
+- [Technical levels and price targets]
 
-8. AI ADOPTION PRODUCTIVITY GAINS
-AI adoption is widespread, but the productivity and revenue gains are scattered and limited. Analysis of implications for investors.
+- **Portfolio Allocation Recommendations:**
+- [Percentage allocations by sector/asset class]
+- [Strategic positioning advice]
 
-9. CHINA SHAREHOLDER MOVEMENT
-A massive shareholder movement is sweeping across China, yet this has largely been masked by the tariff noise. A "dividend culture" is emerging in Chinese stocks.
+- **Risk Factors & Market Warnings:**
+- [Potential downside risks]
+- [Market timing considerations]
 
-10. GLOBAL WATER CRISIS
-Global warming is causing the Earth's landmasses to dry out permanently. Soil moisture levels have plummeted, prompting ever-more groundwater pumping. We reached peak water 25 years ago.
+- **Recommended Names:** [List all specific ETFs, indices, stocks, and investment vehicles mentioned with their symbols]
 
-11. GREEK MYTHOLOGY LESSONS
-What we can learn from Greek mythology and its applications to modern investment thinking.
+- **Category Tags:** [Choose relevant tags: Technical Analysis, Precious Metals, Commodities, Asset Allocation, Market Trends, ETFs, Mining, Currency]`;
 
-12. TOP 5 BOOKS FOR TEENAGERS
-The top 5 books that every teenager should read for personal development and education.`;
+        userPrompt = `Please analyze this WATMTU report titled "${title}" focusing on the market analysis, technical patterns, and investment recommendations. Extract specific performance data, ETF names, percentage allocations, and technical analysis:
 
-        userPrompt = `Please analyze this complete WILTW report titled "${title}" and parse ALL articles (1-12) according to the format specified. Make sure to process the entire document and provide analysis for every numbered article section:
+${content}
 
-${actualWILTWContent}
-
-IMPORTANT: Analyze ALL 12 articles in the report. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+IMPORTANT: Focus on extracting specific investment names, performance percentages, technical breakout patterns, and asset allocation percentages mentioned in the report.`;
       } else {
         // Fallback to general summarization
         systemPrompt = "You are an expert investment research analyst. Provide a comprehensive summary of the given report.";
@@ -834,7 +832,7 @@ ${content}`;
       const summary = response.choices[0].message.content;
       
       // Store the generated summary
-      if (promptType === "wiltw_parser") {
+      if (promptType === "wiltw_parser" || promptType === "watmtu_parser") {
         try {
           // Check if summary already exists
           const existingSummary = await storage.getReportSummary(reportId);
@@ -842,7 +840,7 @@ ${content}`;
             await storage.createReportSummary({
               content_report_id: reportId,
               parsed_summary: summary,
-              summary_type: "wiltw_parser"
+              summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
           }
         } catch (error) {

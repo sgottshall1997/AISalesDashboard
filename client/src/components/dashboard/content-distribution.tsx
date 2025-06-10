@@ -104,20 +104,26 @@ export function ContentDistribution() {
       const report = reports.find((r: any) => r.id.toString() === reportId);
       if (!report) throw new Error("Report not found");
 
+      // Automatically detect report type and use appropriate parser
+      const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
+      const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
+
       const response = await apiRequest("POST", "/api/ai/summarize-report", {
         reportId: report.id,
         title: report.title,
         content: report.full_content || report.content_summary,
-        promptType: "wiltw_parser"
+        promptType: promptType
       });
       return response.json();
     },
     onSuccess: (data) => {
       setReportSummary(data.summary);
       setIsGeneratingSummary(false);
+      const report = reports.find((r: any) => r.id.toString() === selectedReport);
+      const isWATMTU = report?.title.includes("WATMTU") || report?.type === "WATMTU Report";
       toast({
         title: "Report Summarized",
-        description: "WILTW article analysis completed successfully.",
+        description: `${isWATMTU ? "WATMTU market analysis" : "WILTW article analysis"} completed successfully.`,
       });
     },
     onError: () => {
