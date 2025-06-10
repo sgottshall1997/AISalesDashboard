@@ -808,14 +808,14 @@ export default function LeadDetail() {
                       Reference Specific Report (Optional)
                     </Label>
                     <Select 
-                      value={selectedReportId?.toString() || ""} 
-                      onValueChange={(value) => setSelectedReportId(value ? parseInt(value) : null)}
+                      value={selectedReportId?.toString() || "none"} 
+                      onValueChange={(value) => setSelectedReportId(value === "none" ? null : parseInt(value))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a report to reference..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No specific report</SelectItem>
+                        <SelectItem value="none">No specific report</SelectItem>
                         {reportSummaries.map((summary: any) => (
                           <SelectItem key={summary.id} value={summary.content_report_id.toString()}>
                             {summary.report.title} ({summary.summary_type})
