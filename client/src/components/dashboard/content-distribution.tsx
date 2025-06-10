@@ -18,13 +18,16 @@ import {
   BarChart3,
   Users,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Upload
 } from "lucide-react";
 
 export function ContentDistribution() {
   const [selectedReport, setSelectedReport] = useState<string>("");
   const [reportSummary, setReportSummary] = useState<string>("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [reportType, setReportType] = useState<string>("wiltw");
   const { toast } = useToast();
   
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
@@ -40,6 +43,60 @@ export function ContentDistribution() {
   const { data: suggestions = [] } = useQuery({
     queryKey: ["/api/ai/content-suggestions"],
     queryFn: () => dashboardApi.getContentSuggestions(),
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+      // Auto-detect report type based on filename
+      if (file.name.includes('WATMTU')) {
+        setReportType('watmtu');
+      } else if (file.name.includes('WILTW')) {
+        setReportType('wiltw');
+      }
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please select a PDF file.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const uploadReportMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      formData.append('reportType', reportType);
+      
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Report uploaded successfully",
+        description: `${reportType.toUpperCase()} report "${data.report.title}" has been processed.`,
+      });
+      setSelectedFile(null);
+      // Refresh reports list
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload failed",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive",
+      });
+    },
   });
 
   const summarizeReportMutation = useMutation({
@@ -151,8 +208,69 @@ export function ContentDistribution() {
     <div className="space-y-6">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Distribution Tracker</h2>
-        <p className="text-gray-600">Monitor WILTW report engagement and optimize client outreach</p>
+        <p className="text-gray-600">Monitor WILTW & WATMTU report engagement and optimize client outreach</p>
       </div>
+
+      {/* PDF Upload Section */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="w-5 h-5" />
+            Upload PDF Reports
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="report-type" className="block text-sm font-medium mb-2">
+                Report Type
+              </label>
+              <Select value={reportType} onValueChange={setReportType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select report type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="wiltw">WILTW - What I Learned This Week</SelectItem>
+                  <SelectItem value="watmtu">WATMTU - What Are The Markets Telling Us</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label htmlFor="pdf-upload" className="block text-sm font-medium mb-2">
+                Select PDF Report
+              </label>
+              <input
+                id="pdf-upload"
+                type="file"
+                accept=".pdf"
+                onChange={handleFileUpload}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          
+          {selectedFile && (
+            <div className="p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-blue-600" />
+                <span className="text-sm font-medium text-blue-900">{selectedFile.name}</span>
+              </div>
+              <p className="text-xs text-blue-600 mt-1">
+                Size: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB | Type: {reportType.toUpperCase()}
+              </p>
+            </div>
+          )}
+
+          <Button 
+            onClick={() => selectedFile && uploadReportMutation.mutate(selectedFile)}
+            disabled={!selectedFile || uploadReportMutation.isPending}
+            className="w-full"
+          >
+            {uploadReportMutation.isPending ? "Uploading..." : "Upload & Process Report"}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Engagement Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">

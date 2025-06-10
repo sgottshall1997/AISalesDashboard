@@ -218,26 +218,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple PDF upload endpoint that works with database
+  // Enhanced PDF upload endpoint with specialized parsing
   app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {
       const file = req.file;
+      const reportType = req.body.reportType || 'wiltw';
+      
       if (!file) {
         return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      // Create basic report entry in database
+      // Parse PDF content
+      const pdfBuffer = fs.readFileSync(file.path);
+      const pdfData = await pdfParse(pdfBuffer);
+      const content = pdfData.text;
+
+      // Determine report type and parse accordingly
+      let parsedData;
+      let reportTitle;
+      let tags: string[] = [];
+      
+      if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
+        parsedData = parseWATMTUReport(content);
+        reportTitle = `WATMTU_${new Date().toISOString().split('T')[0]}`;
+        tags = ['watmtu', 'market-analysis', 'precious-metals', 'commodities'];
+      } else {
+        parsedData = parseWILTWReport(content);
+        reportTitle = `WILTW_${new Date().toISOString().split('T')[0]}`;
+        tags = ['wiltw', 'weekly-insights', 'research'];
+      }
+
+      // Create report entry in database
       const reportData = {
-        title: file.originalname.replace('.pdf', ''),
-        type: 'Research Report',
+        title: reportTitle,
+        type: reportType.toUpperCase() + ' Report',
         published_date: new Date(),
         open_rate: '0',
         click_rate: '0',
         engagement_level: 'medium' as const,
-        tags: ['research']
+        tags,
+        content_summary: parsedData.summary,
+        key_insights: parsedData.keyInsights,
+        target_audience: parsedData.targetAudience,
+        full_content: content.substring(0, 10000) // Store first 10k chars
       };
 
       const report = await storage.createContentReport(reportData);
+      
+      // Generate and store AI summary
+      try {
+        const summaryData = {
+          content_report_id: report.id,
+          summary_type: reportType === 'watmtu' ? 'market_analysis' : 'weekly_insights',
+          key_points: parsedData.keyInsights,
+          investment_themes: parsedData.investmentThemes || [],
+          market_outlook: parsedData.marketOutlook || 'Neutral',
+          risk_factors: parsedData.riskFactors || [],
+          detailed_summary: parsedData.summary
+        };
+        
+        await storage.createReportSummary(summaryData);
+      } catch (summaryError) {
+        console.error('Failed to create report summary:', summaryError);
+      }
       
       // Clean up uploaded file
       if (fs.existsSync(file.path)) {
@@ -245,9 +288,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        message: "PDF uploaded successfully",
+        message: `${reportType.toUpperCase()} report uploaded and processed successfully`,
         report,
-        note: "Basic upload complete - AI analysis can be added later"
+        parsedData,
+        reportType
       });
 
     } catch (error) {
