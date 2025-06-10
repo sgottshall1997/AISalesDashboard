@@ -869,13 +869,16 @@ When referencing insights, use format: (Article X in ${reportTitle.includes('WIL
         if (nonMarketArticles.length > 0) {
           const topics = nonMarketArticles.map((article: any) => {
             const title = article.title.toLowerCase();
+            if (title.includes('teenager') || title.includes('phone') || title.includes('sustainable')) return 'digital wellness and sustainable living';
+            if (title.includes('aesop') || title.includes('fable') || title.includes('wisdom')) return 'timeless wisdom and moral lessons';
+            if (title.includes('loneliness') || title.includes('human')) return 'social connection and human nature';
             if (title.includes('culture') || title.includes('values')) return 'cultural insights';
-            if (title.includes('philosophy') || title.includes('wisdom')) return 'philosophical perspectives';
+            if (title.includes('philosophy') || title.includes('enduring')) return 'philosophical perspectives';
             if (title.includes('leadership') || title.includes('character')) return 'leadership principles';
             if (title.includes('education') || title.includes('lesson')) return 'educational themes';
             if (title.includes('book') || title.includes('story')) return 'literary analysis';
-            if (title.includes('history') || title.includes('human')) return 'historical context';
-            return 'timeless ideas';
+            if (title.includes('history')) return 'historical context';
+            return 'life wisdom';
           });
           
           const uniqueTopics = Array.from(new Set(topics));
