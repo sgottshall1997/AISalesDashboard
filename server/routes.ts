@@ -656,14 +656,25 @@ ${relevantReports.slice(0, 3).map((report: any, i: number) =>
   `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 200) + '...' : ''}`
 ).join('\n')}
 
-Write a personalized follow-up email that follows this specific format:
+Write a highly detailed and personalized follow-up email that demonstrates deep knowledge of the selected report content. Follow this specific format:
 
-1. Brief personal greeting
-2. Report reference with title and key highlights from the summary
-3. Explain how the report would be helpful for their company and investing style based on their interests
-4. End with: "I'd be happy to search for any other relevant reports you may be interested in."
+1. Brief personal greeting referencing their company and interests
+2. Reference the specific report title and mention 2-3 SPECIFIC articles/sections from the report by name or topic
+3. For each article mentioned, provide concrete details about:
+   - The specific thesis or finding
+   - Relevant data points, names, or examples mentioned
+   - Direct implications for their investment focus areas
+4. Connect each article to their specific interests (${lead.interest_tags?.join(', ')}) with actionable insights
+5. End with: "I'd be happy to search for any other relevant reports you may be interested in."
 
-Use proper line breaks and spacing for readability. Reference specific content from the report summaries when available. Make it personal and valuable.
+CRITICAL: Be extremely specific. Instead of saying "the report covers geopolitics," say things like:
+- "Article 2 details our recent China visit where we met with 150 people including central bank members and mayors"
+- "The analysis of Gen Z religious resurgence shows specific demographic trends"
+- "The USD index risks section highlights the 'revenge tax' scenario on foreign asset holders"
+
+Extract specific company names, data points, percentages, or concrete examples from the report summary. Make each point actionable for their portfolio strategy.
+
+Use proper line breaks and spacing. Write as a senior investment advisor who has thoroughly studied the report.
 
 Format as a complete email ready to send.`;
 
