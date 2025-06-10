@@ -18,7 +18,8 @@ import {
   Bot,
   ExternalLink,
   Plus,
-  Trash2
+  Trash2,
+  Search
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ export default function LeadPipeline() {
   const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [newLead, setNewLead] = useState({
     name: "",
     email: "",
@@ -161,7 +163,20 @@ export default function LeadPipeline() {
   });
 
   const getLeadsByStage = (stage: string) => {
-    return leads?.filter(lead => lead.stage === stage) || [];
+    if (!leads) return [];
+    
+    let filteredLeads = leads.filter(lead => lead.stage === stage);
+    
+    if (searchTerm.trim()) {
+      filteredLeads = filteredLeads.filter(lead =>
+        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.interest_tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+    }
+    
+    return filteredLeads;
   };
 
   const handleGenerateEmail = (lead: Lead) => {
@@ -205,18 +220,19 @@ export default function LeadPipeline() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Pipeline Assistant</h2>
-            <p className="text-gray-600">Manage prospects and automate next-step recommendations</p>
-          </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add Lead
-              </Button>
-            </DialogTrigger>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Lead Pipeline Assistant</h2>
+              <p className="text-gray-600">Manage prospects and automate next-step recommendations</p>
+            </div>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Lead
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Add New Lead</DialogTitle>
@@ -346,6 +362,26 @@ export default function LeadPipeline() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
+          
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search prospects by name, company, email, or interests..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full"
+              />
+            </div>
+            {searchTerm && (
+              <p className="text-sm text-gray-600 mt-2">
+                Showing results for "{searchTerm}"
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Pipeline Overview */}
