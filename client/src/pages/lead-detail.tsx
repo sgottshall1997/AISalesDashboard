@@ -39,6 +39,7 @@ interface Lead {
   next_step?: string;
   notes?: string;
   interest_tags: string[];
+  how_heard?: string;
   created_at: string;
 }
 
@@ -379,6 +380,7 @@ export default function LeadDetail() {
                   company: lead.company,
                   stage: lead.stage,
                   next_step: lead.next_step,
+                  how_heard: lead.how_heard,
                 });
               }}>
                 <Edit className="w-4 h-4 mr-2" />
@@ -465,6 +467,16 @@ export default function LeadDetail() {
                       onChange={(e) => setEditData({...editData, next_step: e.target.value})}
                     />
                   </div>
+                  
+                  <div>
+                    <Label htmlFor="howHeard">How did you hear about 13D?</Label>
+                    <Input
+                      id="howHeard"
+                      value={editData.how_heard || ""}
+                      onChange={(e) => setEditData({...editData, how_heard: e.target.value})}
+                      placeholder="e.g., referral, website, LinkedIn, conference"
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -502,6 +514,13 @@ export default function LeadDetail() {
                           </Badge>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  
+                  {lead.how_heard && (
+                    <div className="flex items-center">
+                      <span className="font-medium mr-2">How heard about 13D:</span>
+                      <span>{lead.how_heard}</span>
                     </div>
                   )}
                 </div>
