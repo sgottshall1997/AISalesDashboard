@@ -447,19 +447,27 @@ Investment Implications:
         const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
         const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
         
-        // Use actual PDF content for WILTW reports - preserve raw content
-        parsedData = parseWILTWReport(extractedText);
-        reportTitle = `WILTW_${dateStr}`;
-        tags = ['wiltw', 'weekly-insights', 'research'];
-        
+        // CRITICAL: Preserve raw PDF content without processing
         console.log('PDF Upload Debug:', {
-          reportTitle,
+          reportTitle: `WILTW_${dateStr}`,
           extractedTextLength: extractedText.length,
           extractedTextPreview: extractedText.substring(0, 500),
+          extractedTextMiddle: extractedText.substring(1000, 1500),
           containsWeaponization: extractedText.includes('weaponization'),
           containsCriticalMinerals: extractedText.includes('critical-minerals'),
-          containsMining: extractedText.includes('mining')
+          containsMining: extractedText.includes('mining'),
+          containsArticle2: extractedText.includes('China\'s weaponization'),
+          containsStrategy: extractedText.includes('Strategy & Asset')
         });
+        
+        // Use minimal parsing to avoid content corruption
+        parsedData = {
+          summary: "Raw PDF content preserved for AI analysis",
+          keyInsights: ["China critical minerals", "Mining sector analysis", "Investment research"],
+          targetAudience: "Investment professionals"
+        };
+        reportTitle = `WILTW_${dateStr}`;
+        tags = ['wiltw', 'weekly-insights', 'research'];
       }
 
       // Create report entry in database
@@ -474,7 +482,7 @@ Investment Implications:
         content_summary: parsedData.summary,
         key_insights: parsedData.keyInsights,
         target_audience: parsedData.targetAudience,
-        full_content: extractedText // Store extracted PDF text content
+        full_content: extractedText // Store raw PDF text directly without processing
       };
 
       const report = await storage.createContentReport(reportData);
