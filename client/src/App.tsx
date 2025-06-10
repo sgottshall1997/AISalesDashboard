@@ -14,7 +14,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/invoice/:id" component={InvoiceDetail} />
-      <Route path="/lead/:id" component={LeadDetail} />
+      <Route path="/leads/:id" component={LeadDetail} />
       <Route path="/client/:id" component={ClientDetail} />
       <Route component={NotFound} />
     </Switch>

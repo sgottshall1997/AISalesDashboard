@@ -864,10 +864,11 @@ GOALS:
 • Include a clear CTA (e.g., invite to review the full report, book a call)
 
 HARD RULES:
-• TOTAL word count must not exceed **250 words**
+• TOTAL word count must not exceed **280 words**
 • Use **friendly but professional tone**
 • Paragraph format is fine, but use bullets for the insights section
 • DO NOT use phrases like "Article 1," "titled," or "the report outlines"
+• Include a short paragraph (~30 words) noting that the report also explores important non-market topics — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world
 
 STRUCTURE TO FOLLOW:
 
@@ -884,6 +885,8 @@ I hope you're doing well. Based on [reference to their interests/previous discus
 • [Insight 3 – optional third insight if space allows] (Article Z in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})  
 
 We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
+
+The report also explores important non-market topics — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world.
 
 Let me know if you would like me to pull some older reports on specific topics of interest.
 
