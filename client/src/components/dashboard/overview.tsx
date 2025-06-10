@@ -16,6 +16,90 @@ import {
   UserPlus
 } from "lucide-react";
 
+function SeverelyOverdueInvoices() {
+  const { data: overdueInvoices, isLoading } = useQuery({
+    queryKey: ["/api/invoices/severely-overdue"],
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium text-gray-900">
+            Invoices Over 45 Days Past Due
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!overdueInvoices || overdueInvoices.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium text-gray-900">
+            Invoices Over 45 Days Past Due
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <div className="text-green-600 mb-2">
+              <CircleAlert className="h-8 w-8 mx-auto" />
+            </div>
+            <p className="text-sm text-gray-500">No severely overdue invoices</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-medium text-gray-900 flex items-center">
+          <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+          Invoices Over 45 Days Past Due
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {overdueInvoices.slice(0, 5).map((invoice: any) => (
+            <div key={invoice.id} className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-red-800">
+                    {invoice.client.name}
+                  </p>
+                  <Badge variant="destructive" className="text-xs">
+                    {invoice.daysPastDue} days overdue
+                  </Badge>
+                </div>
+                <p className="text-xs text-red-600 mt-1">
+                  Invoice #{invoice.invoice_number} • ${invoice.amount}
+                </p>
+              </div>
+            </div>
+          ))}
+          {overdueInvoices.length > 5 && (
+            <div className="text-center pt-2">
+              <p className="text-xs text-gray-500">
+                +{overdueInvoices.length - 5} more severely overdue invoices
+              </p>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function Overview() {
   const { data: overview, isLoading } = useQuery({
     queryKey: ["/api/dashboard/overview"],
@@ -179,49 +263,7 @@ export function Overview() {
 
       {/* Recent Activity & Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-gray-900">
-              Recent AI Actions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flow-root">
-              <ul className="-mb-8">
-                {overview.recentActivity.map((activity, index) => (
-                  <li key={index}>
-                    <div className={`relative ${index !== overview.recentActivity.length - 1 ? 'pb-8' : ''}`}>
-                      {index !== overview.recentActivity.length - 1 && (
-                        <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" />
-                      )}
-                      <div className="relative flex space-x-3">
-                        <div>
-                          <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white ${
-                            activity.type === 'ai_action' ? 'bg-green-500' :
-                            activity.type === 'analytics' ? 'bg-blue-500' :
-                            'bg-yellow-500'
-                          }`}>
-                            {activity.type === 'ai_action' && <Bot className="h-4 w-4 text-white" />}
-                            {activity.type === 'analytics' && <BarChart3 className="h-4 w-4 text-white" />}
-                            {activity.type === 'risk' && <Flag className="h-4 w-4 text-white" />}
-                          </span>
-                        </div>
-                        <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                          <div>
-                            <p className="text-sm text-gray-500">{activity.description}</p>
-                          </div>
-                          <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                            {activity.timestamp}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
+        <SeverelyOverdueInvoices />
 
         <Card>
           <CardHeader>

@@ -184,9 +184,10 @@ export class DatabaseStorage implements IStorage {
         client_id: invoices.client_id,
         invoice_number: invoices.invoice_number,
         amount: invoices.amount,
-        sent_date: invoices.sent_date,
+        due_date: invoices.due_date,
         payment_status: invoices.payment_status,
         last_reminder_sent: invoices.last_reminder_sent,
+        notes: invoices.notes,
         created_at: invoices.created_at,
         client: clients
       })
