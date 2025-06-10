@@ -840,11 +840,18 @@ Format as a complete email ready to send.`;
       console.log('Content being sent to AI:', {
         contentLength: actualContent?.length,
         contentPreview: actualContent?.substring(0, 500),
-        isUsingFullContent: actualContent === report.full_content
+        isUsingFullContent: actualContent === report.full_content,
+        containsActualTopics: {
+          criticalMinerals: actualContent?.includes('critical-minerals') || actualContent?.includes('Critical Minerals'),
+          chinaWeaponization: actualContent?.includes('weaponization'),
+          miningStocks: actualContent?.includes('mining'),
+          loneliness: actualContent?.includes('loneliness') || actualContent?.includes('Loneliness')
+        }
       });
       
-      // Use actual PDF content if available, otherwise use date-specific sample content
-      if (!actualContent || actualContent.length < 500) {
+      // CRITICAL: Only use sample content if we have NO actual PDF content
+      if (!actualContent || actualContent.length < 100) {
+        console.log('WARNING: No actual PDF content found, using sample content as fallback');
         // Generate sample content based on report type for demonstration
         const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
         
@@ -890,59 +897,7 @@ Risk Factors:
             includes29: report.title.includes('2025-05-29')
           });
           
-          if (reportDate === '2025-06-05') {
-            actualContent = `WILTW Weekly Report - Investment Research Insights (June 5, 2025)
-
-Table of Contents:
-01 Strategy & Asset Allocation & Performance of High Conviction Ideas
-02 China Market Analysis - Recent Findings from Regional Visit
-03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders
-04 Religious Resurgence Among Gen Z and Young Demographics
-05 European Union Barriers and Potential Trump Policy Impacts
-06 Terrorism and Future Warfare Considerations
-
-Article 1: Strategy & Asset Allocation & Performance of High Conviction Ideas
-Our high conviction portfolio shows 19.6% YTD gains vs S&P 500, driven by 35.5% allocation to precious metals and 15% to Chinese equities. The portfolio gained 1.4% over the past week, outperforming S&P 500 by 18.9% and MSCI World by 14.9%. Commodity leadership theme continues with mining sector outperformance.
-
-Article 2: China Market Intelligence 
-Recent two-week visit yielded insights from 150+ meetings including central bank officials and municipal leaders. Key findings include emerging dividend culture with major shareholder movements despite ongoing tariff concerns. Chinese pet-supply companies have returned 226% since August 2019, highlighting loneliness investment theme.
-
-Article 3: USD Index Risk Assessment
-Growing challenges from weaker growth, rising inflation expectations, and higher bond yields. Potential "revenge tax" on foreign U.S. asset holders poses significant risk to dollar dominance. Established gold-mining shares are breaking out, even junior miners hitting new highs.
-
-Investment Implications:
-- Increase commodity exposure, particularly precious metals
-- Consider Chinese equity allocation amid dividend culture shift
-- Monitor USD risks and alternative reserve currency trends`;
-          } else if (reportDate === '2025-05-29') {
-            actualContent = `WILTW Weekly Report - Investment Research Insights (May 29, 2025)
-
-Table of Contents:
-01 European Central Bank Policy Shifts and Market Implications
-02 Semiconductor Supply Chain Diversification Updates
-03 Renewable Energy Infrastructure Investment Opportunities
-04 Emerging Market Currency Volatility Analysis
-05 U.S. Regional Banking Sector Consolidation Trends
-06 Artificial Intelligence Regulation Framework Development
-
-Article 1: European Central Bank Policy Shifts and Market Implications
-ECB signals potential rate cuts amid declining inflation pressures across eurozone. German manufacturing PMI shows continued contraction at 45.2, while services sector remains resilient. Euro weakening against dollar creates opportunities for European exporters but challenges for import-dependent sectors.
-
-Article 2: Semiconductor Supply Chain Diversification Updates
-TSMC announces new Arizona fab completion ahead of schedule, with production starting Q3 2025. Intel's foundry services gain traction with major automotive clients. Memory chip prices stabilizing after 18-month decline, suggesting inventory normalization.
-
-Article 3: Renewable Energy Infrastructure Investment Opportunities
-Solar panel installation costs drop 12% year-over-year, improving project economics. Battery storage deployment accelerating with 35% capacity increase planned for 2025. Grid modernization investments create opportunities in smart infrastructure companies.
-
-Article 4: Emerging Market Currency Volatility
-Brazilian real strengthens on commodity price recovery and fiscal reforms. Indian rupee under pressure from elevated oil imports. Turkish lira volatility continues amid political uncertainties affecting foreign investment flows.
-
-Investment Implications:
-- European dividend stocks attractive at current valuations
-- Semiconductor equipment manufacturers positioned for growth
-- Renewable energy REITs offering sustainable income streams
-- Selective emerging market exposure through ETFs`;
-          } else {
+          if (false) { // Disabled sample content - always use actual PDF content
             // Default content for other WILTW reports
             actualContent = `WILTW Weekly Report - Investment Research Insights
 

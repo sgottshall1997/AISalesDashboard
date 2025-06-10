@@ -1,0 +1,72 @@
+
+> rest-express@1.0.0 dev
+6:22:55 AM [express] serving on port 5000s
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+6:23:02 AM [express] GET /api/dashboard/stats 304 in 3108ms :: {"outstandingInvoices":539700,"overdu…
+6:23:17 AM [express] GET /api/ai/content-suggestions 200 in 7ms
+6:23:20 AM [express] GET /api/clients 304 in 2311ms :: [{"id":1,"name":"Sarah Johnson","email":"sara…
+6:23:20 AM [express] GET /api/content-reports 304 in 2325ms :: [{"id":11,"title":"WILTW_2025-06-05",…
+Summarization debug: {
+  requestedReportId: '10',
+  availableReports: [
+    { id: 11, title: 'WILTW_2025-06-05', hasContent: true },
+    { id: 10, title: 'WILTW_2025-05-29', hasContent: true }
+  ],
+  foundReport: {
+    id: 10,
+    title: 'WILTW_2025-05-29',
+    hasContent: true,
+    contentPreview: 'WILTW Weekly Report - Investment Research Insights\n' +
+      '\n' +
+      'Table of Contents:\n' +
+      '01 Strategy & Asset Allocatio'
+  }
+}
+Full content check: {
+  reportId: 10,
+  reportTitle: 'WILTW_2025-05-29',
+  hasFullContent: true,
+  fullContentLength: 2394,
+  fullContentPreview: 'WILTW Weekly Report - Investment Research Insights\n' +
+    '\n' +
+    'Table of Contents:\n' +
+    '01 Strategy & Asset Allocation & Performance of High Conviction Ideas\n' +
+    '02 China Market Analysis - Recent Findings from Regional Visit\n' +
+    '03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders\n' +
+    '04 Religious Resurge',
+  containsChina: true,
+  containsCriticalMinerals: false,
+  containsMining: true,
+  willUsePDFContent: true
+}
+Content being sent to AI: {
+  contentLength: 2394,
+  contentPreview: 'WILTW Weekly Report - Investment Research Insights\n' +
+    '\n' +
+    'Table of Contents:\n' +
+    '01 Strategy & Asset Allocation & Performance of High Conviction Ideas\n' +
+    '02 China Market Analysis - Recent Findings from Regional Visit\n' +
+    '03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders\n' +
+    '04 Religious Resurgence Among Gen Z and Young Demographics\n' +
+    '05 European Union Barriers and Potential Trump Policy Impacts\n' +
+    '06 Terrorism and Future Warfare Considerations\n' +
+    '07 U.S. Critical Minerals Partnerships - Gulf States',
+  isUsingFullContent: true
+}
+Summary storage debug: {
+  reportId: '10',
+  promptType: 'wiltw_parser',
+  existingSummary: { id: 7, summaryLength: 8475 },
+  newSummaryLength: 8593
+}
+Updated existing summary: {
+  id: 7,
+  content_report_id: 10,
+  summaryLength: 8593,
+  summaryPreview: '**Article 1: Strategy & Asset Allocation & Performance of High Conviction Ideas**\n' +
+    '\n' +
+    '- **Core Thesis:*'
+}
+6:23:57 AM [express] POST /api/ai/summarize-report 200 in 30122ms :: {"summary":"**Article 1: Strate…
