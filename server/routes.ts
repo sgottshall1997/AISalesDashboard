@@ -545,11 +545,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           preview: extractedText.substring(0, 300)
         });
         
-        // Use GPT to analyze the full extracted PDF content
-        console.log('Analyzing full PDF content with GPT:', extractedText.length, 'characters');
+        // Store the original extracted PDF content
+        console.log('Preserving original PDF content:', extractedText.length, 'characters');
         
-        // Call GPT to analyze the extracted text with investment research prompt
-        extractedText = await analyzeReportWithGPT(extractedText, pdfFilename);
+        // Keep the original extracted text for database storage
+        const originalPDFContent = extractedText;
         
         console.log('PDF processing successful:', {
           filename: file.originalname,
@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content_summary: parsedData.summary,
         key_insights: parsedData.keyInsights,
         target_audience: parsedData.targetAudience,
-        full_content: extractedText // Store extracted PDF text content
+        full_content: originalPDFContent // Store original extracted PDF text content
       };
 
       const report = await storage.createContentReport(reportData);
