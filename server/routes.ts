@@ -15,25 +15,33 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // GPT-based PDF analysis function
 async function analyzeReportWithGPT(extractedText: string, filename: string): Promise<string> {
   try {
-    const prompt = `You are an experienced investment research salesperson. You've just read a detailed investment report.
+    const prompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
 
-Your job is to:
-- Identify each article or section by title or theme
-- Summarize each article in 3–5 punchy bullet points
-- Focus on key investment insights, risks, and implications
-- Speak in the tone of someone preparing for a client call or sales email with a CIO or PM
-- Prioritize relevance, macro importance, and investability
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
 
-Here's the report:
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+REPORT CONTENT:
 """${extractedText}"""
 
-Output this as structured content with article titles and bullet summaries for each, formatted for investment professionals.`;
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [{ role: "user", content: prompt }],
       max_tokens: 4000,
-      temperature: 0.7
+      temperature: 0.3
     });
 
     return response.choices[0].message.content || extractedText;
