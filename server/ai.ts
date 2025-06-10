@@ -89,7 +89,7 @@ export async function generateEmail(request: EmailGenerationRequest): Promise<Em
     // Enforce strict word count for lead nurture emails
     let emailBody = result.body || "Thank you for your continued partnership.";
     if (request.type === "lead_nurture") {
-      emailBody = enforceWordLimit(emailBody, 80);
+      emailBody = enforceWordLimit(emailBody, 250);
     }
     
     return {
@@ -140,45 +140,33 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       
       basePrompt += `
 
-ULTRA-STRICT REQUIREMENTS:
-- HARD LIMIT: 80 words MAXIMUM for entire email body
-- NO greeting pleasantries - start with their name only
-- EXACTLY 2-3 bullet points, 10 words MAX each
-- ONE sentence CTA - 5 words max
-- Cut ALL unnecessary words, articles, conjunctions
+REQUIREMENTS FOR SOPHISTICATED INVESTORS:
+- Maximum 250 words total for entire email body
+- Start with punchy hook - no generic pleasantries
+- Use 2-3 bullet points with specific insights
+- Assume market knowledge - don't over-explain
+- End with clear, direct CTA
+- Be concise but informative
 
-MANDATORY FORMAT (copy this structure exactly):
-Subject: [Direct market insight - 4 words max]
+FORMAT EXAMPLE:
+Subject: Bullish Signals for Gold and Silver Align with Your Strategy
 
-[Name],
+Hi Monica,
 
-[One hook sentence - 10 words max]:
+I wanted to flag a few insights from recent reports that directly align with your focus on precious metals:
 
-• [Market insight - 10 words max]
-• [Technical signal - 10 words max] 
-• [Catalyst/trend - 10 words max]
+• Silver Miners Breaking Out: SIL and SILJ hit new highs, confirming upside momentum in the space you already lean into.
 
-[CTA - 5 words max]?
+• Gold-to-CPI Ratio Surges: A major breakout from a 45-year trend suggests inflation-driven upside — a rare technical confirmation.
 
-[Signature]
+• USD Weakness Builds Case for Hard Assets: Our WILTW piece lays out a scenario where gold is poised to benefit from dollar erosion and global capital shifts.
 
-EXAMPLE:
-Subject: Gold Breakout Confirms
-
-Monica,
-
-Precious metals signals validate your thesis:
-
-• Silver miners breaking multi-year resistance
-• Gold-CPI ratio hit decade highs
-• Dollar weakness accelerating into metals
-
-Want the breakdown?
+Happy to send over the full recaps or hop on a quick call to go deeper. Just let me know.
 
 Best,
-Team
+[Your Name]
 
-ENFORCE: Count every single word. If over 80 words, CUT content aggressively. NO exceptions.`;
+TARGET: Keep under 250 words while being direct and actionable for sophisticated investors.`;
       break;
       
     case "upsell":
