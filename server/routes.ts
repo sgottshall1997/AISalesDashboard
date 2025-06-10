@@ -1562,6 +1562,74 @@ Keep the summary under 200 words and focus on actionable insights.`;
     }
   });
 
+  // Reverse last CSV upload endpoint
+  app.post("/api/upload/csv/reverse", async (req: Request, res: Response) => {
+    try {
+      const { count, timeWindow = 5 } = req.body; // timeWindow in minutes, default 5 minutes
+      
+      if (!count || count <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Please specify the number of records to reverse (count parameter required)"
+        });
+      }
+
+      // Get the most recently added leads within the time window
+      const cutoffTime = new Date(Date.now() - timeWindow * 60 * 1000);
+      const allLeads = await storage.getAllLeads();
+      
+      // Filter leads created within the time window and sort by creation time (newest first)
+      const recentLeads = allLeads
+        .filter(lead => lead.created_at && new Date(lead.created_at) >= cutoffTime)
+        .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+        .slice(0, count);
+
+      if (recentLeads.length === 0) {
+        return res.json({
+          success: false,
+          message: `No leads found that were created in the last ${timeWindow} minutes to reverse`,
+          deleted: 0,
+          timeWindow
+        });
+      }
+
+      // Delete the recent leads
+      let deleted = 0;
+      const errors: string[] = [];
+      
+      for (const lead of recentLeads) {
+        try {
+          const success = await storage.deleteLead(lead.id);
+          if (success) {
+            deleted++;
+          } else {
+            errors.push(`Failed to delete lead ${lead.name} (${lead.email})`);
+          }
+        } catch (error) {
+          errors.push(`Error deleting lead ${lead.name} (${lead.email}): ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      res.json({
+        success: deleted > 0,
+        message: `Reversed upload: deleted ${deleted} leads${errors.length > 0 ? `, ${errors.length} errors` : ''}`,
+        deleted,
+        errors,
+        timeWindow,
+        requestedCount: count,
+        availableCount: recentLeads.length
+      });
+
+    } catch (error) {
+      console.error('Reverse upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to reverse upload",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

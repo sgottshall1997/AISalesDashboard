@@ -37,6 +37,7 @@ export interface IStorage {
   getLeadsByStage(stage: string): Promise<Lead[]>;
   createLead(lead: InsertLead): Promise<Lead>;
   updateLead(id: number, updates: Partial<InsertLead>): Promise<Lead | undefined>;
+  deleteLead(id: number): Promise<boolean>;
 
   // Content Reports
   getAllContentReports(): Promise<ContentReport[]>;
@@ -246,6 +247,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(leads.id, id))
       .returning();
     return lead || undefined;
+  }
+
+  async deleteLead(id: number): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(leads)
+        .where(eq(leads.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      return false;
+    }
   }
 
   async getAllContentReports(): Promise<ContentReport[]> {
