@@ -76,7 +76,7 @@ interface ContentReport {
 }
 
 export default function LeadDetail() {
-  const [, params] = useRoute("/lead/:id");
+  const [, params] = useRoute("/leads/:id");
   const leadId = parseInt(params?.id || "0");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
