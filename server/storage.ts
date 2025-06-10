@@ -93,6 +93,7 @@ export interface IStorage {
   // Report summaries
   getReportSummary(contentReportId: number): Promise<ReportSummary | undefined>;
   createReportSummary(summary: InsertReportSummary): Promise<ReportSummary>;
+  updateReportSummary(id: number, updates: Partial<InsertReportSummary>): Promise<ReportSummary | undefined>;
   getAllReportSummaries(): Promise<(ReportSummary & { report: ContentReport })[]>;
 
   // AI suggestions for invoices and leads
@@ -646,6 +647,15 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
       .values(insertSummary)
       .returning();
     return summary;
+  }
+
+  async updateReportSummary(id: number, updates: Partial<InsertReportSummary>): Promise<ReportSummary | undefined> {
+    const [summary] = await db
+      .update(report_summaries)
+      .set(updates)
+      .where(eq(report_summaries.id, id))
+      .returning();
+    return summary || undefined;
   }
 
   async getAllReportSummaries(): Promise<(ReportSummary & { report: ContentReport })[]> {
