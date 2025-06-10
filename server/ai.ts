@@ -68,12 +68,19 @@ export async function generateEmail(request: EmailGenerationRequest): Promise<Em
   try {
     const prompt = buildEmailPrompt(request);
     
+    // Use different system prompts based on email type
+    let systemPrompt = "You are an expert sales communication specialist for 13D Research, a boutique investment research firm. Generate professional, personalized emails that are warm but business-appropriate. Always maintain a consultative tone and focus on value delivery. Respond with JSON in the specified format.";
+    
+    if (request.type === "lead_nurture") {
+      systemPrompt = "You are a concise email specialist for 13D Research. Generate ULTRA-SHORT prospect emails (170 words MAX). Use bullet points only. NO long paragraphs. NO academic language. Be direct and punchy. Respond with JSON containing 'subject' and 'body' fields only.";
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are an expert sales communication specialist for 13D Research, a boutique investment research firm. Generate professional, personalized emails that are warm but business-appropriate. Always maintain a consultative tone and focus on value delivery. Respond with JSON in the specified format."
+          content: systemPrompt
         },
         {
           role: "user",
