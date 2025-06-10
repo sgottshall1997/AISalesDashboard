@@ -30,6 +30,7 @@ interface Lead {
   email: string;
   company: string;
   stage: string;
+  likelihood_of_closing?: string;
   last_contact?: string;
   next_step?: string;
   notes?: string;
@@ -48,6 +49,7 @@ export default function LeadPipeline() {
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>({});
   const [newLead, setNewLead] = useState({
     name: "",
     email: "",
