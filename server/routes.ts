@@ -813,65 +813,69 @@ Provide a JSON response with actionable prospecting insights:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const emailPrompt = `Generate a CONCISE prospect email for ${lead.name} at ${lead.company}. Lead interests: ${lead.interest_tags?.join(', ') || 'investment research'}.
+      const emailPrompt = `Generate a strategic prospect email for ${lead.name} at ${lead.company}.
+
+LEAD CONTEXT:
+- Current Stage: ${lead.stage}
+- Interest Areas: ${lead.interest_tags?.join(', ') || 'investment research'}
+- Notes: ${lead.notes || 'No additional notes'}
+
+RECENT EMAIL HISTORY:
+${emailHistory && emailHistory.length > 0 ? 
+  emailHistory.slice(-3).map((email: any) => 
+    `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}): ${email.subject}\nKey points: ${email.content.slice(0, 150)}...`
+  ).join('\n\n') : 'No recent email history - this is likely an initial outreach or long gap in communication'}
 
 ${selectedReportSummaries.length > 0 ? `
-Selected Report Content:
-${selectedReportSummaries.map((summary: any) => summary.parsed_summary).join('\n\n')}
+SELECTED REPORT INSIGHTS:
+${selectedReportSummaries.map((summary: any, index: number) => 
+  `Report ${index + 1}: ${summary.parsed_summary}`
+).join('\n\n')}
 ` : ''}
 
-ULTRA-STRICT REQUIREMENTS - NO EXCEPTIONS:
-- HARD LIMIT: 170 words MAXIMUM for entire email
+REQUIREMENTS:
+- HARD LIMIT: 250 words MAXIMUM for entire email
+- Reference their specific interests and how the selected report content directly benefits their focus areas
+- If email history exists, acknowledge previous conversations naturally
+- Include prospect notes context if relevant
+- Use bullet points for key insights (3-4 max)
 - NO academic phrases like "Article 1," "titled," "the report outlines"
-- NO long paragraphs - use bullet points only
-- NO generic pleasantries or filler
-- Start immediately with relevant market hook
-- 3 bullets maximum, each under 25 words
-- End with simple CTA under 10 words
+- Connect report insights to their investment strategy/portfolio needs
+- Professional but conversational tone
 
-MANDATORY FORMAT (COPY EXACTLY):
-Subject: [Market insight - max 8 words]
+MANDATORY FORMAT:
+Subject: [Specific market insight - max 10 words]
 
 Hi ${lead.name},
 
-[Hook sentence connecting to their focus - max 15 words]:
+[Opening that references their interests/previous conversation - max 25 words]
 
-• [Insight 1 - max 25 words]
-• [Insight 2 - max 25 words] 
-• [Insight 3 - max 25 words]
+[Brief context on why this report matters for their specific focus areas - max 30 words]
 
-[CTA - max 10 words]
+• [Market insight 1 with specific data/implications - max 35 words]
+• [Market insight 2 with actionable intelligence - max 35 words] 
+• [Market insight 3 with strategic relevance - max 35 words]
+• [Optional 4th insight if highly relevant - max 35 words]
 
-EXAMPLE (170 words total):
-Subject: Key Shifts in Gold, USD, China
+[Strategic connection to their portfolio/investment approach - max 40 words]
 
-Hi Monica,
+[Simple CTA - max 15 words]
 
-Given your focus on precious metals and geopolitics, here are timely insights supporting W-GEM's strategy:
-
-• Gold/Silver Momentum: Gold-to-CPI ratio broke 45-year downtrend. SIL and SILJ outperforming — bullish for miners.
-
-• China's Strategic Resilience: Recent trip reveals Beijing diversifying trade relationships, stimulating domestic growth. Chinese equities could lead.
-
-• USD Headwinds: Rising inflation, weaker dollar outlook favor hard assets. "Revenge tax" on foreign holders adds urgency.
-
-Let me know if you'd like deeper summaries.
-
-ENFORCE: Count every word. If over 170 words, CUT content aggressively. NO exceptions.`;
+ENFORCE: Total must be under 250 words. Focus on VALUE and RELEVANCE to their specific interests.`;
 
       const emailResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a concise email specialist for 13D Research. Generate ULTRA-SHORT prospect emails (170 words MAX). Use bullet points only. NO long paragraphs. NO academic language. Be direct and punchy."
+            content: "You are a strategic email specialist for 13D Research. Generate personalized prospect emails (250 words MAX) that demonstrate deep understanding of the lead's context, interests, and previous interactions. Connect report insights directly to their investment strategy needs. Use bullet points for key insights. Be professional but conversational."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 400,
+        max_tokens: 500,
         temperature: 0.7
       });
 
