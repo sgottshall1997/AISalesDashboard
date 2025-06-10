@@ -259,13 +259,13 @@ export function ContentDistribution() {
   const getSuggestionButtonStyle = (type: string) => {
     switch (type) {
       case "high_engagement":
-        return "bg-primary hover:bg-blue-700 text-white";
+        return "bg-blue-600 hover:bg-blue-700 text-white border-0";
       case "renewal_opportunity":
-        return "bg-green-600 hover:bg-green-700 text-white";
+        return "bg-green-600 hover:bg-green-700 text-white border-0";
       case "low_engagement":
-        return "bg-yellow-600 hover:bg-yellow-700 text-white";
+        return "bg-yellow-600 hover:bg-yellow-700 text-white border-0";
       default:
-        return "bg-gray-600 hover:bg-gray-700 text-white";
+        return "bg-blue-600 hover:bg-blue-700 text-white border-0";
     }
   };
 
@@ -583,7 +583,8 @@ export function ContentDistribution() {
                         <div className="mt-2">
                           <Button 
                             size="sm" 
-                            className={`text-xs ${getSuggestionButtonStyle(suggestion.type)}`}
+                            variant="default"
+                            className={`text-xs ${getSuggestionButtonStyle(suggestion.type)} !important`}
                           >
                             {suggestion.action}
                           </Button>
