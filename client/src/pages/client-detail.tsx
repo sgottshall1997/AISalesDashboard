@@ -1,476 +1,369 @@
 import { useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Mail, User, Building, Calendar, Tag, MessageSquare, Sparkles, Send, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { Client, Lead } from "@shared/schema";
-
-interface ClientWithDetails extends Client {
-  // Additional client fields from CSV upload
-}
-
-interface LeadWithDetails extends Lead {
-  // Additional lead fields from CSV upload
-}
-
-interface EmailHistory {
-  id: number;
-  client_id: number;
-  subject: string;
-  body: string;
-  sent_date: string;
-  response_received: boolean;
-  notes?: string;
-}
-
-interface AIEmailResponse {
-  subject: string;
-  body: string;
-  keyPoints: string[];
-  reportReferences: string[];
-  bestSendTime?: string;
-}
+import {
+  ArrowLeft,
+  Building2,
+  Mail,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  FileText,
+  User,
+  Phone,
+  MapPin,
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Eye,
+  MousePointer
+} from "lucide-react";
+import { Link } from "wouter";
 
 export default function ClientDetail() {
   const { id } = useParams();
-  const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
-  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
-  const [newEmailSubject, setNewEmailSubject] = useState("");
-  const [newEmailBody, setNewEmailBody] = useState("");
-  const [emailNotes, setEmailNotes] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Try to get client first, then lead if not found
-  const { data: client, isLoading: clientLoading } = useQuery<ClientWithDetails>({
+  const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ["/api/clients", id],
-    enabled: !!id,
+    queryFn: () => apiRequest("GET", `/api/clients/${id}`).then(res => res.json()),
   });
 
-  const { data: lead, isLoading: leadLoading } = useQuery<LeadWithDetails>({
-    queryKey: ["/api/leads", id],
-    enabled: !!id && !client,
+  const { data: invoices = [] } = useQuery({
+    queryKey: ["/api/invoices", id],
+    queryFn: () => apiRequest("GET", "/api/invoices").then(res => res.json()).then(invoices => 
+      invoices.filter((invoice: any) => invoice.client.id.toString() === id)
+    ),
   });
 
-  const { data: emailHistory, isLoading: emailLoading } = useQuery<EmailHistory[]>({
-    queryKey: ["/api/email-history", id],
-    enabled: !!id,
+  const { data: engagements = [] } = useQuery({
+    queryKey: ["/api/client-engagements", id],
+    queryFn: () => apiRequest("GET", "/api/reading-history").then(res => res.json()).then(history => 
+      history.filter((item: any) => item.client.id.toString() === id)
+    ),
   });
 
-  const { data: contentReports } = useQuery({
-    queryKey: ["/api/content-reports"],
-  });
-
-  const generateEmailMutation = useMutation({
-    mutationFn: async () => {
-      const clientData = client || lead;
-      if (!clientData) throw new Error("No client data found");
-
-      const response = await apiRequest("POST", "/api/generate-client-email", {
-        clientId: id,
-        clientName: clientData.name,
-        company: clientData.company,
-        interests: clientData.interest_tags || [],
-        emailHistory: emailHistory || [],
-        webInterests: clientData.interest_tags || []
-      });
-      return response;
-    },
-    onSuccess: (data) => {
-      setAiEmail(data);
-      setNewEmailSubject(data.subject);
-      setNewEmailBody(data.body);
-      toast({
-        title: "AI Email Generated",
-        description: "Personalized email created based on client interests and report data",
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate AI email. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const saveEmailMutation = useMutation({
-    mutationFn: async (emailData: {
-      subject: string;
-      body: string;
-      notes?: string;
-    }) => {
-      return apiRequest("POST", `/api/clients/${id}/emails`, {
-        subject: emailData.subject,
-        body: emailData.body,
-        notes: emailData.notes,
-        sent_date: new Date().toISOString(),
-        response_received: false
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/email-history", id] });
-      setNewEmailSubject("");
-      setNewEmailBody("");
-      setEmailNotes("");
-      setAiEmail(null);
-      toast({
-        title: "Email Saved",
-        description: "Email has been saved to client history",
-      });
-    },
-  });
-
-  const deleteEmailMutation = useMutation({
-    mutationFn: async (emailId: number) => {
-      return apiRequest("DELETE", `/api/email-history/${emailId}`);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/email-history", id] });
-      toast({
-        title: "Email Deleted",
-        description: "Email has been removed from history",
-      });
-    },
-  });
-
-  const isLoading = clientLoading || leadLoading;
-  const clientData = client || lead;
-
-  if (isLoading) {
+  if (clientLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading client details...</p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              </div>
+              <div className="space-y-6">
+                <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!clientData) {
+  if (!client) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Client Not Found</h1>
-          <p className="text-gray-600 mb-6">The requested client could not be found.</p>
-          <Link href="/">
-            <Button>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const handleGenerateEmail = () => {
-    setIsGeneratingEmail(true);
-    generateEmailMutation.mutate();
-    setIsGeneratingEmail(false);
-  };
-
-  const handleSaveEmail = () => {
-    if (!newEmailSubject.trim() || !newEmailBody.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please enter both subject and email body",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    saveEmailMutation.mutate({
-      subject: newEmailSubject,
-      body: newEmailBody,
-      notes: emailNotes
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <Card>
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Client Not Found</h2>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">The client you're looking for doesn't exist.</p>
               <Link href="/">
-                <Button variant="ghost" size="sm" className="mr-4">
+                <Button>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back to Dashboard
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{clientData.name}</h1>
-                <p className="text-gray-600">{clientData.company}</p>
-              </div>
-            </div>
-            <Button 
-              onClick={handleGenerateEmail}
-              disabled={isGeneratingEmail || generateEmailMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              {isGeneratingEmail ? "Generating..." : "Generate AI Email"}
-            </Button>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
+    );
+  }
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Client Overview</TabsTrigger>
-            <TabsTrigger value="emails">Email History</TabsTrigger>
-            <TabsTrigger value="compose">Compose Email</TabsTrigger>
-          </TabsList>
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "paid": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "pending": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "overdue": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    }
+  };
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Client Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    Client Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Name</Label>
-                    <p className="font-medium">{clientData.name}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Email</Label>
-                    <p className="font-medium">{clientData.email}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Company</Label>
-                    <p className="font-medium">{clientData.company}</p>
-                  </div>
-                  {client && (
-                    <>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-500">Subscription Type</Label>
-                        <p className="font-medium">{client.subscription_type || 'N/A'}</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-medium text-gray-500">Engagement Rate</Label>
-                        <p className="font-medium">{client.engagement_rate || 'N/A'}</p>
-                      </div>
-                    </>
-                  )}
-                  {lead && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">Stage</Label>
-                      <Badge variant="outline">{lead.stage}</Badge>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+  const getRiskColor = (risk: string) => {
+    switch (risk) {
+      case "low": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+      case "medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+      case "high": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+      default: return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200";
+    }
+  };
 
-              {/* Interests & Notes */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Tag className="w-5 h-5" />
-                    Interests & Notes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Web Interests</Label>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {clientData.interest_tags?.map((tag, index) => (
-                        <Badge key={index} variant="secondary">{tag}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                  {clientData.notes && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">Notes</Label>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{clientData.notes}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+  const totalInvoiceValue = invoices.reduce((sum: number, invoice: any) => sum + parseFloat(invoice.amount), 0);
+  const pendingInvoices = invoices.filter((inv: any) => inv.payment_status === "pending");
+  const overdueInvoices = invoices.filter((inv: any) => inv.payment_status === "overdue");
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link href="/">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{client.name}</h1>
+              <p className="text-gray-600 dark:text-gray-400">{client.company}</p>
             </div>
-          </TabsContent>
+          </div>
+          <Badge className={getRiskColor(client.risk_level || "medium")}>
+            {client.risk_level || "Medium"} Risk
+          </Badge>
+        </div>
 
-          <TabsContent value="emails" className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Client Overview */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Mail className="w-5 h-5" />
-                  Email History
+                  <User className="w-5 h-5" />
+                  Client Information
                 </CardTitle>
-                <CardDescription>
-                  All email communications with this client
-                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
+                      <span className="text-sm font-medium">{client.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Company:</span>
+                      <span className="text-sm font-medium">{client.company}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Subscription:</span>
+                      <span className="text-sm font-medium">{client.subscription_type || "Standard"}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Renewal:</span>
+                      <span className="text-sm font-medium">
+                        {client.renewal_date ? new Date(client.renewal_date).toLocaleDateString() : "Not set"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Engagement:</span>
+                      <span className="text-sm font-medium">{client.engagement_rate || "N/A"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MousePointer className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Click Rate:</span>
+                      <span className="text-sm font-medium">{client.click_rate || "N/A"}</span>
+                    </div>
+                  </div>
+                </div>
+                {client.notes && (
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{client.notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Invoices */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Invoices ({invoices.length})
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {emailLoading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-gray-600">Loading email history...</p>
-                  </div>
-                ) : emailHistory && emailHistory.length > 0 ? (
-                  <div className="space-y-4">
-                    {emailHistory.map((email) => (
-                      <div key={email.id} className="border rounded-lg p-4 bg-gray-50">
-                        <div className="flex justify-between items-start mb-2">
-                          <h4 className="font-medium">{email.subject}</h4>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">
-                              {new Date(email.sent_date).toLocaleDateString()}
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => deleteEmailMutation.mutate(email.id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                {invoices.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No invoices found for this client.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {invoices.map((invoice: any) => (
+                      <div key={invoice.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {invoice.invoice_number}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Due: {new Date(invoice.due_date).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap mb-2">{email.body}</p>
-                        {email.notes && (
-                          <p className="text-xs text-gray-500">Notes: {email.notes}</p>
-                        )}
-                        <div className="mt-2">
-                          <Badge variant={email.response_received ? "default" : "secondary"}>
-                            {email.response_received ? "Response Received" : "No Response"}
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            ${parseFloat(invoice.amount).toLocaleString()}
+                          </span>
+                          <Badge className={getStatusColor(invoice.payment_status)}>
+                            {invoice.payment_status}
+                          </Badge>
+                          <Link href={`/invoice/${invoice.id}`}>
+                            <Button variant="outline" size="sm">
+                              View
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Content Engagement History */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Content Engagement
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {engagements.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-8">No content engagement history found.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {engagements.map((engagement: any) => (
+                      <div key={engagement.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-gray-100">
+                            {engagement.report_title}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            Read on {new Date(engagement.read_date).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">
+                            {engagement.engagement_time}s
                           </Badge>
                         </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No email history found</p>
-                    <p className="text-sm text-gray-500">Start a conversation to see emails here</p>
-                  </div>
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="compose" className="space-y-6">
-            {/* AI Generated Email Preview */}
-            {aiEmail && (
-              <Card className="border-blue-200 bg-blue-50">
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Client Stats */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Client Metrics</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Total Invoice Value</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">
+                      ${totalInvoiceValue.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Pending Invoices</span>
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                      {pendingInvoices.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Overdue Invoices</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400">
+                      {overdueInvoices.length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Content Engagements</span>
+                    <span className="font-semibold text-blue-600 dark:text-blue-400">
+                      {engagements.length}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Interest Tags */}
+            {client.interest_tags && client.interest_tags.length > 0 && (
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-blue-700">
-                    <Sparkles className="w-5 h-5" />
-                    AI Generated Email
-                  </CardTitle>
-                  <CardDescription>
-                    Personalized email based on client interests and recent reports
-                  </CardDescription>
+                  <CardTitle>Interest Tags</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {aiEmail.keyPoints && aiEmail.keyPoints.length > 0 && (
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">Key Discussion Points</Label>
-                      <ul className="mt-2 text-sm text-blue-600 list-disc list-inside">
-                        {aiEmail.keyPoints.map((point, index) => (
-                          <li key={index}>{point}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {aiEmail.reportReferences && aiEmail.reportReferences.length > 0 && (
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">Referenced Reports</Label>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {aiEmail.reportReferences.map((report, index) => (
-                          <Badge key={index} variant="outline" className="border-blue-300 text-blue-700">
-                            {report}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {client.interest_tags.map((tag: string, index: number) => (
+                      <Badge key={index} variant="secondary">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Email Composition */}
+            {/* Account Status */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Send className="w-5 h-5" />
-                  Compose Email
-                </CardTitle>
+                <CardTitle>Account Status</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    value={newEmailSubject}
-                    onChange={(e) => setNewEmailSubject(e.target.value)}
-                    placeholder="Email subject"
-                  />
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  {overdueInvoices.length > 0 ? (
+                    <>
+                      <AlertTriangle className="w-4 h-4 text-red-500" />
+                      <span className="text-sm text-red-600 dark:text-red-400">
+                        {overdueInvoices.length} Overdue Invoice{overdueInvoices.length > 1 ? 's' : ''}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      <span className="text-sm text-green-600 dark:text-green-400">Account in Good Standing</span>
+                    </>
+                  )}
                 </div>
-                
-                <div>
-                  <Label htmlFor="body">Email Body</Label>
-                  <Textarea
-                    id="body"
-                    value={newEmailBody}
-                    onChange={(e) => setNewEmailBody(e.target.value)}
-                    placeholder="Write your email message..."
-                    rows={8}
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="notes">Internal Notes (Optional)</Label>
-                  <Textarea
-                    id="notes"
-                    value={emailNotes}
-                    onChange={(e) => setEmailNotes(e.target.value)}
-                    placeholder="Add internal notes about this email..."
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSaveEmail}
-                    disabled={saveEmailMutation.isPending}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    Save to History
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => {
-                      setNewEmailSubject("");
-                      setNewEmailBody("");
-                      setEmailNotes("");
-                      setAiEmail(null);
-                    }}
-                  >
-                    Clear
-                  </Button>
-                </div>
+                {client.renewal_date && (
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                      Renewal: {new Date(client.renewal_date).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
