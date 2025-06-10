@@ -840,45 +840,14 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
       
-      // Create a filtered report summary excluding Article 1 content
-      let reportSummary = '';
-      if (primaryReport) {
-        // Build a new summary focusing only on Articles 2 onward
-        reportSummary = `**${reportTitle} Analysis - Market Intelligence Insights**
-
-**Key Global Market Developments:**
-- China's strategic control of critical mineral supply chains, particularly rare-earth elements, poses significant risks to U.S. national security and manufacturing
-- U.S. dollar showing structural weakness signals, creating opportunities in alternative assets and currencies
-- Central banks globally increasing gold reserves, particularly among non-Western nations
-- Mining sector challenges from decades of underinvestment affecting U.S. supply chain resilience
-
-**Geopolitical & Economic Trends:**
-- China's domestic economic pivot strengthening its independence from Western markets
-- European monetary policy shifts challenging U.S. dollar reserve status
-- Agricultural production challenges in Europe increasing food import dependencies
-- Technology infrastructure gaps determining AI deployment leadership globally
-
-**Investment Landscape Shifts:**
-- Commodity markets showing technical strength across multiple sectors
-- Hard asset rotation accelerating amid inflation concerns
-- Mining stocks benefiting from reshoring and supply chain diversification
-- Chinese equity markets positioning for potential outperformance`;
-      }
+      const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
 
       // Extract non-market topics from article content
       let nonMarketTopics = '';
       
       if (reportArticles.length > 0) {
-        // Filter out Article 1 from reportArticles
-        const filteredArticles = reportArticles.filter((article: any) => {
-          const title = article.title || '';
-          return !title.toLowerCase().includes('strategy & asset allocation') && 
-                 !title.toLowerCase().includes('high conviction ideas') &&
-                 !title.toLowerCase().includes('article 1');
-        });
-        
-        // Extract non-market topics from remaining article titles
-        const nonMarketArticles = filteredArticles.filter((article: any) => {
+        // Extract non-market topics from article titles
+        const nonMarketArticles = reportArticles.filter((article: any) => {
           const title = article.title.toLowerCase();
           return title.includes('culture') || title.includes('values') || title.includes('philosophy') || 
                  title.includes('leadership') || title.includes('education') || title.includes('history') ||
@@ -913,9 +882,7 @@ Provide a JSON response with actionable prospecting insights:
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.
-
-IMPORTANT: Do **not** draw from Article 1: "Strategy & Asset Allocation & Performance of High Conviction Ideas." Only use content from Articles 2 onward.` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
