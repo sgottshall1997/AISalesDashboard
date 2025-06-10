@@ -6,7 +6,41 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
-// PDF text extraction will be handled with a different approach
+
+// Initialize OpenAI client
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// GPT-based PDF analysis function
+async function analyzeReportWithGPT(extractedText: string, filename: string): Promise<string> {
+  try {
+    const prompt = `You are an experienced investment research salesperson. You've just read a detailed investment report.
+
+Your job is to:
+- Identify each article or section by title or theme
+- Summarize each article in 3–5 punchy bullet points
+- Focus on key investment insights, risks, and implications
+- Speak in the tone of someone preparing for a client call or sales email with a CIO or PM
+- Prioritize relevance, macro importance, and investability
+
+Here's the report:
+"""${extractedText}"""
+
+Output this as structured content with article titles and bullet summaries for each, formatted for investment professionals.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 4000,
+      temperature: 0.7
+    });
+
+    return response.choices[0].message.content || extractedText;
+  } catch (error) {
+    console.error('GPT analysis failed:', error);
+    // Return the original extracted text if GPT fails
+    return extractedText;
+  }
+}
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -426,11 +460,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Extract actual PDF content using pdf-parse library
         const pdfFilename = file.originalname;
-        const pdf = require('pdf-parse');
+        const { default: pdfParse } = await import('pdf-parse');
         
         try {
           // Use pdf-parse to extract the complete text from the PDF buffer
-          const pdfData = await pdf(file.buffer);
+          const pdfData = await pdfParse(file.buffer);
           extractedText = pdfData.text;
           
           console.log('PDF extraction successful:', {
