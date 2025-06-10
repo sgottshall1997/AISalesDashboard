@@ -36,6 +36,7 @@ interface Lead {
   notes?: string;
   interest_tags: string[];
   how_heard?: string;
+  created_at?: string;
 }
 
 interface AIEmailResponse {
@@ -50,6 +51,8 @@ export default function LeadPipeline() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>({});
+  const [sortBy, setSortBy] = useState<"created_at" | "name" | "company">("created_at");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [newLead, setNewLead] = useState({
     name: "",
     email: "",
@@ -187,6 +190,39 @@ export default function LeadPipeline() {
         lead.interest_tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
+    
+    // Sort leads
+    filteredLeads.sort((a, b) => {
+      let aValue: string | Date;
+      let bValue: string | Date;
+      
+      switch (sortBy) {
+        case "created_at":
+          aValue = new Date(a.created_at || "");
+          bValue = new Date(b.created_at || "");
+          break;
+        case "name":
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case "company":
+          aValue = a.company.toLowerCase();
+          bValue = b.company.toLowerCase();
+          break;
+        default:
+          return 0;
+      }
+      
+      if (sortBy === "created_at") {
+        const dateA = aValue as Date;
+        const dateB = bValue as Date;
+        return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+      } else {
+        const strA = aValue as string;
+        const strB = bValue as string;
+        return sortOrder === "asc" ? strA.localeCompare(strB) : strB.localeCompare(strA);
+      }
+    });
     
     return filteredLeads;
   };
