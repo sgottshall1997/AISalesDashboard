@@ -751,13 +751,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Ensure we have substantial content
         if (!extractedText || extractedText.length < 100) {
-          const filename = file.originalname;
-          const dateMatch = filename.match(/(\d{4}-\d{2}-\d{2})/);
+          const dateMatch = pdfFilename.match(/(\d{4}-\d{2}-\d{2})/);
           const reportDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
           
-          if (filename.includes('WATMTU')) {
+          if (pdfFilename.includes('WATMTU')) {
             extractedText = `WATMTU Market Analysis Report ${reportDate}. Strategic asset allocation analysis covering precious metals market trends, gold and silver performance metrics, commodity sector insights, and portfolio allocation recommendations for institutional investors.`;
-          } else if (filename.includes('WILTW')) {
+          } else if (pdfFilename.includes('WILTW')) {
             extractedText = `What I Learned This Week Report ${reportDate}. Weekly market insights covering global economic developments, investment themes, geopolitical analysis, and strategic market opportunities for professional investors.`;
           } else {
             extractedText = `Investment Research Report ${reportDate}. Comprehensive analysis of market conditions, strategic insights, and investment recommendations based on current market data and research findings.`;
