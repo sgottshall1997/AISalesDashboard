@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateAIEmail } from "./openai";
 import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
