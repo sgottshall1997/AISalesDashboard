@@ -819,71 +819,64 @@ Provide a JSON response with actionable prospecting insights:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Prepare report content for the prompt
-      const primaryReport = selectedReportSummaries.length > 0 ? selectedReportSummaries[0] : null;
+      // Prepare report content for the prompt - combine all selected reports
+      let combinedReportContent = '';
+      let reportTitles = [];
+      let allReportTags = [];
       
-      // Get the actual content report data
-      let reportTitle = 'Recent 13D Report';
-      let reportTags = '';
-      let reportArticles = [];
-      if (primaryReport) {
-        // Get the content report from database if not provided
-        let contentReport = null;
-        if (contentReports && contentReports.length > 0) {
-          contentReport = contentReports.find((report: any) => report.id === primaryReport.content_report_id);
-        } else {
-          // Fetch from database if not provided
-          const allReports = await storage.getAllContentReports();
-          contentReport = allReports.find(report => report.id === primaryReport.content_report_id);
+      if (selectedReportSummaries.length > 0) {
+        for (const summary of selectedReportSummaries) {
+          // Get the content report from database
+          let contentReport = null;
+          if (contentReports && contentReports.length > 0) {
+            contentReport = contentReports.find((report: any) => report.id === summary.content_report_id);
+          } else {
+            // Fetch from database if not provided
+            const allReports = await storage.getAllContentReports();
+            contentReport = allReports.find(report => report.id === summary.content_report_id);
+          }
+          
+          if (contentReport) {
+            reportTitles.push(contentReport.title);
+            if (contentReport.tags) {
+              allReportTags.push(...contentReport.tags);
+            }
+            
+            // Add this report's content with clear separation
+            combinedReportContent += `\n\n--- ${contentReport.title} ---\n`;
+            combinedReportContent += summary.parsed_summary || '';
+          }
         }
-        
-        reportTitle = contentReport?.title || 'Recent 13D Report';
-        reportTags = contentReport?.tags?.join(', ') || '';
-        
-        // Extract article information from the full content for WILTW reports
-        if (contentReport && contentReport.full_content && reportTitle.includes('WILTW')) {
-          const parsedData = parseWILTWReport(contentReport.full_content);
-          reportArticles = parsedData.articles || [];
+      } else if (selectedReportSummaries.length === 0 && (contentReports || []).length > 0) {
+        // Fallback to first available report if no specific selection
+        const firstReport = contentReports[0];
+        reportTitles.push(firstReport.title);
+        if (firstReport.tags) {
+          allReportTags.push(...firstReport.tags);
         }
       }
       
-      const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      const reportTitle = reportTitles.length > 0 ? reportTitles.join(', ') : 'Recent 13D Reports';
+      const reportTags = Array.from(new Set(allReportTags)).join(', ');
+      const reportSummary = combinedReportContent || '';
 
-      // Extract non-market topics from article content
+      // Extract non-market topics from combined content
       let nonMarketTopics = '';
       
-      if (reportArticles.length > 0) {
-        // Extract non-market topics from article titles
-        const nonMarketArticles = reportArticles.filter((article: any) => {
-          const title = article.title.toLowerCase();
-          return title.includes('culture') || title.includes('values') || title.includes('philosophy') || 
-                 title.includes('leadership') || title.includes('education') || title.includes('history') ||
-                 title.includes('book') || title.includes('life') || title.includes('wisdom') ||
-                 title.includes('personal') || title.includes('character') || title.includes('principle') ||
-                 title.includes('lesson') || title.includes('story') || title.includes('human') ||
-                 title.includes('society') || title.includes('ethics') || title.includes('moral') ||
-                 title.includes('teenager') || title.includes('phone') || title.includes('school') ||
-                 title.includes('aesop') || title.includes('fable') || title.includes('sustainable') ||
-                 title.includes('remote') || title.includes('loneliness') || title.includes('enduring');
-        });
-
-        if (nonMarketArticles.length > 0) {
-          const topics = nonMarketArticles.map((article: any) => {
-            const title = article.title.toLowerCase();
-            if (title.includes('teenager') || title.includes('phone') || title.includes('sustainable')) return 'digital wellness and sustainable living';
-            if (title.includes('aesop') || title.includes('fable') || title.includes('wisdom')) return 'timeless wisdom and moral lessons';
-            if (title.includes('loneliness') || title.includes('human')) return 'social connection and human nature';
-            if (title.includes('culture') || title.includes('values')) return 'cultural insights';
-            if (title.includes('philosophy') || title.includes('enduring')) return 'philosophical perspectives';
-            if (title.includes('leadership') || title.includes('character')) return 'leadership principles';
-            if (title.includes('education') || title.includes('lesson')) return 'educational themes';
-            if (title.includes('book') || title.includes('story')) return 'literary analysis';
-            if (title.includes('history')) return 'historical context';
-            return 'life wisdom';
-          });
-          
-          const uniqueTopics = Array.from(new Set(topics));
-          nonMarketTopics = `The report also explores ${uniqueTopics.slice(0, 2).join(' and ')} to provide readers with perspective beyond the financial world.`;
+      if (reportSummary) {
+        // Look for non-market content indicators in the combined summary
+        const hasNonMarketContent = reportSummary.toLowerCase().includes('teenager') || 
+                                   reportSummary.toLowerCase().includes('phone') ||
+                                   reportSummary.toLowerCase().includes('sustainable') ||
+                                   reportSummary.toLowerCase().includes('aesop') ||
+                                   reportSummary.toLowerCase().includes('fable') ||
+                                   reportSummary.toLowerCase().includes('wisdom') ||
+                                   reportSummary.toLowerCase().includes('loneliness') ||
+                                   reportSummary.toLowerCase().includes('culture') ||
+                                   reportSummary.toLowerCase().includes('philosophy');
+        
+        if (hasNonMarketContent) {
+          nonMarketTopics = `The reports also explore cultural insights and life wisdom to provide readers with perspective beyond the financial world.`;
         }
       }
 
@@ -927,10 +920,12 @@ Provide a JSON response with actionable prospecting insights:
 CONTEXT: ${contextNotes.length > 0 ? contextNotes.join(' | ') : 'First outreach to this lead'}
 ${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior relationship naturally and avoid repeating previously covered topics.' : ''}
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
+${selectedReportSummaries.length > 0 ? `Reference the recent 13D reports: "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the combined report content: "${filteredSummary}". The reports cover: ${reportTags}.
 
 ${selectedReportIds && selectedReportIds.length > 1 ? 
 `MANDATORY REQUIREMENT: You MUST end every single bullet point with (REPORT_TITLE - Article X) where REPORT_TITLE is the specific report name and X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers from potentially different reports - never repeat the same article number twice. This is absolutely required - no exceptions.
+
+CRITICAL DISTRIBUTION RULE: When multiple reports are available, you MUST pull insights from DIFFERENT reports. Do NOT take all 3 bullet points from the same report. Mix insights across the available reports to show breadth of coverage.
 
 Available reports and their articles:
 ${selectedReportSummaries.map(summary => {
@@ -945,12 +940,12 @@ Article 7 = Russia analysis
 Article 8 = European agriculture` : '';
 }).join('\n\n')}
 
-Example format (MANDATORY - notice 3 DIFFERENT citations with report titles):
+Example format (MANDATORY - notice 3 DIFFERENT citations from DIFFERENT reports):
 • China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (WILTW_2025-06-05 - Article 2).
 • Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (WILTW_2025-05-29 - Article 4).
-• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-06-05 - Article 7).
+• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-05-22 - Article 7).
 
-CRITICAL: Each bullet point MUST include the specific report title and a DIFFERENT article number. Never use the same article twice in one email.` :
+CRITICAL: Each bullet point MUST include the specific report title and a DIFFERENT article number. Distribute insights across different reports when multiple are available.` :
 `IMPORTANT: Since only one report is selected, DO NOT include article citations or reference numbers. Present the insights naturally without any (Article X) citations.`}` : ''}
 
 GOALS:
