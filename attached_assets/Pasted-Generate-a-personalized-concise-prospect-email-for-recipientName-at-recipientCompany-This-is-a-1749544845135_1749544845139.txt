@@ -1,0 +1,59 @@
+Generate a personalized, concise prospect email for [recipientName] at [recipientCompany]. This is a [stage] stage lead with interests in: [interestTags].
+
+Reference the recent 13D report titled "[reportTitle]" with the following content: "[reportSummary]". The report covers: [reportTags].
+
+GOALS:
+• Greet the reader warmly with a short intro
+• Acknowledge their stated investment interests (from [interestTags] or [Notes] if applicable)
+• Explain why this specific report is relevant to their strategy
+• Summarize 2–3 high-impact insights using concise bullets
+• End with a conclusion summarizing 13D’s market view and how our research helps investors stay ahead
+• Include a clear CTA (e.g., invite to review the full report, book a call)
+
+HARD RULES:
+• TOTAL word count must not exceed **250 words**
+• Use **friendly but professional tone**
+• Paragraph format is fine, but use bullets for the insights section
+• DO NOT use phrases like “Article 1,” “titled,” or “the report outlines”
+
+STRUCTURE TO FOLLOW:
+
+---
+
+**Subject**: [Concise market insight or theme – max 8 words]  
+
+Hi [Name],  
+
+I hope you're doing well. Based on your interest in [interestTags], I wanted to share a few key takeaways from our recent report that I believe you’ll find highly relevant.  
+
+• [Insight 1 – concise market data or trend, max 25 words]  
+• [Insight 2 – another aligned insight, max 25 words]  
+• [Insight 3 – optional, only if still within 190 words]  
+
+These insights reflect what we’re seeing broadly at 13D — a strategic shift toward [summary of market direction]. Our research is designed to help investors like you stay ahead of macroeconomic shifts, policy changes, and long-cycle trends.  
+
+Let me know if you would like me to send over some older relevant reports on topics of interest. 
+
+Best regards,  
+[Your Name]
+
+---
+
+EXAMPLE:
+
+**Subject**: Gold, Inflation, and the Dollar Shift  
+
+Hi Monica,  
+
+I hope you're doing well. Based on your interest in precious metals and geopolitics, I wanted to share a few quick insights from our latest 13D research that may be timely for your strategy:  
+
+• Gold-to-CPI ratio just broke a 45-year downtrend, suggesting renewed strength in metals.  
+• Silver miners (SIL, SILJ) are outperforming global indices by double digits.  
+• USD under pressure as inflation expectations rise, boosting commodity tailwinds.  
+
+At 13D, we're seeing a broad asset rotation toward hard assets and non-U.S. exposures. Our research provides early intelligence to help position portfolios before these shifts become consensus.  
+
+Let me know if you would like me to send over some older relevant reports on topics of interest. 
+
+Best regards,  
+Spencer

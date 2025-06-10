@@ -812,61 +812,86 @@ Provide a JSON response with actionable prospecting insights:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const emailPrompt = `Generate a strategic prospect email for ${lead.name} at ${lead.company}.
+      // Prepare report content for the prompt
+      const primaryReport = selectedReportSummaries.length > 0 ? selectedReportSummaries[0] : null;
+      
+      // Get the actual content report data
+      let reportTitle = 'Recent 13D Report';
+      let reportTags = '';
+      if (primaryReport) {
+        const contentReport = contentReports.find(report => report.id === primaryReport.content_report_id);
+        reportTitle = contentReport?.title || 'Recent 13D Report';
+        reportTags = contentReport?.tags?.join(', ') || '';
+      }
+      
+      const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
 
-LEAD CONTEXT:
-- Current Stage: ${lead.stage}
-- Interest Areas: ${lead.interest_tags?.join(', ') || 'investment research'}
-- Notes: ${lead.notes || 'No additional notes'}
+      const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-RECENT EMAIL HISTORY:
-${emailHistory && emailHistory.length > 0 ? 
-  emailHistory.slice(-3).map((email: any) => 
-    `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}): ${email.subject}\nKey points: ${email.content.slice(0, 150)}...`
-  ).join('\n\n') : 'No recent email history - this is likely an initial outreach or long gap in communication'}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
 
-${selectedReportSummaries.length > 0 ? `
-SELECTED REPORT INSIGHTS:
-${selectedReportSummaries.map((summary: any, index: number) => 
-  `Report ${index + 1}: ${summary.parsed_summary}`
-).join('\n\n')}
-` : ''}
+GOALS:
+• Greet the reader warmly with a short intro
+• Acknowledge their stated investment interests (from ${lead.interest_tags?.join(', ') || 'general investment research'}${lead.notes ? ` or Notes: ${lead.notes}` : ''} if applicable)
+• Explain why this specific report is relevant to their strategy
+• Summarize 2–3 high-impact insights using concise bullets
+• End with a conclusion summarizing 13D's market view and how our research helps investors stay ahead
+• Include a clear CTA (e.g., invite to review the full report, book a call)
 
-ULTRA-STRICT REQUIREMENTS:
-- ABSOLUTE HARD LIMIT: 250 words MAXIMUM - COUNT EVERY WORD
-- Use ONLY bullet points for insights - NO paragraphs
-- NO academic language ("Article 1," "titled," "the report outlines," "the analysis shows")
-- NO filler words or pleasantries beyond brief greeting
-- MAXIMUM 3 bullet points, each under 35 words
-- Connect insights directly to their investment needs
-- End with simple 10-word CTA maximum
+HARD RULES:
+• TOTAL word count must not exceed **250 words**
+• Use **friendly but professional tone**
+• Paragraph format is fine, but use bullets for the insights section
+• DO NOT use phrases like "Article 1," "titled," or "the report outlines"
 
-MANDATORY FORMAT:
-Subject: [Specific market insight - max 10 words]
+STRUCTURE TO FOLLOW:
 
-Hi ${lead.name},
+---
 
-[Opening that references their interests/previous conversation - max 25 words]
+**Subject**: [Concise market insight or theme – max 8 words]  
 
-[Brief context on why this report matters for their specific focus areas - max 30 words]
+Hi ${lead.name},  
 
-• [Market insight 1 with specific data/implications - max 35 words]
-• [Market insight 2 with actionable intelligence - max 35 words] 
-• [Market insight 3 with strategic relevance - max 35 words]
-• [Optional 4th insight if highly relevant - max 35 words]
+I hope you're doing well. Based on your interest in ${lead.interest_tags?.join(', ') || 'investment research'}, I wanted to share a few key takeaways from our recent report that I believe you'll find highly relevant.  
 
-[Strategic connection to their portfolio/investment approach - max 40 words]
+• [Insight 1 – concise market data or trend, max 25 words]  
+• [Insight 2 – another aligned insight, max 25 words]  
+• [Insight 3 – optional, only if still within 190 words]  
 
-[Simple CTA - max 15 words]
+These insights reflect what we're seeing broadly at 13D — a strategic shift toward [summary of market direction]. Our research is designed to help investors like you stay ahead of macroeconomic shifts, policy changes, and long-cycle trends.  
 
-ENFORCE: Total must be under 250 words. Focus on VALUE and RELEVANCE to their specific interests.`;
+Let me know if you would like me to send over some older relevant reports on topics of interest. 
+
+Best regards,  
+Spencer
+
+---
+
+EXAMPLE:
+
+**Subject**: Gold, Inflation, and the Dollar Shift  
+
+Hi Monica,  
+
+I hope you're doing well. Based on your interest in precious metals and geopolitics, I wanted to share a few quick insights from our latest 13D research that may be timely for your strategy:  
+
+• Gold-to-CPI ratio just broke a 45-year downtrend, suggesting renewed strength in metals.  
+• Silver miners (SIL, SILJ) are outperforming global indices by double digits.  
+• USD under pressure as inflation expectations rise, boosting commodity tailwinds.  
+
+At 13D, we're seeing a broad asset rotation toward hard assets and non-U.S. exposures. Our research provides early intelligence to help position portfolios before these shifts become consensus.  
+
+Let me know if you would like me to send over some older relevant reports on topics of interest. 
+
+Best regards,  
+Spencer`;
 
       const emailResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a strategic email specialist for 13D Research. Generate personalized prospect emails (250 words MAX) that demonstrate deep understanding of the lead's context, interests, and previous interactions. Connect report insights directly to their investment strategy needs. Use bullet points for key insights. Be professional but conversational."
+            content: "You are an expert email specialist for 13D Research. Follow the exact structure and format provided. Generate personalized, concise prospect emails that are friendly but professional. Use the EXACT template structure shown in the prompt. Maximum 250 words total. Focus on relevance to the prospect's specific interests and provide actionable market insights."
           },
           {
             role: "user",
