@@ -842,16 +842,10 @@ Provide a JSON response with actionable prospecting insights:
       
       const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
 
-      // Create article attribution context and extract non-market topics
-      let articleContext = '';
+      // Extract non-market topics from article content
       let nonMarketTopics = '';
       
       if (reportArticles.length > 0) {
-        articleContext = `\n\nAVAILABLE ARTICLES for attribution:
-${reportArticles.map((article: any, index: number) => `Article ${index + 1}: ${article.title}`).join('\n')}
-
-When referencing insights, use format: (Article X in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})`;
-
         // Extract non-market topics from article titles
         const nonMarketArticles = reportArticles.filter((article: any) => {
           const title = article.title.toLowerCase();
@@ -888,7 +882,7 @@ When referencing insights, use format: (Article X in ${reportTitle.includes('WIL
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.${articleContext}` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
@@ -915,9 +909,9 @@ Hi ${lead.name},
 
 I hope you're doing well. Based on [reference to their interests/previous discussion], I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• [Insight 1 – concise market data or trend with specific details] (Article X in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})
-• [Insight 2 – another aligned insight with actionable intelligence] (Article Y in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})
-• [Insight 3 – optional third insight if space allows] (Article Z in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})  
+• [Insight 1 – concise market data or trend with specific details]
+• [Insight 2 – another aligned insight with actionable intelligence]
+• [Insight 3 – optional third insight if space allows]  
 
 We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
