@@ -500,6 +500,80 @@ Format as a complete email ready to send.`;
     }
   });
 
+  // AI report summarization with WILTW Article Parser
+  app.post("/api/ai/summarize-report", async (req: Request, res: Response) => {
+    try {
+      const { reportId, title, content, promptType } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered report analysis." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      let systemPrompt = "";
+      let userPrompt = "";
+
+      if (promptType === "wiltw_parser") {
+        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research. The report is divided into clearly titled article sections.
+
+For each article, do the following:
+
+Headline: Identify and restate the article's title.
+
+Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
+
+Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
+
+Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
+
+Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
+
+Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
+
+Return the results in a structured format, clearly separating each article.`;
+
+        userPrompt = `Please analyze this WILTW report titled "${title}" and parse it according to the format specified:
+
+${content}`;
+      } else {
+        // Fallback to general summarization
+        systemPrompt = "You are an expert investment research analyst. Provide a comprehensive summary of the given report.";
+        userPrompt = `Please summarize this report titled "${title}":
+
+${content}`;
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: userPrompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3
+      });
+
+      const summary = response.choices[0].message.content;
+      
+      res.json({ summary });
+    } catch (error) {
+      console.error("Summarize report error:", error);
+      res.status(500).json({ 
+        message: "Failed to summarize report",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI email summarization
   app.post("/api/ai/summarize-emails", async (req: Request, res: Response) => {
     try {

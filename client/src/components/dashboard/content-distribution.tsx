@@ -1,9 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { dashboardApi } from "@/lib/api";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Mail, 
   MousePointer, 
@@ -12,13 +16,20 @@ import {
   Bot,
   TrendingUp,
   BarChart3,
-  Users
+  Users,
+  FileText,
+  ChevronDown
 } from "lucide-react";
 
 export function ContentDistribution() {
+  const [selectedReport, setSelectedReport] = useState<string>("");
+  const [reportSummary, setReportSummary] = useState<string>("");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const { toast } = useToast();
+  
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
-    queryKey: ["/api/reports"],
-    queryFn: () => dashboardApi.getReports(),
+    queryKey: ["/api/content-reports"],
+    queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
   });
 
   const { data: clients = [] } = useQuery({
@@ -29,6 +40,37 @@ export function ContentDistribution() {
   const { data: suggestions = [] } = useQuery({
     queryKey: ["/api/ai/content-suggestions"],
     queryFn: () => dashboardApi.getContentSuggestions(),
+  });
+
+  const summarizeReportMutation = useMutation({
+    mutationFn: async (reportId: string) => {
+      const report = reports.find((r: any) => r.id.toString() === reportId);
+      if (!report) throw new Error("Report not found");
+
+      const response = await apiRequest("POST", "/api/ai/summarize-report", {
+        reportId: report.id,
+        title: report.title,
+        content: report.full_content || report.content_summary,
+        promptType: "wiltw_parser"
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setReportSummary(data.summary);
+      setIsGeneratingSummary(false);
+      toast({
+        title: "Report Summarized",
+        description: "WILTW article analysis completed successfully.",
+      });
+    },
+    onError: () => {
+      setIsGeneratingSummary(false);
+      toast({
+        title: "Error",
+        description: "Failed to summarize report. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (reportsLoading) {
@@ -170,6 +212,61 @@ export function ContentDistribution() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Report Summarization */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="w-5 h-5 mr-2" />
+            WILTW Article Parser
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
+                <label htmlFor="report-select" className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Report to Summarize
+                </label>
+                <Select value={selectedReport} onValueChange={setSelectedReport}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a WILTW report..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {reports.map((report: any) => (
+                      <SelectItem key={report.id} value={report.id.toString()}>
+                        {report.title} - {new Date(report.published_date).toLocaleDateString()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={() => {
+                  if (selectedReport) {
+                    setIsGeneratingSummary(true);
+                    summarizeReportMutation.mutate(selectedReport);
+                  }
+                }}
+                disabled={!selectedReport || isGeneratingSummary}
+                className="flex items-center gap-2"
+              >
+                <Bot className="w-4 h-4" />
+                {isGeneratingSummary ? "Parsing..." : "Parse Report"}
+              </Button>
+            </div>
+
+            {reportSummary && (
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-3">Structured Article Analysis</h4>
+                <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
+                  {reportSummary}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Recent WILTW Reports & AI Suggestions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
