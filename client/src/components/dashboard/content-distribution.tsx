@@ -31,7 +31,7 @@ export function ContentDistribution() {
   const [reportType, setReportType] = useState<string>("wiltw");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
+  
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
     queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
@@ -71,16 +71,16 @@ export function ContentDistribution() {
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('reportType', reportType);
-
+      
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData,
       });
-
+      
       if (!response.ok) {
         throw new Error('Upload failed');
       }
-
+      
       return response.json();
     },
     onSuccess: (data) => {
@@ -103,23 +103,18 @@ export function ContentDistribution() {
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
-      const report = safeReports.find((r: any) => r.id.toString() === reportId);
-      if (!report) {
-        console.error('Report not found. Available reports:', safeReports.map(r => ({ id: r.id, title: r.title })));
-        throw new Error("Report not found");
-      }
+      const report = reports.find((r: any) => r.id.toString() === reportId);
+      if (!report) throw new Error("Report not found");
 
       // Automatically detect report type and use appropriate parser
       const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
       const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
       console.log('Frontend debug - sending summarization request:', {
-        selectedReportId: reportId,
-        foundReportId: report.id,
-        reportTitle: report.title,
+        reportId: report.id,
         reportIdType: typeof report.id,
-        promptType: promptType,
-        allAvailableReports: safeReports.map(r => ({ id: r.id, title: r.title }))
+        title: report.title,
+        promptType: promptType
       });
 
       const response = await apiRequest("POST", "/api/ai/summarize-report", {
@@ -245,9 +240,6 @@ export function ContentDistribution() {
     }
   };
 
-  // Safely handle undefined reports array
-  const safeReports = reports || [];
-
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -279,7 +271,7 @@ export function ContentDistribution() {
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div>
               <label htmlFor="pdf-upload" className="block text-sm font-medium mb-2">
                 Select PDF Report
@@ -293,7 +285,7 @@ export function ContentDistribution() {
               />
             </div>
           </div>
-
+          
           {selectedFile && (
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2">
@@ -390,23 +382,14 @@ export function ContentDistribution() {
                 <label htmlFor="report-select" className="block text-sm font-medium text-gray-700 mb-2">
                   Select Report to Summarize
                 </label>
-                <Select 
-                  value={selectedReport} 
-                  onValueChange={(value) => {
-                    console.log('Report selection changed:', {
-                      selectedValue: value,
-                      reportTitle: safeReports.find(r => r.id.toString() === value)?.title
-                    });
-                    setSelectedReport(value);
-                  }}
-                >
+                <Select value={selectedReport} onValueChange={setSelectedReport}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a WILTW report..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {safeReports.map((report: any) => (
+                    {reports.map((report: any) => (
                       <SelectItem key={report.id} value={report.id.toString()}>
-                        {report.title} (ID: {report.id})
+                        {report.title}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -431,11 +414,35 @@ export function ContentDistribution() {
                   onClick={async () => {
                     if (selectedReport) {
                       try {
-                        const response = await fetch(`/api/ai/load-summary/${selectedReport}`);
-
-                        if (response.ok) {
-                          const data = await response.json();
-                          setReportSummary(data.summary);
+                        const response = await fetch(`/api/report-summaries`);
+                        const summaries = await response.json();
+                        const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+                        
+                        console.log('Load saved summary debug:', {
+                          selectedReport,
+                          selectedReportType: typeof selectedReport,
+                          foundSummary: reportSummary ? {
+                            id: reportSummary.id,
+                            content_report_id: reportSummary.content_report_id,
+                            summaryLength: reportSummary.parsed_summary?.length,
+                            summaryPreview: reportSummary.parsed_summary?.substring(0, 200),
+                            summaryEnd: reportSummary.parsed_summary?.substring(-100)
+                          } : null,
+                          allSummaries: summaries.map((s: any) => ({
+                            id: s.id,
+                            content_report_id: s.content_report_id,
+                            summaryLength: s.parsed_summary?.length,
+                            preview: s.parsed_summary?.substring(0, 100)
+                          }))
+                        });
+                        
+                        if (reportSummary) {
+                          console.log('Setting summary content:', {
+                            summaryId: reportSummary.id,
+                            contentLength: reportSummary.parsed_summary?.length,
+                            firstLine: reportSummary.parsed_summary?.split('\n')[0]
+                          });
+                          setReportSummary(reportSummary.parsed_summary);
                           toast({
                             title: "Summary Loaded",
                             description: "Previously saved summary loaded successfully.",
@@ -443,7 +450,7 @@ export function ContentDistribution() {
                         } else {
                           toast({
                             title: "No Saved Summary",
-                            description: "No previously saved summary found. Parse the report first.",
+                            description: "No previously saved summary found. Try parsing the report first.",
                             variant: "destructive",
                           });
                         }
@@ -485,8 +492,7 @@ export function ContentDistribution() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {safeReports.slice(0, 6).map((report: any) => (
+              {reports.slice(0, 3).map((report) => (
                 <div key={report.id} className="border rounded-lg p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -525,7 +531,6 @@ export function ContentDistribution() {
                   </div>
                 </div>
               ))}
-            </div>
             </div>
           </CardContent>
         </Card>
