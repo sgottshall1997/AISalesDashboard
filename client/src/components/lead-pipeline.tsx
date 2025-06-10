@@ -282,6 +282,19 @@ export default function LeadPipeline() {
     }
   };
 
+  const getEngagementColor = (engagement: string) => {
+    switch (engagement) {
+      case "full":
+        return "bg-blue-100 text-blue-800";
+      case "medium":
+        return "bg-purple-100 text-purple-800";
+      case "none":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
