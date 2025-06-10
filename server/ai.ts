@@ -106,12 +106,13 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       basePrompt += `
 
 CRITICAL REQUIREMENTS:
-- Word count: 250 words maximum
-- Start with a relevant hook that ties their investment focus to current market developments
-- Use max 3 bullet points or short paragraphs for key insights
-- Be direct and actionable - minimize generic phrases
-- End with simple CTA like "Want me to send over a deeper summary?" or "Let me know if this is of interest"
-- Match the tone and style of this example:
+- STRICT word count: 200-250 words MAXIMUM - be extremely concise
+- Start with ONE sentence hook tying their focus to market developments
+- Use EXACTLY 3 bullet points (one line each, max 25 words per bullet)
+- Each bullet should be one specific, actionable insight
+- End with ONE sentence CTA like "Want me to send over a deeper summary?" 
+- NO fluff, generic phrases, or unnecessary words
+- Match this EXACT format and brevity:
 
 EXAMPLE EMAIL:
 Subject: Bullish Signals for Gold and Silver Align with Your Strategy
@@ -131,7 +132,9 @@ Happy to send over the full recaps or hop on a quick call to go deeper. Just let
 Best,
 [Your Name]
 
-Generate an email following this exact format and style, tailored to their specific interests and recent report content.`;
+Generate an email following this exact format and style, tailored to their specific interests and recent report content.
+
+MANDATORY: Count every word in your response. The email body must be between 150-200 words total. If longer, cut content aggressively. Be ruthlessly concise.`;
       break;
       
     case "upsell":
