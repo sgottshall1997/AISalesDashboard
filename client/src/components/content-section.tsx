@@ -407,9 +407,13 @@ export default function ContentSection() {
                             )}
                             <div className="mt-3">
                               <button
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  console.log('=== BUTTON CLICKED ===');
                                   console.log('Button clicked for:', suggestion.title, suggestion.type);
                                   console.log('Full suggestion object:', suggestion);
+                                  alert('Button clicked! Check console for details.');
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
@@ -427,7 +431,9 @@ export default function ContentSection() {
                                   alignItems: "center",
                                   gap: "8px",
                                   opacity: generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1",
-                                  transition: "all 0.2s"
+                                  transition: "all 0.2s",
+                                  zIndex: "10",
+                                  position: "relative"
                                 }}
                                 onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
                                 onMouseOut={(e) => e.currentTarget.style.opacity = generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1"}

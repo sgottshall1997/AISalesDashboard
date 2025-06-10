@@ -1,0 +1,96 @@
+6047-78563b60daddd5d2.js:1 Replit version 4ebbce11, pid2 version 0.0.1394
+_app-0f033ad5276b45e8.js:38 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+_app-0f033ad5276b45e8.js:38 [LaunchDarkly] LaunchDarkly client initialized
+analytics.tiktok.com/i18n/pixel/events.js?sdkid=D004GE3C77U8PIVDSDJG&lib=ttq:1 
+            
+            
+           Failed to load resource: net::ERR_INTERNET_DISCONNECTEDUnderstand this error
+www.googletagmanager.com/gtag/js?id=AW-11411994397:1 
+            
+            
+           Failed to load resource: net::ERR_INTERNET_DISCONNECTEDUnderstand this error
+www.googletagmanager.com/gtag/js?id=G-MPJY3F1YEL&cx=c&_slc=1:1 
+            
+            
+           Failed to load resource: net::ERR_INTERNET_DISCONNECTEDUnderstand this error
+31Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this error
+framework-e84da00011764c69.js:1 Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'battery'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'layout-animations'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'navigation-override'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'oversized-images'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'publickey-credentials'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'speaker-selection'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'unoptimized-images'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'unsized-media'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Unrecognized feature: 'pointer-lock'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+framework-e84da00011764c69.js:1 Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-e84da00011764c69.js:1Understand this warning
+AISalesDashboard:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+content-all.js:1 Uncaught (in promise) Error: Could not establish connection. Receiving end does not exist.
+    at y (content-all.js:1:49334)Understand this error
+AISalesDashboard:1 Unchecked runtime.lastError: The message port closed before a response was received.Understand this error
+gravatar.com/avatar/2824033876673b5cbb00e9d349508835?d=404:1 
+            
+            
+           Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/2824033876673b5cbb00e9d349508835?d=404:1 
+            
+            
+           Failed to load resource: the server responded with a status of 404 ()Understand this error
+gravatar.com/avatar/2824033876673b5cbb00e9d349508835?d=404:1 
+            
+            
+           Failed to load resource: the server responded with a status of 404 ()Understand this error
+workspace_iframe.html:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'battery'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'layout-animations'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'legacy-image-formats'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'navigation-override'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'oversized-images'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'publickey-credentials'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'speaker-selection'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'unoptimized-images'.Understand this warning
+workspace_iframe.html:32 Unrecognized feature: 'unsized-media'.Understand this warning
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warning
+workspace_iframe.html:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warning
+Console.js:61 [vite] connecting...
+Console.js:61 [vite] connected.
+gravatar.com/avatar/2824033876673b5cbb00e9d349508835?d=404:1 
+            
+            
+           Failed to load resource: the server responded with a status of 404 ()
