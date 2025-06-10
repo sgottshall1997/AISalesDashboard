@@ -606,7 +606,7 @@ Provide a JSON response with actionable prospecting insights:
   // AI email generation for leads
   app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
     try {
-      const { lead, emailHistory, contentReports, selectedReportId } = req.body;
+      const { lead, emailHistory, contentReports, selectedReportIds } = req.body;
       
       if (!lead) {
         return res.status(400).json({ error: "Lead data is required" });
@@ -618,10 +618,15 @@ Provide a JSON response with actionable prospecting insights:
         });
       }
 
-      // Get stored summary if a specific report is selected
-      let selectedReportSummary = null;
-      if (selectedReportId) {
-        selectedReportSummary = await storage.getReportSummary(selectedReportId);
+      // Get stored summaries for all selected reports
+      let selectedReportSummaries = [];
+      if (selectedReportIds && selectedReportIds.length > 0) {
+        for (const reportId of selectedReportIds) {
+          const summary = await storage.getReportSummary(reportId);
+          if (summary) {
+            selectedReportSummaries.push(summary);
+          }
+        }
       }
 
       // Find relevant reports based on lead's interests
@@ -646,9 +651,13 @@ ${emailHistory && emailHistory.length > 0 ?
     `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name}: ${email.subject}\n${email.content.slice(0, 200)}...`
   ).join('\n\n') : 'No recent email history'}
 
-${selectedReportSummary ? `
-Featured Report Analysis:
-${selectedReportSummary.parsed_summary}
+${selectedReportSummaries.length > 0 ? `
+Selected Report Analyses:
+${selectedReportSummaries.map((summary: any, index: number) => 
+  `Report ${index + 1} (${summary.summary_type}):
+${summary.parsed_summary}
+---`
+).join('\n\n')}
 ` : ''}
 
 Available Reports to Reference:

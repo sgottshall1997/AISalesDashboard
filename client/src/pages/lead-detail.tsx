@@ -93,7 +93,7 @@ export default function LeadDetail() {
   const [emailSummary, setEmailSummary] = useState<string | null>(null);
   const [aiEmailSuggestion, setAiEmailSuggestion] = useState<string | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
-  const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
+  const [selectedReportIds, setSelectedReportIds] = useState<number[]>([]);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -197,7 +197,7 @@ export default function LeadDetail() {
         lead,
         emailHistory: emailHistory || [],
         contentReports: contentReports.slice(0, 5),
-        selectedReportId,
+        selectedReportIds,
       });
       return response.json();
     },
@@ -748,25 +748,35 @@ export default function LeadDetail() {
                 
                 {reportSummaries && reportSummaries.length > 0 && (
                   <div className="space-y-2">
-                    <Label htmlFor="report-select" className="text-sm font-medium">
-                      Reference Specific Report (Optional)
+                    <Label className="text-sm font-medium">
+                      Select Reports to Reference (Optional)
                     </Label>
-                    <Select 
-                      value={selectedReportId?.toString() || "none"} 
-                      onValueChange={(value) => setSelectedReportId(value === "none" ? null : parseInt(value))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a report to reference..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No specific report</SelectItem>
-                        {reportSummaries.map((summary: any) => (
-                          <SelectItem key={summary.id} value={summary.content_report_id.toString()}>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
+                      {reportSummaries.map((summary: any) => (
+                        <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selectedReportIds.includes(summary.content_report_id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                              } else {
+                                setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                              }
+                            }}
+                            className="rounded"
+                          />
+                          <span className="text-sm">
                             {summary.report.title} ({summary.summary_type})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedReportIds.length > 0 && (
+                      <p className="text-xs text-gray-600">
+                        {selectedReportIds.length} report{selectedReportIds.length > 1 ? 's' : ''} selected
+                      </p>
+                    )}
                   </div>
                 )}
                 
