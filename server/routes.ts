@@ -424,259 +424,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Extract actual PDF content from the uploaded file
+        // Extract actual PDF content using pdf-parse library
         const pdfFilename = file.originalname;
+        const pdf = require('pdf-parse');
         
         try {
-          // Extract text content from PDF buffer using multiple approaches
-          let rawText = '';
+          // Use pdf-parse to extract the complete text from the PDF buffer
+          const pdfData = await pdf(file.buffer);
+          extractedText = pdfData.text;
           
-          // Method 1: Binary extraction with improved text detection
-          const bufferBinary = file.buffer.toString('binary');
-          const textChunks = [];
-          let currentChunk = '';
-          
-          for (let i = 0; i < bufferBinary.length; i++) {
-            const char = bufferBinary[i];
-            const charCode = char.charCodeAt(0);
-            
-            // Include readable characters including extended ASCII
-            if ((charCode >= 32 && charCode <= 126) || 
-                charCode === 9 || charCode === 10 || charCode === 13) {
-              currentChunk += char;
-            } else {
-              if (currentChunk.length > 15) {
-                const cleaned = currentChunk.trim();
-                if (cleaned.length > 10 && cleaned.match(/[a-zA-Z]{3,}/)) {
-                  textChunks.push(cleaned);
-                }
-              }
-              currentChunk = '';
-            }
-          }
-          
-          // Add final chunk
-          if (currentChunk.length > 15) {
-            const cleaned = currentChunk.trim();
-            if (cleaned.length > 10 && cleaned.match(/[a-zA-Z]{3,}/)) {
-              textChunks.push(cleaned);
-            }
-          }
-          
-          // Method 2: UTF-8 extraction with better filtering
-          const bufferUtf8 = file.buffer.toString('utf8');
-          const utf8Segments = bufferUtf8.match(/[A-Za-z0-9\s\.\,\;\:\!\?\-\+\=\(\)\[\]\"\']{15,}/g);
-          if (utf8Segments) {
-            textChunks.push(...utf8Segments.filter(s => s.trim().length > 10));
-          }
-          
-          // Combine and deduplicate
-          const allText = [...new Set(textChunks)].join(' ');
-          rawText = allText
-            .replace(/\s+/g, ' ')
-            .replace(/[^\x20-\x7E\n\r]/g, ' ')
-            .trim();
-          
-          console.log('Enhanced PDF extraction:', {
-            binaryChunks: textChunks.length,
-            totalLength: rawText.length,
-            preview: rawText.substring(0, 200)
+          console.log('PDF extraction successful:', {
+            filename: pdfFilename,
+            pages: pdfData.numpages,
+            textLength: extractedText.length,
+            preview: extractedText.substring(0, 300)
           });
-          
-          extractedText = rawText;
           
         } catch (error) {
           console.error('PDF extraction error:', error);
-          // More aggressive fallback extraction
-          const fallbackText = file.buffer.toString('latin1');
-          const matches = fallbackText.match(/[A-Za-z0-9\s\.\,\;\:\!\?\-]{20,}/g);
-          extractedText = matches ? matches.join(' ') : file.buffer.toString('utf8').substring(0, 100000);
+          throw new Error(`Failed to extract PDF content: ${error.message}`);
         }
         
-        if (pdfFilename.includes('WILTW') && extractedText.length < 1000) {
-          // If extraction failed, use the actual WILTW content structure from the attached file
-          const actualWILTWContent = `**Article 1: The Rise of Quantum Computing in Financial Services**
-
-- **Core Thesis:** Quantum computing is poised to revolutionize the financial services industry by enhancing computational power and solving complex problems that are currently intractable for classical computers.
-
-- **Key Insights:**
-- Quantum computers can process data exponentially faster than classical computers, enabling real-time risk analysis and optimization.
-- Financial institutions are investing heavily in quantum research, with JPMorgan and Goldman Sachs leading the charge.
-- The development of quantum algorithms for portfolio optimization and fraud detection is underway.
-
-- **Investment Implications:**
-- Early adopters of quantum technology in finance may gain a competitive edge.
-- Potential disruption in traditional financial services as quantum computing becomes mainstream.
-
-- **Recommended Names (if any):** IBM, Google, D-Wave
-- **Category Tag:** Technology
-
----
-
-**Article 2: Geopolitical Shifts in the Middle East and Their Global Impact**
-
-- **Core Thesis:** Recent geopolitical shifts in the Middle East, including new alliances and conflicts, are reshaping global energy markets and international relations.
-
-- **Key Insights:**
-- The normalization of relations between Israel and several Arab states is altering regional dynamics.
-- Iran's nuclear ambitions continue to be a source of tension, affecting global oil prices.
-- The U.S. is reducing its military presence, impacting power balances and economic ties.
-
-- **Investment Implications:**
-- Volatility in oil markets may increase, presenting both risks and opportunities for investors.
-- Companies with exposure to Middle Eastern markets need to reassess geopolitical risks.
-
-- **Recommended Names (if any):** ExxonMobil, Chevron, BP
-- **Category Tag:** Geopolitics
-
----
-
-**Article 3: China's Belt and Road Initiative: Expanding Influence**
-
-- **Core Thesis:** China's Belt and Road Initiative (BRI) is expanding its global influence by investing in infrastructure projects across Asia, Africa, and Europe, fostering economic dependencies.
-
-- **Key Insights:**
-- BRI projects have reached over 60 countries, with investments exceeding $1 trillion.
-- Infrastructure developments include railways, ports, and energy projects, enhancing trade routes.
-- Some countries express concerns over debt sustainability and political influence.
-
-- **Investment Implications:**
-- Opportunities in infrastructure and construction sectors as BRI projects continue to expand.
-- Potential risks related to geopolitical tensions and debt defaults.
-
-- **Recommended Names (if any):** China Communications Construction Company, CRRC Corporation
-- **Category Tag:** China
-
----
-
-**Article 4: The Future of AI in Healthcare**
-
-- **Core Thesis:** Artificial Intelligence (AI) is transforming healthcare by improving diagnostics, personalizing treatment plans, and streamlining administrative processes.
-
-- **Key Insights:**
-- AI algorithms are achieving high accuracy in diagnosing diseases such as cancer and cardiovascular conditions.
-- Personalized medicine is becoming more feasible with AI-driven data analysis.
-- AI is reducing administrative burdens, allowing healthcare professionals to focus more on patient care.
-
-- **Investment Implications:**
-- Growth potential in AI healthcare applications, with significant investment opportunities in biotech and health tech startups.
-- Regulatory challenges and ethical considerations may impact adoption rates.
-
-- **Recommended Names (if any):** IBM Watson Health, Google Health, Tempus
-- **Category Tag:** AI
-
----
-
-**Article 5: Renewable Energy: The Path to Net Zero**
-
-- **Core Thesis:** The transition to renewable energy is crucial for achieving net-zero carbon emissions, with significant investments required in solar, wind, and battery storage technologies.
-
-- **Key Insights:**
-- Global renewable energy capacity is expected to double by 2030, driven by government policies and technological advancements.
-- Solar and wind energy costs have decreased by over 70% in the past decade.
-- Energy storage solutions are critical for managing intermittent renewable power supply.
-
-- **Investment Implications:**
-- Strong growth prospects in renewable energy sectors, particularly in solar and wind.
-- Energy storage and grid modernization present additional investment opportunities.
-
-- **Recommended Names (if any):** Tesla, NextEra Energy, Vestas Wind Systems
-- **Category Tag:** Energy
-
----
-
-**Article 6: The Impact of Climate Change on Global Agriculture**
-
-- **Core Thesis:** Climate change is significantly affecting global agriculture, altering crop yields, and threatening food security, necessitating adaptive strategies and technologies.
-
-- **Key Insights:**
-- Rising temperatures and changing precipitation patterns are impacting crop productivity.
-- Innovations in agricultural technology, such as drought-resistant crops, are critical for adaptation.
-- The agricultural sector is a major contributor to greenhouse gas emissions, requiring sustainable practices.
-
-- **Investment Implications:**
-- Opportunities in agri-tech and sustainable farming practices.
-- Risks associated with supply chain disruptions and increased costs for traditional agriculture.
-
-- **Recommended Names (if any):** Deere & Company, Bayer AG, Corteva Agriscience
-- **Category Tag:** Climate
-
----
-
-**Article 7: The Evolution of Global Supply Chains Post-Pandemic**
-
-- **Core Thesis:** The COVID-19 pandemic has accelerated changes in global supply chains, emphasizing resilience, diversification, and the adoption of digital technologies.
-
-- **Key Insights:**
-- Companies are shifting from just-in-time to just-in-case inventory models.
-- Nearshoring and reshoring trends are gaining momentum to reduce dependency on single regions.
-- Digital supply chain solutions, including blockchain and IoT, are enhancing transparency and efficiency.
-
-- **Investment Implications:**
-- Increased demand for supply chain technology solutions.
-- Opportunities in logistics and warehousing sectors as companies adapt to new supply chain models.
-
-- **Recommended Names (if any):** FedEx, Maersk, SAP
-- **Category Tag:** Markets
-
----
-
-**Article 8: The Role of Education in the Digital Economy**
-
-- **Core Thesis:** Education systems must evolve to meet the demands of the digital economy, focusing on skills development in technology, critical thinking, and adaptability.
-
-- **Key Insights:**
-- There is a growing skills gap in fields such as AI, cybersecurity, and data science.
-- Online education platforms are expanding access to digital skills training.
-- Collaboration between educational institutions and industries is essential for curriculum relevance.
-
-- **Investment Implications:**
-- Growth potential in edtech platforms and services.
-- Long-term benefits for companies investing in workforce upskilling and reskilling.
-
-- **Recommended Names (if any):** Coursera, Udacity, 2U
-- **Category Tag:** Education
-
----
-
-**Article 9: The Future of Urban Mobility**
-
-- **Core Thesis:** Urban mobility is undergoing a transformation with the rise of electric vehicles (EVs), autonomous driving, and shared mobility solutions, aiming to create sustainable and efficient transportation systems.
-
-- **Key Insights:**
-- EV adoption is increasing, supported by government incentives and declining battery costs.
-- Autonomous vehicle technology is advancing, with pilot programs in major cities.
-- Shared mobility services are reshaping urban transportation, reducing congestion and emissions.
-
-- **Investment Implications:**
-- Opportunities in EV manufacturing, autonomous technology, and mobility-as-a-service platforms.
-- Regulatory and infrastructure challenges may affect the pace of adoption.
-
-- **Recommended Names (if any):** Tesla, Uber, Waymo
-- **Category Tag:** Technology
-
----
-
-**Article 10: The Strategic Importance of Rare Earth Metals**
-
-- **Core Thesis:** Rare earth metals are critical for modern technologies, including electronics, renewable energy, and defense systems, with supply chain vulnerabilities highlighting their strategic importance.
-
-- **Key Insights:**
-- China dominates the global supply of rare earth metals, accounting for over 80% of production.
-- Rare earths are essential for manufacturing high-tech products such as smartphones and electric vehicles.
-- Geopolitical tensions and trade policies are influencing the availability and pricing of these materials.
-
-- **Investment Implications:**
-- Opportunities in rare earth mining and processing industries.
-- Risks related to supply chain disruptions and geopolitical conflicts.
-
-- **Recommended Names (if any):** Lynas Rare Earths, MP Materials
-- **Category Tag:** Commodities`;
-          
-          extractedText = actualWILTWContent;
-        } else {
-          // For non-WILTW files, attempt basic text extraction
-          extractedText = file.buffer.toString('utf8').substring(0, 10000);
+        // Only use real extracted PDF text - no fallback content
+        if (extractedText.length < 1000) {
+          throw new Error('PDF extraction failed - extracted text is too short. Please ensure the PDF contains readable text.');
         }
         
         console.log('Raw PDF extraction:', {
@@ -684,136 +455,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           preview: extractedText.substring(0, 300)
         });
         
-        // Process the actual extracted content based on report type
-        const dateMatch = pdfFilename.match(/(\d{4}-\d{2}-\d{2})/);
-        const reportDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+        // Use GPT to analyze the full extracted PDF content
+        console.log('Analyzing full PDF content with GPT:', extractedText.length, 'characters');
         
-        if (pdfFilename.includes('WILTW') && extractedText.length > 1000) {
-          // Use actual PDF content for WILTW reports
-          console.log('Processing WILTW with actual content:', extractedText.length, 'characters');
-          extractedText = formatWILTWArticles(extractedText, reportDate);
-          console.log('Formatted WILTW content:', extractedText.length, 'characters');
-        } else if (pdfFilename.includes('WATMTU') && extractedText.length > 1000) {
-          // For WATMTU, use the actual extracted content
-          console.log('Processing WATMTU with actual content:', extractedText.length, 'characters');
-          extractedText = `WATMTU Market Analysis Report ${reportDate}
-
-**Strategic Asset Allocation Analysis**
-
-- **Core Thesis:** Precious metals sector showing breakout potential with specific percentage gains across gold and silver positions. Portfolio allocation recommendations targeting institutional investor requirements.
-
-- **Key Market Insights:**
-- Gold positioning shows 15-20% upside potential in current market environment
-- Silver industrial demand supporting price floor at key technical levels  
-- Mining sector consolidation creating value opportunities in mid-cap names
-- Commodity allocation models suggesting 8-12% precious metals weighting optimal
-
-- **Investment Themes:**
-- Defensive positioning through hard assets allocation
-- USD index risks creating tailwinds for precious metals
-- Geopolitical tensions supporting safe haven demand
-- Portfolio diversification benefits in current cycle
-
-- **Risk Assessment:**
-- Dollar strength risks to precious metals pricing
-- Fed policy pivot timing affecting sector performance
-- Mining operational risks in key producing regions
-
-- **Recommended Allocation:** 10% precious metals, 5% mining equities
-- **Target Audience:** Investment professionals and portfolio managers
-- **Market Outlook:** Bullish on commodities sector rotation`;
-        } else if (pdfFilename.includes('WILTW')) {
-          extractedText = `What I Learned This Week Report ${reportDate}
-
-**Weekly Market Insights and Strategic Analysis**
-
-**Article 1: China's Critical Minerals Supply Chain Dominance**
-
-- **Core Thesis:** China's control over critical mineral supply chains represents a strategic vulnerability for Western economies and investment portfolios requiring defensive positioning.
-
-- **Key Insights:**
-- China controls 85% of rare earth processing capacity globally
-- Strategic stockpiling of lithium, cobalt creating supply constraints
-- US reshoring initiatives targeting mineral independence by 2030
-- Technology sector dependencies creating national security implications
-
-- **Investment Implications:**
-- Diversification away from China-dependent supply chains
-- Opportunities in North American mining development projects
-- Technology companies with secure supply agreements outperforming
-
-**Article 2: USD Risks and Portfolio Implications**
-
-- **Core Thesis:** Dollar index volatility creating "revenge tax" scenario for foreign asset holders, requiring currency hedging strategies.
-
-- **Key Market Drivers:**
-- Federal Reserve policy uncertainty affecting dollar strength
-- International trade tensions impacting currency stability
-- Emerging market capital flows reversing on dollar moves
-- Portfolio hedging costs rising across asset classes
-
-- **Strategic Recommendations:**
-- Currency hedge ratios increased to 75-80% for international exposure
-- Alternative asset allocation protecting against dollar volatility
-- Emerging market selective exposure in commodity exporters
-
-**Article 3: Emerging Market Opportunities**
-
-- **Core Thesis:** Select emerging markets showing resilience despite global headwinds, particularly in commodity-exporting nations.
-
-- **Investment Themes:**
-- Brazil agricultural exports benefiting from global food security concerns
-- Indonesia infrastructure development supporting growth outlook
-- India technology sector gaining market share from China alternatives
-
-- **Risk Factors:**
-- Global growth slowdown affecting export demand
-- Political stability concerns in key markets
-- Currency volatility impacting returns
-
-**Market Outlook:** Cautiously optimistic on selective EM exposure
-**Target Audience:** Investment professionals and portfolio managers`;
-        } else {
-          extractedText = `Investment Research Report ${reportDate}
-
-**Comprehensive Market Analysis and Strategic Insights**
-
-- **Core Investment Themes:** Market analysis covering sector rotation opportunities, geopolitical risk assessment, and portfolio positioning recommendations for institutional investors.
-
-- **Key Findings:**
-- Market volatility creating selective opportunities across sectors
-- Defensive positioning warranted given economic uncertainty
-- Technology sector showing resilience despite headwinds
-- International diversification benefits in current environment
-
-- **Strategic Recommendations:**
-- Maintain balanced allocation across growth and value factors
-- Increase cash positions for tactical opportunities
-- Focus on quality companies with pricing power
-- Monitor geopolitical developments affecting global markets
-
-- **Risk Assessment:**
-- Inflation persistence affecting real returns
-- Central bank policy coordination challenges
-- Supply chain disruptions continuing sector impact
-
-- **Target Audience:** Investment professionals and portfolio managers
-- **Outlook:** Cautiously optimistic with tactical flexibility`;
-        }
-        
-        // Ensure we have substantial content
-        if (!extractedText || extractedText.length < 100) {
-          const dateMatch = pdfFilename.match(/(\d{4}-\d{2}-\d{2})/);
-          const reportDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-          
-          if (pdfFilename.includes('WATMTU')) {
-            extractedText = `WATMTU Market Analysis Report ${reportDate}. Strategic asset allocation analysis covering precious metals market trends, gold and silver performance metrics, commodity sector insights, and portfolio allocation recommendations for institutional investors.`;
-          } else if (pdfFilename.includes('WILTW')) {
-            extractedText = `What I Learned This Week Report ${reportDate}. Weekly market insights covering global economic developments, investment themes, geopolitical analysis, and strategic market opportunities for professional investors.`;
-          } else {
-            extractedText = `Investment Research Report ${reportDate}. Comprehensive analysis of market conditions, strategic insights, and investment recommendations based on current market data and research findings.`;
-          }
-        }
+        // Call GPT to analyze the extracted text with investment research prompt
+        extractedText = await analyzeReportWithGPT(extractedText, pdfFilename);
         
         console.log('PDF processing successful:', {
           filename: file.originalname,
