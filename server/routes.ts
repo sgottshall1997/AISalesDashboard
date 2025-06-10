@@ -462,6 +462,11 @@ ${emailHistory && emailHistory.length > 0 ?
     `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name}: ${email.subject}\n${email.content.slice(0, 200)}...`
   ).join('\n\n') : 'No recent email history'}
 
+${selectedReportSummary ? `
+Featured Report Analysis:
+${selectedReportSummary.parsed_summary}
+` : ''}
+
 Available Reports to Reference:
 ${relevantReports.slice(0, 3).map((report: any, i: number) => 
   `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 200) + '...' : ''}`

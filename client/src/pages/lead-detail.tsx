@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, 
   Edit, 
@@ -92,6 +93,7 @@ export default function LeadDetail() {
   const [emailSummary, setEmailSummary] = useState<string | null>(null);
   const [aiEmailSuggestion, setAiEmailSuggestion] = useState<string | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -113,6 +115,10 @@ export default function LeadDetail() {
 
   const { data: contentReports } = useQuery<ContentReport[]>({
     queryKey: ["/api/content-reports"],
+  });
+
+  const { data: reportSummaries } = useQuery({
+    queryKey: ["/api/report-summaries"],
   });
 
   // Update notes when lead data loads
@@ -194,6 +200,7 @@ export default function LeadDetail() {
         lead,
         emailHistory: emailHistory || [],
         contentReports: contentReports.slice(0, 5),
+        selectedReportId,
       });
       return response.json();
     },
