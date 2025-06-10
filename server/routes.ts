@@ -6,7 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
-// Using dynamic import for PDF parsing to avoid ES module issues
+// PDF text extraction will be handled with a different approach
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -437,9 +437,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Extract actual text content from PDF buffer
-        const pdfData = await pdfParse(file.buffer);
-        extractedText = pdfData.text;
+        // Save PDF buffer to temporary file for processing
+        const tempPdfPath = `/tmp/temp_${Date.now()}.pdf`;
+        fs.writeFileSync(tempPdfPath, file.buffer);
+        
+        try {
+          // Extract text using pdf-poppler
+          const options = {
+            format: 'text',
+            out_dir: '/tmp',
+            out_prefix: `extract_${Date.now()}`,
+            page: null // Extract all pages
+          };
+          
+          const result = await pdfPoppler.convert(tempPdfPath, options);
+          extractedText = result ? result.toString() : '';
+          
+          // Clean up temp file
+          fs.unlinkSync(tempPdfPath);
+        } catch (pdfError) {
+          console.error('PDF extraction failed:', pdfError);
+          // Clean up temp file on error
+          if (fs.existsSync(tempPdfPath)) {
+            fs.unlinkSync(tempPdfPath);
+          }
+          throw new Error(`PDF text extraction failed: ${pdfError.message}`);
+        }
         
         console.log('Raw PDF extraction:', {
           length: extractedText.length,
