@@ -19,8 +19,10 @@ export default function ContentSection() {
   });
 
   const { data: suggestions, isLoading: suggestionsLoading, refetch: refetchSuggestions } = useQuery({
-    queryKey: ["/api/ai/content-suggestions"],
+    queryKey: ["/api/ai/content-suggestions", Date.now()], // Force fresh fetch with timestamp
     enabled: false, // Don't auto-fetch, only when button is clicked
+    gcTime: 0, // Don't cache results
+    staleTime: 0, // Always fetch fresh data
   });
 
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
@@ -226,7 +228,10 @@ export default function ContentSection() {
               <CardTitle>Email Topic Suggestions</CardTitle>
               <Button 
                 size="sm" 
-                onClick={() => refetchSuggestions()}
+                onClick={() => {
+                  queryClient.removeQueries({ queryKey: ["/api/ai/content-suggestions"] });
+                  refetchSuggestions();
+                }}
                 disabled={suggestionsLoading}
                 className="ml-2"
               >
