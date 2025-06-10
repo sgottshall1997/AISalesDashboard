@@ -102,6 +102,13 @@ export interface IStorage {
   generateInvoiceFollowUp(invoice: any, emailHistory: EmailHistory[]): Promise<any>;
   getLeadAISuggestion(leadId: number): Promise<any>;
   generateLeadFollowUp(lead: any, emailHistory: LeadEmailHistory[], contentReports: ContentReport[], reportSummaries?: ReportSummary[]): Promise<any>;
+
+  // Tasks
+  getAllTasks(): Promise<Task[]>;
+  getTask(id: number): Promise<Task | undefined>;
+  createTask(task: InsertTask): Promise<Task>;
+  updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined>;
+  deleteTask(id: number): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {

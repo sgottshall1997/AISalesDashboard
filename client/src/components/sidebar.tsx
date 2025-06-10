@@ -6,7 +6,7 @@ import {
   FileText, 
   TrendingUp, 
   Users, 
-  Send, 
+  CheckSquare, 
   Menu, 
   X, 
   User,
@@ -26,7 +26,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: "invoicing", name: "Invoicing Assistant", icon: FileText },
     { id: "content", name: "Content Distribution", icon: TrendingUp },
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
-    { id: "followup", name: "Follow-Up Generator", icon: Send },
+    { id: "followup", name: "Task Tracker", icon: CheckSquare },
     { id: "upload", name: "CSV Upload", icon: Upload },
   ];
 

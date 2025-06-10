@@ -128,6 +128,18 @@ export const lead_email_history = pgTable("lead_email_history", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  client_name: text("client_name"), // Optional client association
+  priority: text("priority").notNull().default("medium"), // low, medium, high
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed
+  due_date: timestamp("due_date"),
+  created_at: timestamp("created_at").defaultNow(),
+  completed_at: timestamp("completed_at"),
+});
+
 // Insert schemas
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -192,6 +204,12 @@ export const insertLeadEmailHistorySchema = createInsertSchema(lead_email_histor
   to_email: z.string().optional().default(''),
 });
 
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  created_at: true,
+  completed_at: true,
+});
+
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
@@ -216,6 +234,9 @@ export type InsertEmailHistory = z.infer<typeof insertEmailHistorySchema>;
 
 export type LeadEmailHistory = typeof lead_email_history.$inferSelect;
 export type InsertLeadEmailHistory = z.infer<typeof insertLeadEmailHistorySchema>;
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
 
 export const report_summaries = pgTable("report_summaries", {
   id: serial("id").primaryKey(),
