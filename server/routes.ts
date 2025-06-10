@@ -813,69 +813,65 @@ Provide a JSON response with actionable prospecting insights:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const emailPrompt = `You are an expert investment advisor writing a personalized follow-up email.
-
-Lead Information:
-- Name: ${lead.name}
-- Company: ${lead.company}
-- Stage: ${lead.stage}
-- Interest Areas: ${lead.interest_tags?.join(', ') || 'General investing'}
-
-Recent Email History:
-${emailHistory && emailHistory.length > 0 ? 
-  emailHistory.slice(-3).map((email: any) => 
-    `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name}: ${email.subject}\n${email.content.slice(0, 200)}...`
-  ).join('\n\n') : 'No recent email history'}
+      const emailPrompt = `Generate a CONCISE prospect email for ${lead.name} at ${lead.company}. Lead interests: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
 ${selectedReportSummaries.length > 0 ? `
-Selected Report Analyses:
-${selectedReportSummaries.map((summary: any, index: number) => 
-  `Report ${index + 1} (${summary.summary_type}):
-${summary.parsed_summary}
----`
-).join('\n\n')}
+Selected Report Content:
+${selectedReportSummaries.map((summary: any) => summary.parsed_summary).join('\n\n')}
 ` : ''}
 
-Available Reports to Reference:
-${relevantReports.slice(0, 3).map((report: any, i: number) => 
-  `${i+1}. ${report.title} (Tags: ${report.tags?.join(', ')})${report.content_summary ? '\n   Summary: ' + report.content_summary.slice(0, 200) + '...' : ''}`
-).join('\n')}
+ULTRA-STRICT REQUIREMENTS - NO EXCEPTIONS:
+- HARD LIMIT: 170 words MAXIMUM for entire email
+- NO academic phrases like "Article 1," "titled," "the report outlines"
+- NO long paragraphs - use bullet points only
+- NO generic pleasantries or filler
+- Start immediately with relevant market hook
+- 3 bullets maximum, each under 25 words
+- End with simple CTA under 10 words
 
-Write a highly detailed and personalized follow-up email that demonstrates deep knowledge of the selected report content. ${selectedReportSummaries.length > 1 ? 'Reference ALL selected reports' : 'Reference the selected report'} comprehensively. Follow this specific format:
+MANDATORY FORMAT (COPY EXACTLY):
+Subject: [Market insight - max 8 words]
 
-1. Brief personal greeting referencing their company and interests
-${selectedReportSummaries.length > 1 ? `2. Reference ALL ${selectedReportSummaries.length} selected reports by title, mentioning 2-3 SPECIFIC articles/sections from EACH report` : '2. Reference the specific report title and mention 2-3 SPECIFIC articles/sections from the report by name or topic'}
-3. For each article/section mentioned from ${selectedReportSummaries.length > 1 ? 'each report' : 'the report'}, provide concrete details about:
-   - The specific thesis or finding
-   - Relevant data points, names, or examples mentioned
-   - Direct implications for their investment focus areas
-4. Connect insights from ${selectedReportSummaries.length > 1 ? 'all reports' : 'the report'} to their specific interests (${lead.interest_tags?.join(', ')}) with actionable insights
-5. End with: "I'd be happy to search for any other relevant reports you may be interested in."
+Hi ${lead.name},
 
-CRITICAL: Be extremely specific with data from ${selectedReportSummaries.length > 1 ? 'ALL selected reports' : 'the selected report'}. Instead of saying "the report covers geopolitics," say things like:
-- "Article 2 details our recent China visit where we met with 150 people including central bank members and mayors"
-- "The WATMTU analysis shows precious metals breaking out with specific percentage gains"
-- "The USD index risks section highlights the 'revenge tax' scenario on foreign asset holders"
+[Hook sentence connecting to their focus - max 15 words]:
 
-Extract specific company names, data points, percentages, ETF symbols, or concrete examples from ${selectedReportSummaries.length > 1 ? 'each report summary' : 'the report summary'}. Make each point actionable for their portfolio strategy.
+• [Insight 1 - max 25 words]
+• [Insight 2 - max 25 words] 
+• [Insight 3 - max 25 words]
 
-Use proper line breaks and spacing. Write as a senior investment advisor who has thoroughly studied the report.
+[CTA - max 10 words]
 
-Format as a complete email ready to send.`;
+EXAMPLE (170 words total):
+Subject: Key Shifts in Gold, USD, China
+
+Hi Monica,
+
+Given your focus on precious metals and geopolitics, here are timely insights supporting W-GEM's strategy:
+
+• Gold/Silver Momentum: Gold-to-CPI ratio broke 45-year downtrend. SIL and SILJ outperforming — bullish for miners.
+
+• China's Strategic Resilience: Recent trip reveals Beijing diversifying trade relationships, stimulating domestic growth. Chinese equities could lead.
+
+• USD Headwinds: Rising inflation, weaker dollar outlook favor hard assets. "Revenge tax" on foreign holders adds urgency.
+
+Let me know if you'd like deeper summaries.
+
+ENFORCE: Count every word. If over 170 words, CUT content aggressively. NO exceptions.`;
 
       const emailResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are an expert investment advisor and relationship manager. Write personalized, value-driven emails that build trust and drive engagement."
+            content: "You are a concise email specialist for 13D Research. Generate ULTRA-SHORT prospect emails (170 words MAX). Use bullet points only. NO long paragraphs. NO academic language. Be direct and punchy."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 800,
+        max_tokens: 400,
         temperature: 0.7
       });
 
