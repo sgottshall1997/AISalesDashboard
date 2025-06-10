@@ -357,6 +357,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // In production, implement proper PDF parsing with a working library
       let extractedText = '';
       
+      console.log('PDF Upload - File details:', {
+        originalname: file.originalname,
+        size: file.size,
+        reportType,
+        detectedType: file.originalname.includes('WATMTU') ? 'WATMTU' : 
+                     file.originalname.includes('WILTW') ? 'WILTW' : 'Unknown'
+      });
+      
       if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
         extractedText = `WATMTU Market Analysis Report
         
@@ -484,6 +492,14 @@ Investment Implications:
         target_audience: parsedData.targetAudience,
         full_content: extractedText // Store raw PDF text directly without processing
       };
+
+      console.log('Storing report with content validation:', {
+        title: reportTitle,
+        contentLength: extractedText.length,
+        contentType: extractedText.includes('Table of Contents') ? 'Structured Report' : 'Sample Content',
+        isActualPDFContent: extractedText.length > 1000 && !extractedText.includes('Sample content'),
+        warningMessage: extractedText.length < 1000 ? 'WARNING: Short content detected - may be sample data' : 'Content appears valid'
+      });
 
       const report = await storage.createContentReport(reportData);
       
