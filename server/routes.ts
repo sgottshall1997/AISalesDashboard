@@ -519,21 +519,29 @@ Format as a complete email ready to send.`;
       if (promptType === "wiltw_parser") {
         systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research. The report is divided into clearly titled article sections.
 
-For each article, do the following:
+For each article, analyze and format exactly as follows:
 
-Headline: Identify and restate the article's title.
+**Article [Number]: [Article Title]**
 
-Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
+- **Core Thesis:** Summarize the main argument or thesis in 2–3 sentences.
 
-Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
+- **Key Insights:**
+- [Bullet point 1 with specific data/facts]
+- [Bullet point 2 with specific data/facts]
+- [Bullet point 3 with specific data/facts]
+- [Additional bullet points as needed]
 
-Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
+- **Investment Implications:**
+- [Forward-looking insights for investors]
+- [Market opportunities or risks]
 
-Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
+- **Recommended Names (if any):** [List specific equities, ETFs, indices mentioned, or "None specified"]
 
-Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
+- **Category Tag:** [Choose from: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
 
-Return the results in a structured format, clearly separating each article.`;
+---
+
+Separate each article analysis with a horizontal line (---) and maintain consistent formatting throughout.`;
 
         userPrompt = `Please analyze this WILTW report titled "${title}" and parse it according to the format specified:
 
