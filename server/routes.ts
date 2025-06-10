@@ -840,12 +840,16 @@ Format as a complete email ready to send.`;
       console.log('Content being sent to AI:', {
         contentLength: actualContent?.length,
         contentPreview: actualContent?.substring(0, 500),
+        contentMiddle: actualContent?.substring(500, 1000),
+        contentEnd: actualContent?.substring(Math.max(0, (actualContent?.length || 0) - 500)),
         isUsingFullContent: actualContent === report.full_content,
         containsActualTopics: {
           criticalMinerals: actualContent?.includes('critical-minerals') || actualContent?.includes('Critical Minerals'),
           chinaWeaponization: actualContent?.includes('weaponization'),
           miningStocks: actualContent?.includes('mining'),
-          loneliness: actualContent?.includes('loneliness') || actualContent?.includes('Loneliness')
+          loneliness: actualContent?.includes('loneliness') || actualContent?.includes('Loneliness'),
+          hasArticleContent: actualContent?.includes('Article 1:') || actualContent?.includes('Article 2:'),
+          justTableOfContents: actualContent?.split('\n').length < 20
         }
       });
       
