@@ -7,6 +7,7 @@ import fs from "fs";
 import csv from "csv-parser";
 import PDFParser from "pdf2json";
 import path from "path";
+import { Readable } from "stream";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -1433,7 +1434,6 @@ Keep the summary under 200 words and focus on actionable insights.`;
       const csvString = file.buffer.toString('utf8');
       
       await new Promise((resolve, reject) => {
-        const { Readable } = require('stream');
         const readable = new Readable();
         readable.push(csvString);
         readable.push(null);

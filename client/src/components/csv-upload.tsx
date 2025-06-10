@@ -16,6 +16,8 @@ interface UploadResult {
   processed: number;
   errors: string[];
   duplicates: number;
+  total: number;
+  message?: string;
 }
 
 export default function CsvUpload() {
