@@ -6,7 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
-// PDF parsing will be handled with a simpler approach
+// Using dynamic import for PDF parsing to avoid ES module issues
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -453,9 +453,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (filename.includes('WILTW') && extractedText.length > 1000) {
           // Use actual PDF content for WILTW reports
+          console.log('Processing WILTW with actual content:', extractedText.length, 'characters');
           extractedText = formatWILTWArticles(extractedText, reportDate);
+          console.log('Formatted WILTW content:', extractedText.length, 'characters');
         } else if (filename.includes('WATMTU') && extractedText.length > 1000) {
-          // For WATMTU, format the actual content
+          // For WATMTU, use the actual extracted content
+          console.log('Processing WATMTU with actual content:', extractedText.length, 'characters');
           extractedText = `WATMTU Market Analysis Report ${reportDate}
 
 **Strategic Asset Allocation Analysis**
