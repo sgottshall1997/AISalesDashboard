@@ -5,16 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { 
   DollarSign, 
   Users, 
-  TrendingUp, 
+  CheckSquare, 
   AlertTriangle,
   Clock,
   UserPlus,
   CircleAlert,
   Bot,
   BarChart,
-  Flag
+  Flag,
+  TrendingUp
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Task } from "@shared/schema";
 
 interface DashboardStats {
   outstandingInvoices: number;
@@ -22,6 +24,87 @@ interface DashboardStats {
   activeLeads: number;
   avgEngagement: number;
   atRiskRenewals: number;
+}
+
+function OpenTasks() {
+  const { data: tasks, isLoading } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const openTasks = tasks?.filter(task => task.status !== "completed") || [];
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-medium text-gray-900">
+            Open Tasks
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "high": return "destructive";
+      case "medium": return "default";
+      case "low": return "secondary";
+      default: return "default";
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-medium text-gray-900">
+          Open Tasks ({openTasks.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {openTasks.length === 0 ? (
+          <div className="text-center py-6 text-gray-500">
+            <CheckSquare className="mx-auto h-12 w-12 text-gray-400" />
+            <p className="mt-2">No open tasks</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {openTasks.slice(0, 5).map((task) => (
+              <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900 truncate">{task.title}</h4>
+                  <p className="text-sm text-gray-600 truncate">{task.description}</p>
+                  {task.client_name && (
+                    <p className="text-xs text-gray-500">Client: {task.client_name}</p>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={getPriorityColor(task.priority || "medium")}>
+                    {task.priority || "medium"}
+                  </Badge>
+                  <Badge variant="outline">
+                    {task.status}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+            {openTasks.length > 5 && (
+              <p className="text-sm text-gray-500 text-center pt-2">
+                +{openTasks.length - 5} more tasks
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function SeverelyOverdueInvoices() {
@@ -112,6 +195,13 @@ export default function Overview() {
     queryKey: ["/api/dashboard/stats"],
   });
 
+  const { data: tasks } = useQuery<Task[]>({
+    queryKey: ["/api/tasks"],
+  });
+
+  const openTasks = tasks?.filter(task => task.status !== "completed") || [];
+  const highPriorityTasks = tasks?.filter(task => task.status !== "completed" && task.priority === "high") || [];
+
   if (isLoading) {
     return (
       <div className="py-6">
@@ -181,20 +271,22 @@ export default function Overview() {
             <CardContent className="p-5">
               <div className="flex items-center">
                 <div className="flex-shrink-0">
-                  <TrendingUp className="h-6 w-6 text-green-600" />
+                  <CheckSquare className="h-6 w-6 text-blue-600" />
                 </div>
                 <div className="ml-5 w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Report Engagement</dt>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Open Tasks</dt>
                     <dd className="text-2xl font-semibold text-gray-900">
-                      {stats?.avgEngagement ? `${Math.round(stats.avgEngagement)}%` : '0%'}
+                      {openTasks.length}
                     </dd>
                   </dl>
                 </div>
               </div>
               <div className="mt-3 text-sm">
-                <span className="text-green-600 font-medium">+12%</span>
-                <span className="text-gray-600"> vs last month</span>
+                <span className="text-blue-600 font-medium">
+                  {highPriorityTasks.length} high priority
+                </span>
+                <span className="text-gray-600"> tasks</span>
               </div>
             </CardContent>
           </Card>
