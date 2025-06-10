@@ -912,7 +912,19 @@ Provide a JSON response with actionable prospecting insights:
           .trim();
       }
 
+      // Prepare streamlined context
+      const hasEmailHistory = leadEmailHistory && leadEmailHistory.length > 0;
+      const recentEmails = hasEmailHistory ? leadEmailHistory.slice(-2) : []; // Only last 2 emails to avoid prompt bloat
+      
+      const contextNotes = [];
+      if (lead.notes) contextNotes.push(`Notes: ${lead.notes}`);
+      if (hasEmailHistory) contextNotes.push(`Previous contact established (${recentEmails.length} recent emails)`);
+      if (lead.last_contact_date) contextNotes.push(`Last contact: ${new Date(lead.last_contact_date).toLocaleDateString()}`);
+
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
+
+CONTEXT: ${contextNotes.length > 0 ? contextNotes.join(' | ') : 'First outreach to this lead'}
+${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior relationship naturally and avoid repeating previously covered topics.' : ''}
 
 ${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
 
@@ -935,12 +947,13 @@ Example format (MANDATORY - notice 3 DIFFERENT articles):
 CRITICAL: Each bullet point MUST reference a DIFFERENT article number. Never use the same article twice in one email.` : ''}
 
 GOALS:
-• Greet the reader warmly with a short intro
+• Greet the reader warmly with a short intro that references any prior context appropriately
 • Acknowledge their stated investment interests (from ${lead.interest_tags?.join(', ') || 'general investment research'}${lead.notes ? ` or Notes: ${lead.notes}` : ''} if applicable)
-• Explain why this specific report is relevant to their strategy
-• Summarize 2–3 high-impact insights using concise bullets
+• If this is a follow-up email, reference previous conversations naturally without being repetitive
+• Explain why this specific report is relevant to their strategy and interests
+• Summarize 2–3 high-impact insights using concise bullets that complement (don't repeat) previous communications
 • End with a conclusion summarizing 13D's market view and how our research helps investors stay ahead
-• Include a clear CTA (e.g., invite to review the full report, book a call)
+• Include a clear CTA appropriate for their lead stage (${lead.stage}) and relationship history
 
 HARD RULES:
 • TOTAL word count must not exceed **280 words**
