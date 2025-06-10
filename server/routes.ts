@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import * as pdfParse from "pdf-parse";
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
@@ -352,8 +353,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      // For now, we'll process based on filename pattern since PDF parsing requires additional libraries
-      // In production, implement proper PDF text extraction
+      // Extract actual PDF text content
+      let extractedText = '';
+      try {
+        const pdfBuffer = fs.readFileSync(file.path);
+        const pdfData = await pdfParse(pdfBuffer);
+        extractedText = pdfData.text;
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        return res.status(400).json({ error: 'Failed to extract text from PDF' });
+      }
       
       let parsedData;
       let reportTitle;
@@ -372,22 +381,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
         const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
         
-        // Use enhanced parser for WILTW reports with sample content from the uploaded file
-        const sampleContent = `Table of Contents
-01 Strategy & Asset Allocation & Performance of High Conviction Ideas
-02 In the last two weeks, we were in China. Here is what we learned
-03 The risks to the USD Index are mounting. The challenges of weaker growth, rising inflation expectations and higher bond yields are compounded by the possibility that U.S. policymakers may institute a "revenge tax" on foreign holders of U.S. assets. Established gold-mining shares are breaking out, and even junior miners are hitting new highs, suggesting the gold bull market is alive and well
-04 Gen Z, and particularly young men, are leading a religious resurgence in the U.S. "We are seeing an openness to transcendence among young people that we haven't seen for some time."
-05 Will the EU cut its inter-country barriers, which are equivalent to tariffs of 45% for manufacturing and 110% for services? The answer is uncertain but the odds are growing that Trump's policies will make Europe great again
-06 Is "Terrorism" the future of war?
-07 The U.S. recognizes that global partnerships are vital to meeting its critical-minerals demand. This week, we launch Part I of a series on U.S. critical-mineral partnerships overseas, beginning with the Gulf states
-08 AI adoption is widespread, but the productivity and revenue gains are scattered and limited. What are the implications?
-09 A massive shareholder movement is sweeping across China, yet this has largely been masked by the tariff noise. A "dividend culture" is emerging in Chinese stocks
-10 Global warming is causing the Earth's landmasses to dry out permanently. Soil moisture levels have plummeted, prompting ever-more groundwater pumping, further drying out land areas. We reached peak water 25 years ago
-11 What we can learn from Greek mythology
-12 The top 5 books that every teenager should read`;
-        
-        parsedData = parseWILTWReport(sampleContent);
+        // Use actual PDF content for WILTW reports
+        parsedData = parseWILTWReport(extractedText);
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
       }
@@ -404,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content_summary: parsedData.summary,
         key_insights: parsedData.keyInsights,
         target_audience: parsedData.targetAudience,
-        full_content: file.originalname // Store filename as reference
+        full_content: extractedText // Store extracted PDF text content
       };
 
       const report = await storage.createContentReport(reportData);
@@ -740,6 +735,17 @@ Format as a complete email ready to send.`;
         });
       }
 
+      // Retrieve actual PDF content from database
+      const reports = await storage.getAllContentReports();
+      const report = reports.find(r => r.id.toString() === reportId);
+      
+      if (!report || !report.full_content) {
+        return res.status(404).json({ 
+          error: "Report not found or PDF content not available. Please re-upload the PDF file." 
+        });
+      }
+
+      const actualContent = report.full_content;
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       let systemPrompt = "";
