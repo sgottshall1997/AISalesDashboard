@@ -281,21 +281,21 @@ export function ContentDistribution() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h4 className="text-sm font-medium text-gray-900">{report.title}</h4>
-                      <p className="text-sm text-gray-500 mt-1">Published: {report.publishDate}</p>
+                      <p className="text-sm text-gray-500 mt-1">Published: {new Date(report.published_date).toLocaleDateString()}</p>
                       <div className="mt-2 flex items-center space-x-4 text-sm">
-                        <span className="text-green-600">↗ {report.openRate}% open rate</span>
-                        <span className="text-primary">↗ {report.clickRate}% click rate</span>
+                        <span className="text-green-600">↗ {report.open_rate || '0'}% open rate</span>
+                        <span className="text-primary">↗ {report.click_rate || '0'}% click rate</span>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {report.topics.map((topic, index) => (
+                        {(report.tags || []).map((topic: string, index: number) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {topic}
                           </Badge>
                         ))}
                       </div>
                     </div>
-                    <Badge className={getEngagementBadge(report.engagementLevel)}>
-                      {report.engagementLevel} Engagement
+                    <Badge className={getEngagementBadge(report.engagement_level)}>
+                      {report.engagement_level} Engagement
                     </Badge>
                   </div>
                 </div>
