@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,8 @@ import {
   Users,
   FileText,
   ChevronDown,
-  Upload
+  Upload,
+  Trash2
 } from "lucide-react";
 
 export function ContentDistribution() {
@@ -29,6 +30,7 @@ export function ContentDistribution() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [reportType, setReportType] = useState<string>("wiltw");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
@@ -131,6 +133,27 @@ export function ContentDistribution() {
       toast({
         title: "Error",
         description: "Failed to summarize report. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteReportMutation = useMutation({
+    mutationFn: async (reportId: number) => {
+      const response = await apiRequest("DELETE", `/api/content-reports/${reportId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+      toast({
+        title: "Report Deleted",
+        description: "Report has been successfully deleted.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete report. Please try again.",
         variant: "destructive",
       });
     },
@@ -457,9 +480,24 @@ export function ContentDistribution() {
                         ))}
                       </div>
                     </div>
-                    <Badge className={getEngagementBadge(report.engagement_level)}>
-                      {report.engagement_level} Engagement
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getEngagementBadge(report.engagement_level)}>
+                        {report.engagement_level} Engagement
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+                            deleteReportMutation.mutate(report.id);
+                          }
+                        }}
+                        disabled={deleteReportMutation.isPending}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
