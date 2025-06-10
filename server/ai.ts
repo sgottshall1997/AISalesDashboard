@@ -105,36 +105,31 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       
       basePrompt += `
 
-CRITICAL REQUIREMENTS:
-- STRICT word count: 200-250 words MAXIMUM - be extremely concise
-- Start with ONE sentence hook tying their focus to market developments
-- Use EXACTLY 3 bullet points (one line each, max 25 words per bullet)
-- Each bullet should be one specific, actionable insight
-- End with ONE sentence CTA like "Want me to send over a deeper summary?" 
-- NO fluff, generic phrases, or unnecessary words
-- Match this EXACT format and brevity:
+CRITICAL REQUIREMENTS FOR SOPHISTICATED INVESTORS:
+- Maximum 120-150 words total (including greeting and signature)
+- ONE punchy opening sentence - no generic pleasantries
+- EXACTLY 2-3 bullet points, max 15 words each
+- Assume they know market basics - don't over-explain
+- End with ONE clear, direct CTA
+- NO filler words, explanations, or hedge language
 
-EXAMPLE EMAIL:
-Subject: Bullish Signals for Gold and Silver Align with Your Strategy
+REVISED EXAMPLE FORMAT:
+Subject: Silver Miners Hit New Highs
 
-Hi Monica,
+Monica,
 
-I wanted to flag a few insights from recent reports that directly align with your focus on precious metals:
+Three signals align with your precious metals thesis:
 
-• Silver Miners Breaking Out: SIL and SILJ hit new highs, confirming upside momentum in the space you already lean into.
+• SIL/SILJ breaking out - confirming your momentum play
+• Gold-CPI ratio surged past 45-year resistance 
+• Dollar weakness accelerating into hard assets
 
-• Gold-to-CPI Ratio Surges: A major breakout from a 45-year trend suggests inflation-driven upside — a rare technical confirmation.
-
-• USD Weakness Builds Case for Hard Assets: Our WILTW piece lays out a scenario where gold is poised to benefit from dollar erosion and global capital shifts.
-
-Happy to send over the full recaps or hop on a quick call to go deeper. Just let me know.
+Want the full breakdown?
 
 Best,
-[Your Name]
+[Name]
 
-Generate an email following this exact format and style, tailored to their specific interests and recent report content.
-
-MANDATORY: Count every word in your response. The email body must be between 150-200 words total. If longer, cut content aggressively. Be ruthlessly concise.`;
+WORD COUNT TARGET: 100-120 words maximum. Write for a sophisticated investor who doesn't need hand-holding. Be direct, assume knowledge, skip explanations.`;
       break;
       
     case "upsell":
@@ -175,8 +170,8 @@ function generateFallbackEmail(request: EmailGenerationRequest): EmailResponse {
       priority: "medium" as const
     },
     lead_nurture: {
-      subject: `Market Insights Align with ${recipientCompany}'s Strategy`,
-      body: `Hi ${recipientName},\n\nI wanted to flag a few insights from our recent reports that align with ${recipientCompany}'s investment focus:\n\n• Market dynamics showing strong momentum in your areas of interest\n• Technical indicators confirming trends you've been tracking\n• Institutional flow data supporting your thesis\n\nWant me to send over the detailed analysis? Just let me know.\n\nBest,\n13D Research Team`,
+      subject: `Key Signals Align with ${recipientCompany}'s Thesis`,
+      body: `${recipientName},\n\nThree signals supporting your investment focus:\n\n• Momentum confirming your sector calls\n• Technical breakouts in your watchlist\n• Flow data backing your thesis\n\nWant the breakdown?\n\nBest,\n13D Research`,
       tone: "professional",
       priority: "medium" as const
     },
