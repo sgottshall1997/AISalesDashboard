@@ -269,12 +269,17 @@ export class DatabaseStorage implements IStorage {
 
   async deleteContentReport(id: number): Promise<boolean> {
     try {
-      // First delete related client engagements
+      // First delete related report summaries
+      await db
+        .delete(report_summaries)
+        .where(eq(report_summaries.content_report_id, id));
+      
+      // Then delete related client engagements
       await db
         .delete(client_engagements)
         .where(eq(client_engagements.report_id, id));
       
-      // Then delete the content report
+      // Finally delete the content report
       const result = await db
         .delete(content_reports)
         .where(eq(content_reports.id, id));
