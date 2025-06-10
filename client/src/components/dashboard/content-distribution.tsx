@@ -420,20 +420,28 @@ export function ContentDistribution() {
                         
                         console.log('Load saved summary debug:', {
                           selectedReport,
+                          selectedReportType: typeof selectedReport,
                           foundSummary: reportSummary ? {
                             id: reportSummary.id,
                             content_report_id: reportSummary.content_report_id,
                             summaryLength: reportSummary.parsed_summary?.length,
-                            summaryPreview: reportSummary.parsed_summary?.substring(0, 200)
+                            summaryPreview: reportSummary.parsed_summary?.substring(0, 200),
+                            summaryEnd: reportSummary.parsed_summary?.substring(-100)
                           } : null,
                           allSummaries: summaries.map((s: any) => ({
                             id: s.id,
                             content_report_id: s.content_report_id,
-                            summaryLength: s.parsed_summary?.length
+                            summaryLength: s.parsed_summary?.length,
+                            preview: s.parsed_summary?.substring(0, 100)
                           }))
                         });
                         
                         if (reportSummary) {
+                          console.log('Setting summary content:', {
+                            summaryId: reportSummary.id,
+                            contentLength: reportSummary.parsed_summary?.length,
+                            firstLine: reportSummary.parsed_summary?.split('\n')[0]
+                          });
                           setReportSummary(reportSummary.parsed_summary);
                           toast({
                             title: "Summary Loaded",

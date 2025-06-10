@@ -1048,7 +1048,7 @@ ${content}`;
       if (promptType === "wiltw_parser" || promptType === "watmtu_parser") {
         try {
           // Check if summary already exists
-          const existingSummary = await storage.getReportSummary(reportId);
+          const existingSummary = await storage.getReportSummary(parseInt(reportId));
           console.log('Summary storage debug:', {
             reportId,
             promptType,
@@ -1058,18 +1058,28 @@ ${content}`;
           
           if (!existingSummary) {
             const newSummary = await storage.createReportSummary({
-              content_report_id: reportId,
+              content_report_id: parseInt(reportId),
               parsed_summary: summary,
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
-            console.log('Created new summary:', { id: newSummary.id, summaryLength: newSummary.parsed_summary?.length });
+            console.log('Created new summary:', { 
+              id: newSummary.id, 
+              content_report_id: newSummary.content_report_id,
+              summaryLength: newSummary.parsed_summary?.length,
+              summaryPreview: newSummary.parsed_summary?.substring(0, 100)
+            });
           } else {
             // Update existing summary with new content
             const updatedSummary = await storage.updateReportSummary(existingSummary.id, {
               parsed_summary: summary,
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
-            console.log('Updated existing summary:', { id: updatedSummary?.id, summaryLength: updatedSummary?.parsed_summary?.length });
+            console.log('Updated existing summary:', { 
+              id: updatedSummary?.id, 
+              content_report_id: updatedSummary?.content_report_id,
+              summaryLength: updatedSummary?.parsed_summary?.length,
+              summaryPreview: updatedSummary?.parsed_summary?.substring(0, 100)
+            });
           }
         } catch (error) {
           console.error("Error storing report summary:", error);
