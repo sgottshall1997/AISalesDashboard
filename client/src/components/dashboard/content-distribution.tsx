@@ -395,25 +395,25 @@ export function ContentDistribution() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`${
-                        (client.engagementRate || 0) > 70 ? 'text-green-600' :
-                        (client.engagementRate || 0) > 50 ? 'text-primary' :
+                        (client.engagement_rate || 0) > 70 ? 'text-green-600' :
+                        (client.engagement_rate || 0) > 50 ? 'text-primary' :
                         'text-yellow-600'
                       }`}>
-                        {client.engagementRate}%
+                        {client.engagement_rate}%
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`${
-                        (client.engagementRate || 0) > 70 ? 'text-green-600' :
-                        (client.engagementRate || 0) > 50 ? 'text-primary' :
+                        (client.engagement_rate || 0) > 70 ? 'text-green-600' :
+                        (client.engagement_rate || 0) > 50 ? 'text-primary' :
                         'text-yellow-600'
                       }`}>
-                        {Math.round((client.engagementRate || 0) * 0.5)}%
+                        {Math.round((client.engagement_rate || 0) * 100)}%
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-1">
-                        {client.interestTags.slice(0, 2).map((tag, index) => (
+                        {(client.interest_tags || []).slice(0, 2).map((tag: string, index: number) => (
                           <Badge key={index} variant="outline" className="text-xs">
                             {tag}
                           </Badge>
