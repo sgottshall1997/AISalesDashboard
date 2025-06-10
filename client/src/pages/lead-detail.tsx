@@ -108,10 +108,7 @@ export default function LeadDetail() {
     enabled: !!leadId,
   });
 
-  const { data: aiSuggestion } = useQuery<AIFollowUpSuggestion>({
-    queryKey: [`/api/leads/${leadId}/ai-suggestion`],
-    enabled: !!leadId,
-  });
+  // Remove automatic AI suggestion loading - only generate when requested
 
   const { data: contentReports } = useQuery<ContentReport[]>({
     queryKey: ["/api/content-reports"],
@@ -734,59 +731,6 @@ export default function LeadDetail() {
 
         {/* AI Suggestions Sidebar */}
         <div className="space-y-6">
-          {/* AI Follow-up Suggestion */}
-          {aiSuggestion && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Bot className="w-5 h-5 mr-2" />
-                  AI Follow-up Suggestion
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Badge className={getPriorityColor(aiSuggestion.priority)}>
-                      {aiSuggestion.priority.toUpperCase()} PRIORITY
-                    </Badge>
-                  </div>
-                  
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Reason:</span>
-                    <p className="text-sm text-gray-700 mt-1">{aiSuggestion.reason}</p>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Subject:</span>
-                    <p className="text-sm mt-1">{aiSuggestion.subject}</p>
-                  </div>
-                  
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">Message:</span>
-                    <div className="text-sm mt-1 bg-gray-50 p-3 rounded border whitespace-pre-line leading-relaxed">
-                      {aiSuggestion.body}
-                    </div>
-                  </div>
-
-                  {aiSuggestion.suggestedReports && aiSuggestion.suggestedReports.length > 0 && (
-                    <div>
-                      <span className="text-sm font-medium text-gray-600">Suggested Reports to Share:</span>
-                      <div className="mt-2 space-y-2">
-                        {aiSuggestion.suggestedReports.map((report, idx) => (
-                          <div key={idx} className="text-xs p-2 bg-blue-50 rounded border">
-                            <div className="font-medium">{report.title}</div>
-                            <div className="text-gray-600 mt-1">{report.relevance}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Generate AI Email */}
           <Card>
