@@ -830,11 +830,12 @@ Format as a complete email ready to send.`;
         reportTitle: report.title,
         hasFullContent: !!report.full_content,
         fullContentLength: report.full_content?.length,
-        fullContentPreview: report.full_content?.substring(0, 150)
+        fullContentPreview: report.full_content?.substring(0, 150),
+        willUsePDFContent: report.full_content && report.full_content.length >= 500
       });
       
-      // Force use of date-specific sample content to ensure unique summaries per report
-      if (true) { // Always use sample content to demonstrate unique parsing
+      // Use actual PDF content if available, otherwise use date-specific sample content
+      if (!actualContent || actualContent.length < 500) {
         // Generate sample content based on report type for demonstration
         const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
         
