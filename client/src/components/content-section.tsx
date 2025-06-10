@@ -255,15 +255,14 @@ export default function ContentSection() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Email Topic Suggestions</CardTitle>
-              <Button 
-                size="sm" 
+              <CardTitle>AI Content Suggestions</CardTitle>
+              <button
                 onClick={() => {
                   queryClient.removeQueries({ queryKey: ["/api/ai/content-suggestions"] });
                   refetchSuggestions();
                 }}
                 disabled={suggestionsLoading}
-                className="ml-2"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center gap-2 disabled:opacity-50"
               >
                 {suggestionsLoading ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
@@ -271,7 +270,7 @@ export default function ContentSection() {
                   <Bot className="h-4 w-4" />
                 )}
                 {suggestionsLoading ? "Analyzing..." : "Generate Ideas"}
-              </Button>
+              </button>
             </CardHeader>
             <CardContent>
               {!suggestions && !suggestionsLoading && (
