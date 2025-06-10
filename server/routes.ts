@@ -908,7 +908,23 @@ Provide a JSON response with actionable prospecting insights:
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
+
+MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. This is absolutely required - no exceptions.
+
+The report contains these article numbers - use them:
+Article 2 = Critical minerals supply chain
+Article 3 = AI tech infrastructure  
+Article 4 = Mining stocks performance
+Article 5 = Teenagers phone experiment
+Article 6 = Loneliness investment theme
+Article 7 = Russia analysis
+Article 8 = European agriculture
+
+Example format (MANDATORY):
+• China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (Article 2).
+• Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (Article 4).
+• Advanced telecom infrastructure becomes the deciding factor in AI deployment and global technological leadership (Article 3).` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
