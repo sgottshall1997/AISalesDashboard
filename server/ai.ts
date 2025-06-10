@@ -27,24 +27,32 @@ export async function generateThemeBasedEmailSuggestions(
       publishedDate: report.published_date
     }));
 
-    const prompt = `Analyze the following WILTW research reports to identify frequent themes and suggest email topics for 13D Research:
+    const prompt = `Analyze the following 13D Research reports (WILTW & WATMTU) to identify themes and suggest compelling email topics for institutional investors:
 
 Reports: ${JSON.stringify(reportData)}
 
-Based on this content, identify:
-1. FREQUENT THEMES - Topics that appear across multiple reports (e.g., Federal Reserve policy, China relations, energy markets)
-2. EMERGING TRENDS - New themes gaining traction in recent reports
-3. CROSS-SECTOR CONNECTIONS - How themes connect across different sectors/markets
-4. DEEP DIVE OPPORTUNITIES - Complex topics that warrant detailed follow-up emails
+Based on the ACTUAL CONTENT from these reports, identify investment themes and market insights. Focus on:
+
+1. FREQUENT THEMES - Investment topics that appear across multiple reports (commodities, paradigm shifts, market cycles, asset allocation)
+2. EMERGING TRENDS - New market developments or investment opportunities mentioned in recent reports
+3. CROSS-SECTOR CONNECTIONS - How different markets/sectors relate (precious metals, inflation, bonds, equities)
+4. DEEP DIVE OPPORTUNITIES - Complex investment themes that warrant detailed follow-up analysis
+
+IMPORTANT: Base suggestions ONLY on the actual content provided. Look for:
+- Specific investment strategies mentioned
+- Market commentary and predictions
+- Asset allocation recommendations
+- Economic themes and philosophical insights
+- References to specific sectors, commodities, or markets
 
 For each suggestion, provide:
 - type: one of "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
-- title: catchy email subject line
-- description: what the email would cover
-- emailAngle: specific perspective/hook for the email
-- supportingReports: array of report titles that support this theme
-- keyPoints: 3-4 bullet points the email should cover
-- priority: "high", "medium", or "low"
+- title: compelling email subject line focused on investment insights
+- description: what specific investment angle the email would cover
+- emailAngle: unique perspective based on the report content
+- supportingReports: array of specific report titles containing this theme
+- keyPoints: 3-4 specific insights from the reports
+- priority: "high" for major investment themes, "medium" for sector-specific, "low" for general insights
 
 Return JSON with "suggestions" array containing these objects.`;
 
@@ -53,7 +61,7 @@ Return JSON with "suggestions" array containing these objects.`;
       messages: [
         {
           role: "system",
-          content: "You are an expert investment research analyst and email marketing strategist. Identify patterns in research content to suggest compelling email topics that would engage institutional investors."
+          content: "You are a 13D Research investment analyst specializing in identifying investment themes from WILTW and WATMTU reports. Focus on actual market commentary, asset allocation strategies, commodities insights, and economic themes mentioned in the reports. Avoid generic suggestions - base everything on the specific content provided."
         },
         {
           role: "user",
