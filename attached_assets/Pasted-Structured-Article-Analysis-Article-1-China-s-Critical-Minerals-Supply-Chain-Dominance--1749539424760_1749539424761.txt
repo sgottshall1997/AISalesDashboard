@@ -1,0 +1,61 @@
+Structured Article Analysis
+**Article 1: China's Critical Minerals Supply Chain Dominance**
+
+- **Core Thesis:** China's control over critical mineral supply chains represents a strategic vulnerability for Western economies and investment portfolios requiring defensive positioning.
+
+- **Key Insights:**
+- China controls 85% of rare earth processing capacity globally.
+- Strategic stockpiling of lithium and cobalt is creating supply constraints.
+- US reshoring initiatives are targeting mineral independence by 2030.
+- Technology sector dependencies are creating national security implications.
+
+- **Investment Implications:**
+- Diversification away from China-dependent supply chains is necessary.
+- There are opportunities in North American mining development projects.
+- Technology companies with secure supply agreements are outperforming.
+
+- **Recommended Names (if any):** None specified
+
+- **Category Tag:** China
+
+---
+
+**Article 2: USD Risks and Portfolio Implications**
+
+- **Core Thesis:** Dollar index volatility is creating a "revenge tax" scenario for foreign asset holders, requiring currency hedging strategies.
+
+- **Key Insights:**
+- Federal Reserve policy uncertainty is affecting dollar strength.
+- International trade tensions are impacting currency stability.
+- Emerging market capital flows are reversing on dollar moves.
+- Portfolio hedging costs are rising across asset classes.
+
+- **Investment Implications:**
+- Currency hedge ratios should be increased to 75-80% for international exposure.
+- Alternative asset allocation is needed to protect against dollar volatility.
+- There is selective exposure opportunity in emerging market commodity exporters.
+
+- **Recommended Names (if any):** None specified
+
+- **Category Tag:** Macro
+
+---
+
+**Article 3: Emerging Market Opportunities**
+
+- **Core Thesis:** Select emerging markets are showing resilience despite global headwinds, particularly in commodity-exporting nations.
+
+- **Key Insights:**
+- Brazil's agricultural exports are benefiting from global food security concerns.
+- Indonesia's infrastructure development is supporting its growth outlook.
+- India's technology sector is gaining market share from China alternatives.
+
+- **Investment Implications:**
+- The market outlook is cautiously optimistic on selective emerging market exposure.
+- There are risks from global growth slowdown affecting export demand.
+- Political stability concerns exist in key markets.
+- Currency volatility may impact returns.
+
+- **Recommended Names (if any):** None specified
+
+- **Category Tag:** Markets
