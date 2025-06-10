@@ -818,17 +818,33 @@ Provide a JSON response with actionable prospecting insights:
       // Get the actual content report data
       let reportTitle = 'Recent 13D Report';
       let reportTags = '';
+      let reportArticles = [];
       if (primaryReport) {
-        const contentReport = contentReports.find(report => report.id === primaryReport.content_report_id);
+        const contentReport = (contentReports || []).find(report => report.id === primaryReport.content_report_id);
         reportTitle = contentReport?.title || 'Recent 13D Report';
         reportTags = contentReport?.tags?.join(', ') || '';
+        
+        // Extract article information from the full content for WILTW reports
+        if (contentReport && contentReport.full_content && reportTitle.includes('WILTW')) {
+          const parsedData = parseWILTWReport(contentReport.full_content);
+          reportArticles = parsedData.articles || [];
+        }
       }
       
       const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
 
+      // Create article attribution context
+      let articleContext = '';
+      if (reportArticles.length > 0) {
+        articleContext = `\n\nAVAILABLE ARTICLES for attribution:
+${reportArticles.map((article: any, index: number) => `Article ${index + 1}: ${article.title}`).join('\n')}
+
+When referencing insights, use format: (Article X in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})`;
+      }
+
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.` : ''}
+${primaryReport ? `Reference the recent 13D report titled "${reportTitle}" with the following content: "${reportSummary}". The report covers: ${reportTags}.${articleContext}` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
@@ -854,9 +870,9 @@ Hi ${lead.name},
 
 I hope you're doing well. Based on [reference to their interests/previous discussion], I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• [Insight 1 – concise market data or trend with specific details] (${reportTitle || 'WILTW'})
-• [Insight 2 – another aligned insight with actionable intelligence] (${reportTitle || 'WILTW'})
-• [Insight 3 – optional third insight if space allows] (${reportTitle || 'WILTW'})  
+• [Insight 1 – concise market data or trend with specific details] (Article X in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})
+• [Insight 2 – another aligned insight with actionable intelligence] (Article Y in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})
+• [Insight 3 – optional third insight if space allows] (Article Z in ${reportTitle.includes('WILTW') ? 'WILTW' : reportTitle})  
 
 We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
@@ -889,9 +905,9 @@ Hi Monica,
 
 I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges. (WILTW)
-• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool. (WILTW)
-• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities. (WILTW)
+• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges. (Article 2 in WILTW)
+• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool. (Article 3 in WILTW)
+• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities. (Article 5 in WILTW)
 
 We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
