@@ -580,8 +580,25 @@ export default function LeadDetail() {
             <CardContent>
               {emailSummary && (
                 <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-medium text-blue-900 mb-2">Email Conversation Summary</h4>
-                  <p className="text-blue-800 text-sm">{emailSummary}</p>
+                  <h4 className="font-medium text-blue-900 mb-3">Email Conversation Summary</h4>
+                  <div className="text-blue-800 text-sm space-y-3">
+                    {emailSummary.split(/\d+\.\s\*\*/).filter(section => section.trim()).map((section, index) => {
+                      if (index === 0) return null; // Skip empty first element
+                      
+                      const [title, ...content] = section.split('**:');
+                      const titleText = title?.trim();
+                      const contentText = content.join('**:').trim();
+                      
+                      if (!titleText || !contentText) return null;
+                      
+                      return (
+                        <div key={index} className="border-l-2 border-blue-300 pl-3">
+                          <h5 className="font-medium text-blue-900 mb-1">{titleText}</h5>
+                          <p className="text-blue-700 leading-relaxed">{contentText}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
