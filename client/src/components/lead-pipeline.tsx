@@ -31,6 +31,7 @@ interface Lead {
   company: string;
   stage: string;
   likelihood_of_closing?: string;
+  engagement_level?: string;
   last_contact?: string;
   next_step?: string;
   notes?: string;
@@ -114,6 +115,16 @@ export default function LeadPipeline() {
   const updateLikelihoodMutation = useMutation({
     mutationFn: async ({ leadId, likelihood }: { leadId: number; likelihood: string }) => {
       const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { likelihood_of_closing: likelihood });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
+  });
+
+  const updateEngagementMutation = useMutation({
+    mutationFn: async ({ leadId, engagement }: { leadId: number; engagement: string }) => {
+      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { engagement_level: engagement });
       return response.json();
     },
     onSuccess: () => {
@@ -347,6 +358,16 @@ export default function LeadPipeline() {
                       placeholder="tech, finance, healthcare (comma separated)"
                     />
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="how_heard" className="text-right">How Heard</Label>
+                    <Input
+                      id="how_heard"
+                      value={newLead.how_heard || ""}
+                      onChange={(e) => setNewLead({...newLead, how_heard: e.target.value})}
+                      className="col-span-3"
+                      placeholder="referral, website, LinkedIn, etc."
+                    />
+                  </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
@@ -496,6 +517,28 @@ export default function LeadPipeline() {
                                       className={`text-xs ${getLikelihoodColor(lead.likelihood_of_closing || 'medium')}`}
                                     >
                                       {lead.likelihood_of_closing || 'medium'}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500">Engagement:</span>
+                                    <Select 
+                                      value={lead.engagement_level || "none"} 
+                                      onValueChange={(value) => updateEngagementMutation.mutate({leadId: lead.id, engagement: value})}
+                                    >
+                                      <SelectTrigger className="w-20 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">None</SelectItem>
+                                        <SelectItem value="medium">Med</SelectItem>
+                                        <SelectItem value="full">Full</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs ${getEngagementColor(lead.engagement_level || 'none')}`}
+                                    >
+                                      {lead.engagement_level || 'none'}
                                     </Badge>
                                   </div>
                                 </div>

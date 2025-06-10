@@ -40,6 +40,8 @@ interface Lead {
   notes?: string;
   interest_tags: string[];
   how_heard?: string;
+  likelihood_of_closing?: string;
+  engagement_level?: string;
   created_at: string;
 }
 
