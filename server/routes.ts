@@ -793,6 +793,12 @@ Provide a JSON response with actionable prospecting insights:
         });
       }
 
+      // Get lead's email history from database if not provided
+      let leadEmailHistory = emailHistory;
+      if (!leadEmailHistory) {
+        leadEmailHistory = await storage.getLeadEmailHistory(lead.id);
+      }
+
       // Get stored summaries for all selected reports
       let selectedReportSummaries = [];
       if (selectedReportIds && selectedReportIds.length > 0) {
@@ -910,7 +916,7 @@ Provide a JSON response with actionable prospecting insights:
 
 ${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
 
-MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. This is absolutely required - no exceptions.
+MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
 
 The report contains these article numbers - use them:
 Article 2 = Critical minerals supply chain
@@ -921,10 +927,12 @@ Article 6 = Loneliness investment theme
 Article 7 = Russia analysis
 Article 8 = European agriculture
 
-Example format (MANDATORY):
+Example format (MANDATORY - notice 3 DIFFERENT articles):
 • China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (Article 2).
 • Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (Article 4).
-• Advanced telecom infrastructure becomes the deciding factor in AI deployment and global technological leadership (Article 3).` : ''}
+• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (Article 7).
+
+CRITICAL: Each bullet point MUST reference a DIFFERENT article number. Never use the same article twice in one email.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro
