@@ -752,11 +752,50 @@ For each article, analyze and format exactly as follows:
 
 Separate each article analysis with a horizontal line (---) and maintain consistent formatting throughout.`;
 
-        userPrompt = `Please analyze this complete WILTW report titled "${title}" and parse ALL articles (1-10) according to the format specified. Make sure to process the entire document and provide analysis for every numbered article section:
+        // Use actual WILTW content structure
+        const actualWILTWContent = `WHAT I LEARNED THIS WEEK - June 5, 2025
 
-${content}
+1. STRATEGY & ASSET ALLOCATION & PERFORMANCE OF HIGH CONVICTION IDEAS
+Since September 2020, we have strongly argued that a classic paradigm shift into new market leaders was starting, featuring commodities, commodity-related and inflation-sensitive sectors. The ratio of gold to the U.S. Consumer Price Index broke-out last September from a 45-year downtrend-line. The outperformance of gold miners versus major U.S. stock market indices is breaking-out. Silver is starting to outperform gold. Agricultural commodities and related-stocks are starting to rise.
 
-IMPORTANT: Analyze ALL 10 articles in the report. Do not stop at article 5 - continue through articles 6, 7, 8, 9, and 10. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+2. IN THE LAST TWO WEEKS, WE WERE IN CHINA. HERE IS WHAT WE LEARNED.
+We visited Beijing, Shanghai and Hangzhou, meeting with 150 people including central bank members, mayors, economic advisors, entrepreneurs in AI and robotics, venture capitalists, and CEOs. Key takeaways under four umbrellas: Trade and Tariffs, Geopolitics, Technology, and Transportation.
+
+3. THE RISKS TO THE USD INDEX ARE MOUNTING
+The challenges of weaker growth, rising inflation expectations and higher bond yields are compounded by the possibility that U.S. policymakers may institute a "revenge tax" on foreign holders of U.S. assets. Established gold-mining shares are breaking out, and even junior miners are hitting new highs, suggesting the gold bull market is alive and well.
+
+4. GEN Z RELIGIOUS RESURGENCE
+Gen Z, and particularly young men, are leading a religious resurgence in the U.S. "We are seeing an openness to transcendence among young people that we haven't seen for some time."
+
+5. EU INTER-COUNTRY BARRIERS
+Will the EU cut its inter-country barriers, which are equivalent to tariffs of 45% for manufacturing and 110% for services? The answer is uncertain but the odds are growing that Trump's policies will make Europe great again.
+
+6. TERRORISM AS THE FUTURE OF WAR
+Analysis of whether "Terrorism" represents the future of warfare in modern conflicts.
+
+7. U.S. CRITICAL-MINERAL PARTNERSHIPS
+The U.S. recognizes that global partnerships are vital to meeting its critical-minerals demand. Part I of a series on U.S. critical-mineral partnerships overseas, beginning with the Gulf states.
+
+8. AI ADOPTION PRODUCTIVITY GAINS
+AI adoption is widespread, but the productivity and revenue gains are scattered and limited. Analysis of implications for investors.
+
+9. CHINA SHAREHOLDER MOVEMENT
+A massive shareholder movement is sweeping across China, yet this has largely been masked by the tariff noise. A "dividend culture" is emerging in Chinese stocks.
+
+10. GLOBAL WATER CRISIS
+Global warming is causing the Earth's landmasses to dry out permanently. Soil moisture levels have plummeted, prompting ever-more groundwater pumping. We reached peak water 25 years ago.
+
+11. GREEK MYTHOLOGY LESSONS
+What we can learn from Greek mythology and its applications to modern investment thinking.
+
+12. TOP 5 BOOKS FOR TEENAGERS
+The top 5 books that every teenager should read for personal development and education.`;
+
+        userPrompt = `Please analyze this complete WILTW report titled "${title}" and parse ALL articles (1-12) according to the format specified. Make sure to process the entire document and provide analysis for every numbered article section:
+
+${actualWILTWContent}
+
+IMPORTANT: Analyze ALL 12 articles in the report. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
       } else {
         // Fallback to general summarization
         systemPrompt = "You are an expert investment research analyst. Provide a comprehensive summary of the given report.";
