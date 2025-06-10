@@ -19,9 +19,7 @@ export default function ContentSection() {
   });
 
   const { data: suggestions, isLoading: suggestionsLoading, refetch: refetchSuggestions } = useQuery({
-    queryKey: ["/api/ai/content-suggestions", Date.now()], // Force fresh fetch with timestamp
-    enabled: false, // Don't auto-fetch, only when button is clicked
-    gcTime: 0, // Don't cache results
+    queryKey: ["/api/ai/content-suggestions"],
     staleTime: 0, // Always fetch fresh data
   });
 
@@ -406,50 +404,17 @@ export default function ContentSection() {
                               </p>
                             )}
                             <div className="mt-3">
-                              <button
-                                onClick={async (e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  console.log('=== BUTTON CLICKED ===');
-                                  console.log('Button clicked for:', suggestion.title, suggestion.type);
-                                  
-                                  // Direct API call test
-                                  try {
-                                    setCurrentSuggestion(suggestion);
-                                    console.log('Starting email generation...');
-                                    await generateEmailMutation.mutateAsync(suggestion);
-                                    console.log('Email generation completed successfully');
-                                  } catch (error) {
-                                    console.error('Button click error:', error);
-                                  }
+                              <Button
+                                onClick={() => {
+                                  console.log('BUTTON CLICKED - Starting generation for:', suggestion.title);
+                                  setCurrentSuggestion(suggestion);
+                                  generateEmailMutation.mutate(suggestion);
                                 }}
                                 disabled={generateEmailMutation.isPending}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 disabled:opacity-50"
                                 style={{
                                   backgroundColor: generateEmailMutation.isPending && currentSuggestion === suggestion ? "#6b7280" : testColor,
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "8px",
-                                  padding: "10px 16px",
-                                  fontSize: "14px",
-                                  fontWeight: "500",
-                                  cursor: generateEmailMutation.isPending ? "not-allowed" : "pointer",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                  opacity: generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.8" : "1",
-                                  transition: "all 0.2s",
-                                  zIndex: "10",
-                                  position: "relative"
-                                }}
-                                onMouseOver={(e) => {
-                                  if (!generateEmailMutation.isPending) {
-                                    e.currentTarget.style.opacity = "0.9";
-                                  }
-                                }}
-                                onMouseOut={(e) => {
-                                  if (!generateEmailMutation.isPending) {
-                                    e.currentTarget.style.opacity = "1";
-                                  }
+                                  border: "none"
                                 }}
                               >
                                 {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
@@ -463,7 +428,7 @@ export default function ContentSection() {
                                     Generate Email
                                   </>
                                 )}
-                              </button>
+                              </Button>
                               
                               {generateEmailMutation.isPending && currentSuggestion === suggestion && (
                                 <div className="bg-gray-50 rounded-md p-3 border">
