@@ -805,7 +805,7 @@ Provide a JSON response with actionable prospecting insights:
       }
 
       // Find relevant reports based on lead's interests
-      const relevantReports = contentReports.filter((report: any) => 
+      const relevantReports = (contentReports || []).filter((report: any) => 
         report.tags && lead.interest_tags && 
         report.tags.some((tag: string) => lead.interest_tags.includes(tag))
       );
