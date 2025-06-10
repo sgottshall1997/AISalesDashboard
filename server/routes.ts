@@ -994,37 +994,29 @@ Format as a complete email ready to send.`;
       let userPrompt = "";
 
       if (promptType === "wiltw_parser") {
-        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research. The report is divided into clearly titled article sections.
+        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into multiple clearly titled article sections.
 
-For each article, analyze and format exactly as follows:
+For each article, do the following:
 
-**Article [Number]: [Article Title]**
+Headline: Identify and restate the article's title.
 
-- **Core Thesis:** Summarize the main argument or thesis in 2–3 sentences.
+Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
 
-- **Key Insights:**
-- [Bullet point 1 with specific data/facts]
-- [Bullet point 2 with specific data/facts]
-- [Bullet point 3 with specific data/facts]
-- [Additional bullet points as needed]
+Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
 
-- **Investment Implications:**
-- [Forward-looking insights for investors]
-- [Market opportunities or risks]
+Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
 
-- **Recommended Names (if any):** [List specific equities, ETFs, indices mentioned, or "None specified"]
+Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
 
-- **Category Tag:** [Choose from: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
+Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
 
----
-
-Separate each article analysis with a horizontal line (---) and maintain consistent formatting throughout.`;
+Return the results in a structured format, clearly separating each article.`;
 
         userPrompt = `Please analyze this complete WILTW report titled "${title || report.title}" and parse ALL articles according to the format specified. Extract all numbered article sections from the actual report content provided:
 
 ${actualContent}
 
-IMPORTANT: Analyze ALL articles found in the actual report content. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+IMPORTANT: Analyze ALL articles found in the actual report content. Each article should follow the exact formatting structure with Headline, Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
       } else if (promptType === "watmtu_parser") {
         systemPrompt = `You are an expert investment research analyst specializing in market analysis and technical indicators. You've received a WATMTU (What Are The Markets Telling Us) report from 13D Research focusing on market trends, technical analysis, and asset allocation strategies.
 
