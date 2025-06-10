@@ -422,7 +422,7 @@ Provide a JSON response with actionable prospecting insights:
   // AI email generation for leads
   app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
     try {
-      const { lead, emailHistory, contentReports } = req.body;
+      const { lead, emailHistory, contentReports, selectedReportId } = req.body;
       
       if (!lead) {
         return res.status(400).json({ error: "Lead data is required" });
@@ -432,6 +432,12 @@ Provide a JSON response with actionable prospecting insights:
         return res.status(400).json({ 
           error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
         });
+      }
+
+      // Get stored summary if a specific report is selected
+      let selectedReportSummary = null;
+      if (selectedReportId) {
+        selectedReportSummary = await storage.getReportSummary(selectedReportId);
       }
 
       // Find relevant reports based on lead's interests
@@ -495,6 +501,20 @@ Format as a complete email ready to send.`;
       console.error("Generate lead email error:", error);
       res.status(500).json({ 
         message: "Failed to generate AI email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get report summaries
+  app.get("/api/report-summaries", async (req: Request, res: Response) => {
+    try {
+      const summaries = await storage.getAllReportSummaries();
+      res.json(summaries);
+    } catch (error) {
+      console.error("Get report summaries error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch report summaries",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
@@ -573,6 +593,23 @@ ${content}`;
       });
 
       const summary = response.choices[0].message.content;
+      
+      // Store the generated summary
+      if (promptType === "wiltw_parser") {
+        try {
+          // Check if summary already exists
+          const existingSummary = await storage.getReportSummary(reportId);
+          if (!existingSummary) {
+            await storage.createReportSummary({
+              content_report_id: reportId,
+              parsed_summary: summary,
+              summary_type: "wiltw_parser"
+            });
+          }
+        } catch (error) {
+          console.error("Error storing report summary:", error);
+        }
+      }
       
       res.json({ summary });
     } catch (error) {

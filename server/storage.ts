@@ -630,6 +630,32 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     }
   }
 
+  async getReportSummary(contentReportId: number): Promise<ReportSummary | undefined> {
+    const [summary] = await db.select().from(report_summaries).where(eq(report_summaries.content_report_id, contentReportId));
+    return summary || undefined;
+  }
+
+  async createReportSummary(insertSummary: InsertReportSummary): Promise<ReportSummary> {
+    const [summary] = await db
+      .insert(report_summaries)
+      .values(insertSummary)
+      .returning();
+    return summary;
+  }
+
+  async getAllReportSummaries(): Promise<(ReportSummary & { report: ContentReport })[]> {
+    const summaries = await db
+      .select()
+      .from(report_summaries)
+      .leftJoin(content_reports, eq(report_summaries.content_report_id, content_reports.id))
+      .orderBy(desc(report_summaries.created_at));
+    
+    return summaries.map(row => ({
+      ...row.report_summaries,
+      report: row.content_reports!
+    }));
+  }
+
   async getLeadEmailHistory(leadId: number): Promise<LeadEmailHistory[]> {
     return await db
       .select()
