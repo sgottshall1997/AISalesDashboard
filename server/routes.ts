@@ -854,9 +854,9 @@ Hi ${lead.name},
 
 I hope you're doing well. Based on [reference to their interests/previous discussion], I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• [Insight 1 – concise market data or trend with specific details]  
-• [Insight 2 – another aligned insight with actionable intelligence]  
-• [Insight 3 – optional third insight if space allows]  
+• [Insight 1 – concise market data or trend with specific details] (${reportTitle || 'WILTW'})
+• [Insight 2 – another aligned insight with actionable intelligence] (${reportTitle || 'WILTW'})
+• [Insight 3 – optional third insight if space allows] (${reportTitle || 'WILTW'})  
 
 We're seeing [broader market theme/direction]. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
@@ -874,6 +874,13 @@ TONE GUIDELINES:
 • End with friendly, clear CTA
 • Sound like a knowledgeable colleague sharing insights
 
+REPORT ATTRIBUTION - MANDATORY:
+• MUST add report title in parentheses after EVERY bullet point
+• Format exactly as: (WILTW) or (WATMTU) or (Report Title)
+• This is REQUIRED - do not skip the parenthetical citations
+• Use the actual report title: ${reportTitle}
+• Example: "Gold prices surged 12% as tensions rose. (${reportTitle})"
+
 EXAMPLE:
 
 **Subject**: Gold, USD Weakness, and China Tailwinds
@@ -882,9 +889,9 @@ Hi Monica,
 
 I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges.
-• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool.
-• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities.
+• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges. (WILTW)
+• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool. (WILTW)
+• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities. (WILTW)
 
 We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
@@ -897,7 +904,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are an expert email specialist for 13D Research. Generate warm, conversational emails that sound like a knowledgeable colleague sharing insights. Follow the structure provided but prioritize natural flow and human tone. Avoid robotic or mechanical language. Set up bullet points with framing sentences. Use smooth transitions. End with friendly, clear CTAs. Maximum 250 words total."
+            content: "You are an expert email specialist for 13D Research. Generate warm, conversational emails that sound like a knowledgeable colleague sharing insights. CRITICAL: You MUST add report title in parentheses after EVERY bullet point - this is mandatory. Follow the structure provided but prioritize natural flow and human tone. Avoid robotic or mechanical language. Set up bullet points with framing sentences. Use smooth transitions. End with friendly, clear CTAs. Maximum 250 words total."
           },
           {
             role: "user",
