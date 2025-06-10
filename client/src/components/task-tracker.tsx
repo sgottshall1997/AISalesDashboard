@@ -84,7 +84,7 @@ export default function TaskTracker() {
     form.reset();
   };
 
-  const filteredTasks = tasks.filter((task: Task) => {
+  const filteredTasks = tasks.filter((task) => {
     if (statusFilter === "all") return true;
     return task.status === statusFilter;
   });
@@ -107,7 +107,7 @@ export default function TaskTracker() {
     }
   };
 
-  const formatDueDate = (date: string | null) => {
+  const formatDueDate = (date: Date | null) => {
     if (!date) return null;
     const dueDate = new Date(date);
     const now = new Date();
@@ -184,7 +184,7 @@ export default function TaskTracker() {
                     <FormItem>
                       <FormLabel>Client Name (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Associated client name" {...field} />
+                        <Input placeholder="Associated client name" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -310,8 +310,7 @@ export default function TaskTracker() {
                         updateTaskMutation.mutate({ 
                           id: task.id, 
                           updates: { 
-                            status: value,
-                            completed_at: value === "completed" ? new Date() : null
+                            status: value
                           } 
                         })
                       }
