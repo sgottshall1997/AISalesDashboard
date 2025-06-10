@@ -458,25 +458,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Extract actual PDF content using pdf-parse library
+        // Extract actual PDF content using GPT-4o vision capabilities
         const pdfFilename = file.originalname;
-        const { default: pdfParse } = await import('pdf-parse');
         
         try {
-          // Use pdf-parse to extract the complete text from the PDF buffer
-          const pdfData = await pdfParse(file.buffer);
-          extractedText = pdfData.text;
+          // Convert PDF buffer to base64 for GPT vision processing
+          const base64Pdf = file.buffer.toString('base64');
           
-          console.log('PDF extraction successful:', {
+          console.log('Processing PDF with GPT vision:', {
             filename: pdfFilename,
-            pages: pdfData.numpages,
-            textLength: extractedText.length,
+            bufferSize: file.buffer.length,
+            base64Length: base64Pdf.length
+          });
+          
+          // Use GPT-4o to read and extract complete text from the PDF
+          const visionResponse = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "user",
+                content: [
+                  {
+                    type: "text",
+                    text: "Extract ALL readable text content from this PDF document. Return only the complete text content without any formatting, analysis, or commentary. This is an investment research report that needs full text extraction for further processing. Include all articles, sections, and content."
+                  },
+                  {
+                    type: "image_url",
+                    image_url: {
+                      url: `data:application/pdf;base64,${base64Pdf}`
+                    }
+                  }
+                ]
+              }
+            ],
+            max_tokens: 4000
+          });
+          
+          extractedText = visionResponse.choices[0].message.content || '';
+          
+          console.log('GPT vision extraction successful:', {
+            filename: pdfFilename,
+            extractedLength: extractedText.length,
             preview: extractedText.substring(0, 300)
           });
           
         } catch (error) {
-          console.error('PDF extraction error:', error);
-          throw new Error(`Failed to extract PDF content: ${error.message}`);
+          console.error('GPT vision extraction error:', error);
+          throw new Error(`Failed to extract PDF content with GPT vision: ${error.message}`);
         }
         
         // Only use real extracted PDF text - no fallback content
