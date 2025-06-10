@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import pdf from "pdf-parse";
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -92,51 +93,8 @@ function parseWILTWReport(content: string) {
   };
 }
 
-// Generate structured data for WATMTU reports
-function generateWATMTUParsedData() {
-  return {
-    summary: 'WATMTU market analysis focuses on precious metals and commodities with emphasis on gold, silver, and mining sector performance. Key themes include portfolio allocation strategies, technical breakouts, and commodity market trends.',
-    keyInsights: [
-      'Gold and silver mining stocks showing strong breakout patterns',
-      'Precious metals sector outperforming broader market indices',
-      'Technical analysis indicates sustained uptrend in commodity markets',
-      'Portfolio allocation recommendations favor hard assets and inflation hedges',
-      'Market breadth expanding in precious metals and mining sectors'
-    ],
-    investmentThemes: [
-      'Precious metals allocation strategy',
-      'Commodity sector rotation',
-      'Inflation hedge positioning',
-      'Technical breakout momentum'
-    ],
-    targetAudience: 'Commodity investors and precious metals specialists',
-    marketOutlook: 'Precious metals bullish',
-    riskFactors: ['Commodity price volatility', 'Dollar strength', 'Economic policy changes']
-  };
-}
-
-// Generate structured data for WILTW reports  
-function generateWILTWParsedData() {
-  return {
-    summary: 'WILTW weekly insights covering investment research, market analysis, and strategic recommendations for portfolio management and client advisory services.',
-    keyInsights: [
-      'Weekly market developments and investment opportunities',
-      'Research-driven investment recommendations',
-      'Portfolio strategy and risk management insights',
-      'Economic analysis and market outlook updates',
-      'Client advisory and relationship management guidance'
-    ],
-    investmentThemes: [
-      'Strategic asset allocation',
-      'Risk management framework',
-      'Market opportunity identification',
-      'Client relationship optimization'
-    ],
-    targetAudience: 'Investment professionals and portfolio managers',
-    marketOutlook: 'Research-focused analysis',
-    riskFactors: ['Market volatility', 'Economic uncertainty', 'Policy changes']
-  };
-}
+// PDF parsing functions require actual PDF processing libraries
+// No sample data generation allowed
 
 // Configure multer for file uploads
 const upload = multer({
@@ -353,10 +311,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      // For now, use sample content based on report type since PDF text extraction requires additional setup
-      // In production, implement proper PDF parsing with a working library
-      let extractedText = '';
-      
+      if (!file) {
+        return res.status(400).json({ error: 'No PDF file uploaded' });
+      }
+
       console.log('PDF Upload - File details:', {
         originalname: file.originalname,
         size: file.size,
@@ -364,119 +322,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         detectedType: file.originalname.includes('WATMTU') ? 'WATMTU' : 
                      file.originalname.includes('WILTW') ? 'WILTW' : 'Unknown'
       });
-      
-      if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
-        extractedText = `WATMTU Market Analysis Report
+
+      // Extract actual text from PDF using pdf-parse
+      let extractedText = '';
+      try {
+        const pdfBuffer = fs.readFileSync(file.path);
+        const pdfData = await pdf(pdfBuffer);
+        extractedText = pdfData.text;
         
-Market Overview:
-Gold and silver continue to show strong momentum with mining sector outperformance across all major indices. Technical breakouts are evident in precious metals with expanding market breadth.
+        console.log('PDF Extraction Success:', {
+          pages: pdfData.numpages,
+          textLength: extractedText.length,
+          textPreview: extractedText.substring(0, 500),
+          hasContent: extractedText.length > 100
+        });
 
-Key Findings:
-- Gold mining stocks showing 15-20% gains over the past month
-- Silver breaking through key resistance levels at $31/oz
-- Junior mining companies hitting new 52-week highs
-- Commodity complex rotation accelerating
-
-Portfolio Allocation Recommendations:
-- Increase precious metals allocation to 35-40% of portfolio
-- Focus on established gold producers and silver miners
-- Consider junior exploration companies for higher risk/reward exposure
-- Maintain commodity-focused ETFs for diversification
-
-Technical Analysis:
-- Gold futures breaking above $2,100 resistance
-- Silver showing cup-and-handle pattern completion
-- Mining sector relative strength vs S&P 500 at 18-month highs
-- Volume expansion confirming breakout moves
-
-Risk Factors:
-- Dollar strength could pressure metals
-- Economic policy changes may impact demand
-- Geopolitical tensions affecting supply chains`;
-      } else {
-        extractedText = `WILTW Weekly Report - Investment Research Insights
-
-Table of Contents:
-01 Strategy & Asset Allocation & Performance of High Conviction Ideas
-02 China Market Analysis - Recent Findings from Regional Visit
-03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders
-04 Religious Resurgence Among Gen Z and Young Demographics
-05 European Union Barriers and Potential Trump Policy Impacts
-06 Terrorism and Future Warfare Considerations
-07 U.S. Critical Minerals Partnerships - Gulf States Analysis Part I
-08 AI Adoption Productivity Gaps and Revenue Implications
-09 Chinese Shareholder Movement and Emerging Dividend Culture
-10 Global Water Crisis - Peak Water and Groundwater Depletion
-11 Greek Mythology Lessons for Modern Markets
-12 Essential Reading for Young Investors
-
-Article Summaries:
-
-Strategy & Asset Allocation Analysis:
-Our high conviction portfolio shows 19.6% YTD gains vs S&P 500, driven by 35.5% allocation to precious metals and 15% to Chinese equities. Commodity leadership theme continues with mining sector outperformance.
-
-China Market Intelligence:
-Recent two-week visit yielded insights from 150+ meetings including central bank officials and municipal leaders. Dividend culture emerging with major shareholder movements despite tariff concerns.
-
-USD Index Risk Assessment:
-Growing challenges from weaker growth, rising inflation expectations, and higher bond yields. Potential "revenge tax" on foreign U.S. asset holders poses significant risk to dollar dominance.
-
-Technology Infrastructure Gap:
-China deploys 4.4M 5G base stations vs U.S. 200K, with Huawei R&D spending exceeding competitors. Over 30,000 smart factories operational, creating AI deployment advantages.
-
-Critical Minerals Strategy:
-U.S. partnerships with Gulf states essential for reducing Chinese dependency in rare earth elements. China controls 70% mining, 85% refining of global REEs.
-
-AI Productivity Analysis:
-Widespread adoption shows scattered productivity gains with limited revenue impact. Implementation challenges across enterprise sectors remain significant.
-
-Investment Implications:
-- Increase commodity exposure, particularly precious metals
-- Consider Chinese equity allocation amid dividend culture shift
-- Monitor USD risks and alternative reserve currency trends
-- Focus on critical minerals supply chain opportunities
-- Evaluate AI infrastructure investments carefully`;
+        if (!extractedText || extractedText.length < 100) {
+          return res.status(400).json({ 
+            error: 'PDF contains no readable text or very little content. Please ensure the PDF contains extractable text (not just images).' 
+          });
+        }
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        return res.status(400).json({ 
+          error: 'Failed to extract text from PDF. Please ensure the file is a valid PDF with extractable text.',
+          details: pdfError instanceof Error ? pdfError.message : 'Unknown PDF parsing error'
+        });
       }
       
-      let parsedData;
+      // Extract date from filename if available
+      const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
+      const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+      
       let reportTitle;
       let tags: string[] = [];
       
       if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
-        // Extract date from filename if available
-        const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-        
-        parsedData = generateWATMTUParsedData();
         reportTitle = `WATMTU_${dateStr}`;
         tags = ['watmtu', 'market-analysis', 'precious-metals', 'commodities'];
       } else {
-        // Extract date from filename if available
-        const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-        
-        // CRITICAL: Preserve raw PDF content without processing
-        console.log('PDF Upload Debug:', {
-          reportTitle: `WILTW_${dateStr}`,
-          extractedTextLength: extractedText.length,
-          extractedTextPreview: extractedText.substring(0, 500),
-          extractedTextMiddle: extractedText.substring(1000, 1500),
-          containsWeaponization: extractedText.includes('weaponization'),
-          containsCriticalMinerals: extractedText.includes('critical-minerals'),
-          containsMining: extractedText.includes('mining'),
-          containsArticle2: extractedText.includes('China\'s weaponization'),
-          containsStrategy: extractedText.includes('Strategy & Asset')
-        });
-        
-        // Use minimal parsing to avoid content corruption
-        parsedData = {
-          summary: "Raw PDF content preserved for AI analysis",
-          keyInsights: ["China critical minerals", "Mining sector analysis", "Investment research"],
-          targetAudience: "Investment professionals"
-        };
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
       }
+      
+      console.log('PDF Content Validation:', {
+        reportTitle,
+        extractedTextLength: extractedText.length,
+        extractedTextPreview: extractedText.substring(0, 500),
+        extractedTextMiddle: extractedText.substring(1000, 1500),
+        isActualPDFContent: true,
+        noSampleContent: true
+      });
+      
+      // Use actual PDF content without any processing or sample data
+      const parsedData = {
+        summary: `Actual PDF content extracted from ${reportTitle}`,
+        keyInsights: [`PDF content with ${extractedText.length} characters extracted`],
+        targetAudience: "Investment professionals"
+      };
 
       // Create report entry in database
       const reportData = {
