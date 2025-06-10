@@ -451,7 +451,7 @@ export default function LeadPipeline() {
                               </div>
                               
                               <div className="flex items-center gap-2 ml-4">
-                                <Link to={`/leads/${lead.id}`}>
+                                <Link to={`/lead/${lead.id}`}>
                                   <Button variant="outline" size="sm">
                                     <ExternalLink className="w-3 h-3 mr-1" />
                                     View
