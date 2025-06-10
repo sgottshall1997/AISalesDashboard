@@ -418,6 +418,21 @@ export function ContentDistribution() {
                         const summaries = await response.json();
                         const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
                         
+                        console.log('Load saved summary debug:', {
+                          selectedReport,
+                          foundSummary: reportSummary ? {
+                            id: reportSummary.id,
+                            content_report_id: reportSummary.content_report_id,
+                            summaryLength: reportSummary.parsed_summary?.length,
+                            summaryPreview: reportSummary.parsed_summary?.substring(0, 200)
+                          } : null,
+                          allSummaries: summaries.map((s: any) => ({
+                            id: s.id,
+                            content_report_id: s.content_report_id,
+                            summaryLength: s.parsed_summary?.length
+                          }))
+                        });
+                        
                         if (reportSummary) {
                           setReportSummary(reportSummary.parsed_summary);
                           toast({

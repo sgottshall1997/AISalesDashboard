@@ -1000,12 +1000,22 @@ ${content}`;
         try {
           // Check if summary already exists
           const existingSummary = await storage.getReportSummary(reportId);
+          console.log('Summary storage debug:', {
+            reportId,
+            promptType,
+            existingSummary: existingSummary ? { id: existingSummary.id, summaryLength: existingSummary.parsed_summary?.length } : null,
+            newSummaryLength: summary?.length
+          });
+          
           if (!existingSummary) {
-            await storage.createReportSummary({
+            const newSummary = await storage.createReportSummary({
               content_report_id: reportId,
               parsed_summary: summary,
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
+            console.log('Created new summary:', { id: newSummary.id, summaryLength: newSummary.parsed_summary?.length });
+          } else {
+            console.log('Summary already exists, not creating new one');
           }
         } catch (error) {
           console.error("Error storing report summary:", error);
