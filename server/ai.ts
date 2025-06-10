@@ -5,6 +5,35 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_KEY || ""
 });
 
+function enforceWordLimit(text: string, maxWords: number): string {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) {
+    return text;
+  }
+  
+  // Truncate to maxWords and ensure it ends properly
+  const truncated = words.slice(0, maxWords).join(' ');
+  
+  // If we cut off mid-sentence, try to end at a complete sentence
+  const lastPeriod = truncated.lastIndexOf('.');
+  const lastExclamation = truncated.lastIndexOf('!');
+  const lastQuestion = truncated.lastIndexOf('?');
+  
+  const lastSentenceEnd = Math.max(lastPeriod, lastExclamation, lastQuestion);
+  
+  // If we have a sentence ending in the last 20% of the text, use that
+  if (lastSentenceEnd > truncated.length * 0.8) {
+    return truncated.substring(0, lastSentenceEnd + 1);
+  }
+  
+  // Otherwise just truncate and add period if needed
+  if (!truncated.match(/[.!?]$/)) {
+    return truncated + '.';
+  }
+  
+  return truncated;
+}
+
 export interface EmailGenerationRequest {
   type: "follow_up" | "renewal" | "overdue" | "lead_nurture" | "upsell";
   recipientName: string;
@@ -57,9 +86,15 @@ export async function generateEmail(request: EmailGenerationRequest): Promise<Em
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
     
+    // Enforce strict word count for lead nurture emails
+    let emailBody = result.body || "Thank you for your continued partnership.";
+    if (request.type === "lead_nurture") {
+      emailBody = enforceWordLimit(emailBody, 80);
+    }
+    
     return {
       subject: result.subject || "Follow-up from 13D Research",
-      body: result.body || "Thank you for your continued partnership.",
+      body: emailBody,
       tone: result.tone || "professional",
       priority: result.priority || "medium",
       bestSendTime: result.bestSendTime
@@ -105,31 +140,45 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       
       basePrompt += `
 
-CRITICAL REQUIREMENTS FOR SOPHISTICATED INVESTORS:
-- Maximum 120-150 words total (including greeting and signature)
-- ONE punchy opening sentence - no generic pleasantries
-- EXACTLY 2-3 bullet points, max 15 words each
-- Assume they know market basics - don't over-explain
-- End with ONE clear, direct CTA
-- NO filler words, explanations, or hedge language
+ULTRA-STRICT REQUIREMENTS:
+- HARD LIMIT: 80 words MAXIMUM for entire email body
+- NO greeting pleasantries - start with their name only
+- EXACTLY 2-3 bullet points, 10 words MAX each
+- ONE sentence CTA - 5 words max
+- Cut ALL unnecessary words, articles, conjunctions
 
-REVISED EXAMPLE FORMAT:
-Subject: Silver Miners Hit New Highs
+MANDATORY FORMAT (copy this structure exactly):
+Subject: [Direct market insight - 4 words max]
+
+[Name],
+
+[One hook sentence - 10 words max]:
+
+• [Market insight - 10 words max]
+• [Technical signal - 10 words max] 
+• [Catalyst/trend - 10 words max]
+
+[CTA - 5 words max]?
+
+[Signature]
+
+EXAMPLE:
+Subject: Gold Breakout Confirms
 
 Monica,
 
-Three signals align with your precious metals thesis:
+Precious metals signals validate your thesis:
 
-• SIL/SILJ breaking out - confirming your momentum play
-• Gold-CPI ratio surged past 45-year resistance 
-• Dollar weakness accelerating into hard assets
+• Silver miners breaking multi-year resistance
+• Gold-CPI ratio hit decade highs
+• Dollar weakness accelerating into metals
 
-Want the full breakdown?
+Want the breakdown?
 
 Best,
-[Name]
+Team
 
-WORD COUNT TARGET: 100-120 words maximum. Write for a sophisticated investor who doesn't need hand-holding. Be direct, assume knowledge, skip explanations.`;
+ENFORCE: Count every single word. If over 80 words, CUT content aggressively. NO exceptions.`;
       break;
       
     case "upsell":
