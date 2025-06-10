@@ -293,6 +293,7 @@ export default function ContentSection() {
               {suggestions && suggestions.length > 0 && (
                 <div className="space-y-4">
                   {suggestions.map((suggestion: any, index: number) => {
+                    console.log('Rendering suggestion:', suggestion.type, suggestion.title);
                     const getTypeIcon = (type: string) => {
                       switch (type) {
                         case "frequent_theme": return <TrendingUp className="h-5 w-5" />;
@@ -400,39 +401,31 @@ export default function ContentSection() {
                                 {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
                               </p>
                             )}
-                            <div className="flex flex-col gap-2">
-                              <button
+                            <div className="mt-3">
+                              {/* Test button with fixed blue color */}
+                              <div
                                 onClick={() => {
+                                  console.log('Button clicked for:', suggestion.title);
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
-                                disabled={generateEmailMutation.isPending}
                                 style={{
-                                  backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
-                                                 suggestion.type === "emerging_trend" ? "#059669" :
-                                                 suggestion.type === "cross_sector" ? "#7c3aed" :
-                                                 suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563",
+                                  backgroundColor: "#2563eb",
                                   color: "white",
-                                  border: "none",
-                                  borderRadius: "6px",
                                   padding: "8px 16px",
+                                  borderRadius: "6px",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "8px",
                                   fontSize: "14px",
                                   fontWeight: "500",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  gap: "8px",
-                                  cursor: "pointer",
-                                  opacity: generateEmailMutation.isPending ? "0.5" : "1"
+                                  border: "1px solid #2563eb"
                                 }}
                               >
-                                {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Mail className="h-4 w-4" />
-                                )}
+                                <Mail className="h-4 w-4" />
                                 Generate Email
-                              </button>
+                              </div>
                               
                               {generateEmailMutation.isPending && currentSuggestion === suggestion && (
                                 <div className="bg-gray-50 rounded-md p-3 border">
