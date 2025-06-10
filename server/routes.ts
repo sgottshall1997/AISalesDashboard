@@ -880,47 +880,30 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
 
-      // Filter out Article 1 content from summary - aggressive approach
+      // Filter out Article 1 content from summary with enhanced detection
       let filteredSummary = reportSummary;
       if (reportSummary) {
-        // Split into lines and filter out problematic sections
-        const lines = filteredSummary.split('\n');
-        const filteredLines = [];
-        let skipSection = false;
-        
-        for (const line of lines) {
-          // Check if we're starting a section to skip
-          if (line.includes('**Core Investment Thesis:**') ||
-              line.includes('**Asset allocation recommendations:**') ||
-              line.includes('**Portfolio Allocation Recommendations:**') ||
-              line.includes('**Percentage allocations by sector/asset class:**') ||
-              line.includes('**Strategic positioning advice:**')) {
-            skipSection = true;
-            continue;
-          }
-          
-          // Check if we're ending a section to skip
-          if (skipSection && (line.startsWith('- **') || line.startsWith('**'))) {
-            skipSection = false;
-          }
-          
-          // Skip lines with problematic phrases
-          if (line.includes('outperform major stock indices') ||
-              line.includes('outperform major U.S. indices') ||
-              line.includes('strategic asset allocation') ||
-              line.includes('Gold, silver, and mining stocks (') ||
-              line.includes('commodities and related sectors (') ||
-              line.includes('Chinese equity markets (')) {
-            continue;
-          }
-          
-          // Add line if we're not skipping
-          if (!skipSection) {
-            filteredLines.push(line);
-          }
-        }
-        
-        filteredSummary = filteredLines.join('\n').trim();
+        // Remove entire problematic sections and specific Article 1 phrases
+        filteredSummary = filteredSummary
+          // Remove core investment thesis section
+          .replace(/\*\*Core Investment Thesis:\*\*[\s\S]*?(?=\n\*\*[^*]|\n- \*\*[^*]|$)/gi, '')
+          // Remove asset allocation sections
+          .replace(/- \*\*Asset allocation recommendations:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Portfolio Allocation Recommendations:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Percentage allocations by sector[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Strategic positioning advice:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          // Remove specific problematic phrases
+          .replace(/outperform major stock indices/gi, '')
+          .replace(/outperform major U\.S\. indices/gi, '')
+          .replace(/strategic asset allocation/gi, '')
+          .replace(/paradigm shift towards commodities/gi, '')
+          .replace(/Gold, silver, and mining stocks \([^)]+\)/gi, '')
+          .replace(/commodities and related sectors \([^)]+\)/gi, '')
+          .replace(/Chinese equity markets \([^)]+\)/gi, '')
+          // Clean up formatting
+          .replace(/\n\s*\n\s*\n/g, '\n\n')
+          .replace(/\n\s*$/, '')
+          .trim();
       }
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
@@ -1016,12 +999,13 @@ Spencer`;
       
       // Red flag safeguard: Check for Article 1 content leakage
       const article1Indicators = [
-        'gold miners',
-        'major U.S. stock indices',
-        'major U.S. indices',
-        'outperform.*U.S. indices',
-        'strategy.*asset allocation',
-        'high conviction ideas'
+        'outperform major stock indices',
+        'outperform major U.S. indices', 
+        'paradigm shift towards commodities',
+        'high conviction ideas',
+        'Gold, silver, and mining stocks \\(',
+        'commodities and related sectors \\(',
+        'Chinese equity markets \\('
       ];
       
       const hasArticle1Content = article1Indicators.some(indicator => 
