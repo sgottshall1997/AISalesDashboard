@@ -14,6 +14,43 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 
+// WATMTU Report Parser - For market analysis reports
+function parseWATMTUReport(content: string) {
+  const lines = content.split('\n').filter(line => line.trim());
+  
+  const keyInsights = [];
+  const investmentThemes = [];
+  let summary = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim();
+    
+    // Extract key market insights
+    if (trimmed.includes('gold') || trimmed.includes('silver') || 
+        trimmed.includes('mining') || trimmed.includes('precious metals') ||
+        trimmed.includes('commodity') || trimmed.includes('allocation')) {
+      keyInsights.push(trimmed);
+    }
+    
+    // Extract investment themes
+    if (trimmed.includes('%') || trimmed.includes('portfolio') || 
+        trimmed.includes('recommendation') || trimmed.includes('target')) {
+      investmentThemes.push(trimmed);
+    }
+  }
+  
+  // Create summary from first substantial paragraphs
+  const substantialLines = lines.filter(line => line.length > 50);
+  summary = substantialLines.slice(0, 5).join(' ').substring(0, 500);
+  
+  return {
+    summary: summary || 'Market analysis report processed.',
+    keyInsights: keyInsights.slice(0, 10),
+    investmentThemes: investmentThemes.slice(0, 8),
+    targetAudience: 'Investment professionals and portfolio managers'
+  };
+}
+
 // WILTW Report Parser - Enhanced for actual content extraction
 function parseWILTWReport(content: string) {
   const lines = content.split('\n').filter(line => line.trim());
@@ -343,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced PDF upload endpoint with specialized parsing
+  // Enhanced PDF upload endpoint with actual PDF text extraction
   app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {
       const file = req.file;
@@ -353,101 +390,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      // For now, use sample content based on report type since PDF text extraction requires additional setup
-      // In production, implement proper PDF parsing with a working library
+      // Import pdf-parse for actual PDF text extraction
+      const pdfParse = require('pdf-parse');
+      
       let extractedText = '';
       
-      if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
-        extractedText = `WATMTU Market Analysis Report
+      try {
+        // Extract actual text from the uploaded PDF
+        const pdfData = await pdfParse(file.buffer);
+        extractedText = pdfData.text;
         
-Market Overview:
-Gold and silver continue to show strong momentum with mining sector outperformance across all major indices. Technical breakouts are evident in precious metals with expanding market breadth.
-
-Key Findings:
-- Gold mining stocks showing 15-20% gains over the past month
-- Silver breaking through key resistance levels at $31/oz
-- Junior mining companies hitting new 52-week highs
-- Commodity complex rotation accelerating
-
-Portfolio Allocation Recommendations:
-- Increase precious metals allocation to 35-40% of portfolio
-- Focus on established gold producers and silver miners
-- Consider junior exploration companies for higher risk/reward exposure
-- Maintain commodity-focused ETFs for diversification
-
-Technical Analysis:
-- Gold futures breaking above $2,100 resistance
-- Silver showing cup-and-handle pattern completion
-- Mining sector relative strength vs S&P 500 at 18-month highs
-- Volume expansion confirming breakout moves
-
-Risk Factors:
-- Dollar strength could pressure metals
-- Economic policy changes may impact demand
-- Geopolitical tensions affecting supply chains`;
-      } else {
-        extractedText = `WILTW Weekly Report - Investment Research Insights
-
-Table of Contents:
-01 Strategy & Asset Allocation & Performance of High Conviction Ideas
-02 China Market Analysis - Recent Findings from Regional Visit
-03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders
-04 Religious Resurgence Among Gen Z and Young Demographics
-05 European Union Barriers and Potential Trump Policy Impacts
-06 Terrorism and Future Warfare Considerations
-07 U.S. Critical Minerals Partnerships - Gulf States Analysis Part I
-08 AI Adoption Productivity Gaps and Revenue Implications
-09 Chinese Shareholder Movement and Emerging Dividend Culture
-10 Global Water Crisis - Peak Water and Groundwater Depletion
-11 Greek Mythology Lessons for Modern Markets
-12 Essential Reading for Young Investors
-
-Article Summaries:
-
-Strategy & Asset Allocation Analysis:
-Our high conviction portfolio shows 19.6% YTD gains vs S&P 500, driven by 35.5% allocation to precious metals and 15% to Chinese equities. Commodity leadership theme continues with mining sector outperformance.
-
-China Market Intelligence:
-Recent two-week visit yielded insights from 150+ meetings including central bank officials and municipal leaders. Dividend culture emerging with major shareholder movements despite tariff concerns.
-
-USD Index Risk Assessment:
-Growing challenges from weaker growth, rising inflation expectations, and higher bond yields. Potential "revenge tax" on foreign U.S. asset holders poses significant risk to dollar dominance.
-
-Technology Infrastructure Gap:
-China deploys 4.4M 5G base stations vs U.S. 200K, with Huawei R&D spending exceeding competitors. Over 30,000 smart factories operational, creating AI deployment advantages.
-
-Critical Minerals Strategy:
-U.S. partnerships with Gulf states essential for reducing Chinese dependency in rare earth elements. China controls 70% mining, 85% refining of global REEs.
-
-AI Productivity Analysis:
-Widespread adoption shows scattered productivity gains with limited revenue impact. Implementation challenges across enterprise sectors remain significant.
-
-Investment Implications:
-- Increase commodity exposure, particularly precious metals
-- Consider Chinese equity allocation amid dividend culture shift
-- Monitor USD risks and alternative reserve currency trends
-- Focus on critical minerals supply chain opportunities
-- Evaluate AI infrastructure investments carefully`;
+        console.log('PDF extraction successful:', {
+          filename: file.originalname,
+          extractedLength: extractedText.length,
+          firstChars: extractedText.substring(0, 200)
+        });
+        
+        if (!extractedText || extractedText.trim().length < 100) {
+          throw new Error('PDF text extraction yielded insufficient content');
+        }
+        
+      } catch (extractionError) {
+        console.error('PDF extraction failed:', extractionError);
+        return res.status(400).json({ 
+          error: 'Failed to extract text from PDF. Please ensure the PDF contains readable text and is not corrupted.',
+          details: extractionError.message
+        });
       }
       
       let parsedData;
       let reportTitle;
       let tags: string[] = [];
       
+      // Extract date from filename if available
+      const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
+      const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+      
       if (reportType === 'watmtu' || file.originalname.includes('WATMTU')) {
-        // Extract date from filename if available
-        const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-        
-        parsedData = generateWATMTUParsedData();
+        // Use actual PDF content for WATMTU reports
+        parsedData = parseWATMTUReport(extractedText);
         reportTitle = `WATMTU_${dateStr}`;
         tags = ['watmtu', 'market-analysis', 'precious-metals', 'commodities'];
       } else {
-        // Extract date from filename if available
-        const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
-        const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-        
-        // Use actual PDF content for WILTW reports
+        // Use actual PDF content for WILTW reports  
         parsedData = parseWILTWReport(extractedText);
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
@@ -822,127 +807,13 @@ Format as a complete email ready to send.`;
         });
       }
 
-      // Use full_content if available, otherwise fall back to content summary or generate sample content
+      // Use only actual PDF content - no fallbacks or sample data
       let actualContent = report.full_content;
       
-      if (!actualContent) {
-        // Generate sample content based on report type for demonstration
-        const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
-        
-        if (isWATMTU) {
-          actualContent = `WATMTU Market Analysis Report
-        
-Market Overview:
-Gold and silver continue to show strong momentum with mining sector outperformance across all major indices. Technical breakouts are evident in precious metals with expanding market breadth.
-
-Key Findings:
-- Gold mining stocks showing 15-20% gains over the past month
-- Silver breaking through key resistance levels at $31/oz
-- Junior mining companies hitting new 52-week highs
-- Commodity complex rotation accelerating
-
-Portfolio Allocation Recommendations:
-- Increase precious metals allocation to 35-40% of portfolio
-- Focus on established gold producers and silver miners
-- Consider junior exploration companies for higher risk/reward exposure
-- Maintain commodity-focused ETFs for diversification
-
-Technical Analysis:
-- Gold futures breaking above $2,100 resistance
-- Silver showing cup-and-handle pattern completion
-- Mining sector relative strength vs S&P 500 at 18-month highs
-- Volume expansion confirming breakout moves
-
-Risk Factors:
-- Dollar strength could pressure metals
-- Economic policy changes may impact demand
-- Geopolitical tensions affecting supply chains`;
-        } else {
-          // Generate unique content based on report title/date for different WILTW reports
-          const reportDate = report.title.includes('2025-06-05') ? '2025-06-05' : 
-                           report.title.includes('2025-05-29') ? '2025-05-29' : 
-                           'current';
-          
-          if (reportDate === '2025-06-05') {
-            actualContent = `WILTW Weekly Report - Investment Research Insights (June 5, 2025)
-
-Table of Contents:
-01 Strategy & Asset Allocation & Performance of High Conviction Ideas
-02 China Market Analysis - Recent Findings from Regional Visit
-03 USD Index Risks and "Revenge Tax" Implications for Foreign Asset Holders
-04 Religious Resurgence Among Gen Z and Young Demographics
-05 European Union Barriers and Potential Trump Policy Impacts
-06 Terrorism and Future Warfare Considerations
-
-Article 1: Strategy & Asset Allocation & Performance of High Conviction Ideas
-Our high conviction portfolio shows 19.6% YTD gains vs S&P 500, driven by 35.5% allocation to precious metals and 15% to Chinese equities. The portfolio gained 1.4% over the past week, outperforming S&P 500 by 18.9% and MSCI World by 14.9%. Commodity leadership theme continues with mining sector outperformance.
-
-Article 2: China Market Intelligence 
-Recent two-week visit yielded insights from 150+ meetings including central bank officials and municipal leaders. Key findings include emerging dividend culture with major shareholder movements despite ongoing tariff concerns. Chinese pet-supply companies have returned 226% since August 2019, highlighting loneliness investment theme.
-
-Article 3: USD Index Risk Assessment
-Growing challenges from weaker growth, rising inflation expectations, and higher bond yields. Potential "revenge tax" on foreign U.S. asset holders poses significant risk to dollar dominance. Established gold-mining shares are breaking out, even junior miners hitting new highs.
-
-Investment Implications:
-- Increase commodity exposure, particularly precious metals
-- Consider Chinese equity allocation amid dividend culture shift
-- Monitor USD risks and alternative reserve currency trends`;
-          } else if (reportDate === '2025-05-29') {
-            actualContent = `WILTW Weekly Report - Investment Research Insights (May 29, 2025)
-
-Table of Contents:
-01 European Central Bank Policy Shifts and Market Implications
-02 Semiconductor Supply Chain Diversification Updates
-03 Renewable Energy Infrastructure Investment Opportunities
-04 Emerging Market Currency Volatility Analysis
-05 U.S. Regional Banking Sector Consolidation Trends
-06 Artificial Intelligence Regulation Framework Development
-
-Article 1: European Central Bank Policy Shifts and Market Implications
-ECB signals potential rate cuts amid declining inflation pressures across eurozone. German manufacturing PMI shows continued contraction at 45.2, while services sector remains resilient. Euro weakening against dollar creates opportunities for European exporters but challenges for import-dependent sectors.
-
-Article 2: Semiconductor Supply Chain Diversification Updates
-TSMC announces new Arizona fab completion ahead of schedule, with production starting Q3 2025. Intel's foundry services gain traction with major automotive clients. Memory chip prices stabilizing after 18-month decline, suggesting inventory normalization.
-
-Article 3: Renewable Energy Infrastructure Investment Opportunities
-Solar panel installation costs drop 12% year-over-year, improving project economics. Battery storage deployment accelerating with 35% capacity increase planned for 2025. Grid modernization investments create opportunities in smart infrastructure companies.
-
-Article 4: Emerging Market Currency Volatility
-Brazilian real strengthens on commodity price recovery and fiscal reforms. Indian rupee under pressure from elevated oil imports. Turkish lira volatility continues amid political uncertainties affecting foreign investment flows.
-
-Investment Implications:
-- European dividend stocks attractive at current valuations
-- Semiconductor equipment manufacturers positioned for growth
-- Renewable energy REITs offering sustainable income streams
-- Selective emerging market exposure through ETFs`;
-          } else {
-            // Default content for other WILTW reports
-            actualContent = `WILTW Weekly Report - Investment Research Insights
-
-Table of Contents:
-01 Federal Reserve Policy Update and Interest Rate Outlook
-02 Technology Sector Earnings Analysis and Forward Guidance
-03 Healthcare Innovation and Biotech Investment Opportunities
-04 Real Estate Market Dynamics and REIT Performance
-05 Energy Transition and Clean Technology Investments
-06 International Trade Relations and Global Supply Chains
-
-Article 1: Federal Reserve Policy Update
-Federal Reserve maintains dovish stance with potential rate cuts on horizon. Inflation data showing consistent decline toward 2% target. Employment market cooling gradually with jobless claims trending higher. Bond yields reflecting market expectations of policy normalization.
-
-Article 2: Technology Sector Analysis
-Mega-cap technology stocks showing mixed earnings results with cloud growth slowing. Artificial intelligence investments driving capex increases across sector. Cybersecurity demand remains strong amid increasing threat landscape. Semiconductor cycle showing signs of stabilization.
-
-Article 3: Healthcare Innovation Focus
-Breakthrough obesity treatments expanding addressable market significantly. Gene therapy approvals accelerating with improved safety profiles. Healthcare AI applications gaining regulatory approval faster than expected. Aging demographics driving medical device demand globally.
-
-Investment Implications:
-- Quality dividend growth stocks in defensive sectors
-- Technology infrastructure plays benefiting from AI adoption
-- Healthcare innovation leaders with strong pipelines
-- Real estate exposure through diversified REIT portfolios`;
-          }
-        }
+      if (!actualContent || actualContent.trim().length < 100) {
+        return res.status(400).json({ 
+          error: "No PDF content available for this report. Please re-upload the PDF file to extract the actual content." 
+        });
       }
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
