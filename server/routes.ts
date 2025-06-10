@@ -6,7 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
-import extract from "pdf-text-extract";
+import PDFParser from "pdf2json";
 import path from "path";
 
 // Initialize OpenAI client
@@ -460,44 +460,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Extract actual PDF content using pdf-text-extract library
+        // Extract actual PDF content using pdf2json library
         const pdfFilename = file.originalname;
         
         try {
-          // Save PDF buffer to temporary file for processing
-          const tempDir = path.join(process.cwd(), 'uploads');
-          if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-          }
-          
-          const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${pdfFilename}`);
-          fs.writeFileSync(tempFilePath, file.buffer);
-          
-          console.log('Processing PDF with pdf-text-extract:', {
+          console.log('Processing PDF with pdf2json:', {
             filename: pdfFilename,
-            bufferSize: file.buffer.length,
-            tempPath: tempFilePath
+            bufferSize: file.buffer.length
           });
           
-          // Extract text using pdf-text-extract library
+          // Extract text using pdf2json library
           extractedText = await new Promise<string>((resolve, reject) => {
-            extract(tempFilePath, (err: any, pages: string[]) => {
-              // Clean up temp file
-              try {
-                fs.unlinkSync(tempFilePath);
-              } catch (cleanupError) {
-                console.warn('Failed to cleanup temp file:', cleanupError);
-              }
-              
-              if (err) {
-                reject(err);
-                return;
-              }
-              
-              // Join all pages into complete text
-              const fullText = pages.join('\n\n');
-              resolve(fullText);
+            const pdfParser = new (PDFParser as any)(null, true);
+            
+            pdfParser.on("pdfParser_dataError", (errData: any) => {
+              reject(new Error(`PDF parsing error: ${errData.parserError}`));
             });
+            
+            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+              try {
+                // Extract text from all pages
+                let fullText = '';
+                
+                if (pdfData.Pages) {
+                  for (const page of pdfData.Pages) {
+                    if (page.Texts) {
+                      for (const text of page.Texts) {
+                        if (text.R) {
+                          for (const run of text.R) {
+                            if (run.T) {
+                              // Decode URI component and add space
+                              fullText += decodeURIComponent(run.T) + ' ';
+                            }
+                          }
+                        }
+                      }
+                    }
+                    fullText += '\n\n'; // Page break
+                  }
+                }
+                
+                // Clean up the text
+                fullText = fullText
+                  .replace(/\s+/g, ' ')
+                  .replace(/\n\s*\n/g, '\n\n')
+                  .trim();
+                
+                resolve(fullText);
+              } catch (parseError) {
+                reject(new Error(`Text extraction error: ${parseError.message}`));
+              }
+            });
+            
+            // Parse the PDF buffer
+            pdfParser.parseBuffer(file.buffer);
           });
           
           console.log('PDF text extraction successful:', {
