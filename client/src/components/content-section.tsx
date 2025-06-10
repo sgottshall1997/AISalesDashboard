@@ -87,6 +87,7 @@ export default function ContentSection() {
       setEstimatedTime(0);
     },
     onError: (error: any) => {
+      console.error('Email generation error:', error);
       setLoadingProgress(0);
       setEstimatedTime(0);
       toast({
@@ -408,10 +409,11 @@ export default function ContentSection() {
                               <button
                                 onClick={() => {
                                   console.log('Button clicked for:', suggestion.title, suggestion.type);
+                                  console.log('Full suggestion object:', suggestion);
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
-                                disabled={generateEmailMutation.isPending && currentSuggestion === suggestion}
+                                disabled={generateEmailMutation.isPending}
                                 style={{
                                   backgroundColor: testColor,
                                   color: "white",
