@@ -863,6 +863,14 @@ Risk Factors:
                            report.title.includes('2025-05-29') ? '2025-05-29' : 
                            'current';
           
+          console.log('Content generation debug:', {
+            reportTitle: report.title,
+            reportId: report.id,
+            detectedDate: reportDate,
+            includes05: report.title.includes('2025-06-05'),
+            includes29: report.title.includes('2025-05-29')
+          });
+          
           if (reportDate === '2025-06-05') {
             actualContent = `WILTW Weekly Report - Investment Research Insights (June 5, 2025)
 
