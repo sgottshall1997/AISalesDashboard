@@ -1063,11 +1063,31 @@ ${actualContent}
 
 IMPORTANT: Focus on extracting specific investment names, performance percentages, technical breakout patterns, and asset allocation percentages mentioned in the report.`;
       } else {
-        // Fallback to general summarization
-        systemPrompt = "You are an expert investment research analyst. Provide a comprehensive summary of the given report.";
-        userPrompt = `Please summarize this report titled "${title}":
+        // Use enhanced investment research analysis
+        systemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
 
-${content}`;
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
+
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
+        
+        userPrompt = `Please analyze this investment research report titled "${title}" and provide comprehensive insights for investment professionals:
+
+${content}
+
+Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
       }
 
       console.log('OpenAI request debug:', {
