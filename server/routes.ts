@@ -6,6 +6,8 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import extract from "pdf-text-extract";
+import path from "path";
 
 // Initialize OpenAI client
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -458,53 +460,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
           throw new Error('File buffer is not available - multer may not be configured correctly');
         }
         
-        // Extract actual PDF content using GPT-4o vision capabilities
+        // Extract actual PDF content using pdf-text-extract library
         const pdfFilename = file.originalname;
         
         try {
-          // Convert PDF buffer to base64 for GPT vision processing
-          const base64Pdf = file.buffer.toString('base64');
+          // Save PDF buffer to temporary file for processing
+          const tempDir = path.join(process.cwd(), 'uploads');
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+          }
           
-          console.log('Processing PDF with GPT vision:', {
+          const tempFilePath = path.join(tempDir, `temp_${Date.now()}_${pdfFilename}`);
+          fs.writeFileSync(tempFilePath, file.buffer);
+          
+          console.log('Processing PDF with pdf-text-extract:', {
             filename: pdfFilename,
             bufferSize: file.buffer.length,
-            base64Length: base64Pdf.length
+            tempPath: tempFilePath
           });
           
-          // Use GPT-4o to read and extract complete text from the PDF
-          const visionResponse = await openai.chat.completions.create({
-            model: "gpt-4o",
-            messages: [
-              {
-                role: "user",
-                content: [
-                  {
-                    type: "text",
-                    text: "Extract ALL readable text content from this PDF document. Return only the complete text content without any formatting, analysis, or commentary. This is an investment research report that needs full text extraction for further processing. Include all articles, sections, and content."
-                  },
-                  {
-                    type: "image_url",
-                    image_url: {
-                      url: `data:application/pdf;base64,${base64Pdf}`
-                    }
-                  }
-                ]
+          // Extract text using pdf-text-extract library
+          extractedText = await new Promise<string>((resolve, reject) => {
+            extract(tempFilePath, (err: any, pages: string[]) => {
+              // Clean up temp file
+              try {
+                fs.unlinkSync(tempFilePath);
+              } catch (cleanupError) {
+                console.warn('Failed to cleanup temp file:', cleanupError);
               }
-            ],
-            max_tokens: 4000
+              
+              if (err) {
+                reject(err);
+                return;
+              }
+              
+              // Join all pages into complete text
+              const fullText = pages.join('\n\n');
+              resolve(fullText);
+            });
           });
           
-          extractedText = visionResponse.choices[0].message.content || '';
-          
-          console.log('GPT vision extraction successful:', {
+          console.log('PDF text extraction successful:', {
             filename: pdfFilename,
             extractedLength: extractedText.length,
             preview: extractedText.substring(0, 300)
           });
           
         } catch (error) {
-          console.error('GPT vision extraction error:', error);
-          throw new Error(`Failed to extract PDF content with GPT vision: ${error.message}`);
+          console.error('PDF text extraction error:', error);
+          throw new Error(`Failed to extract PDF content: ${error.message}`);
         }
         
         // Only use real extracted PDF text - no fallback content
