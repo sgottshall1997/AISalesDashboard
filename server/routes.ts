@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+// PDF parsing will be handled with a simpler approach
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -390,8 +391,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      // Import pdf-parse for actual PDF text extraction
-      const pdfParse = require('pdf-parse');
+      // Use the imported pdf-parse library
       
       let extractedText = '';
       
