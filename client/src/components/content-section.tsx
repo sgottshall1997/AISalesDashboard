@@ -402,30 +402,28 @@ export default function ContentSection() {
                               </p>
                             )}
                             <div className="mt-3">
-                              {/* Test button with fixed blue color */}
-                              <div
+                              <button
                                 onClick={() => {
                                   console.log('Button clicked for:', suggestion.title);
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
+                                disabled={generateEmailMutation.isPending && currentSuggestion === suggestion}
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all hover:opacity-90 disabled:opacity-50"
                                 style={{
-                                  backgroundColor: "#2563eb",
-                                  color: "white",
-                                  padding: "8px 16px",
-                                  borderRadius: "6px",
-                                  cursor: "pointer",
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                  fontSize: "14px",
-                                  fontWeight: "500",
-                                  border: "1px solid #2563eb"
+                                  backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
+                                                 suggestion.type === "emerging_trend" ? "#059669" :
+                                                 suggestion.type === "cross_sector" ? "#7c3aed" :
+                                                 suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563"
                                 }}
                               >
-                                <Mail className="h-4 w-4" />
+                                {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
                                 Generate Email
-                              </div>
+                              </button>
                               
                               {generateEmailMutation.isPending && currentSuggestion === suggestion && (
                                 <div className="bg-gray-50 rounded-md p-3 border">

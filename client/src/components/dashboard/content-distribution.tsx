@@ -593,22 +593,10 @@ export function ContentDistribution() {
                   </div>
                 ))
               ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <Bot className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-blue-800">High Interest in Tech Trends</p>
-                      <p className="text-sm text-blue-700 mt-1">
-                        5 clients clicked multiple links in WILTW #66. Consider creating follow-up content on semiconductor supply chains.
-                      </p>
-                      <div className="mt-2">
-                        <Button size="sm" className="text-xs bg-primary hover:bg-blue-700 text-white">
-                          Create Follow-up
-                        </Button>
-                      </div>
-                    </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-center text-gray-500">
+                    <Bot className="h-5 w-5 mr-2" />
+                    <span className="text-sm">Loading AI content suggestions...</span>
                   </div>
                 </div>
               )}
