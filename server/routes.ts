@@ -597,7 +597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content_summary: parsedData.summary,
         key_insights: parsedData.keyInsights,
         target_audience: parsedData.targetAudience,
-        full_content: originalPDFContent // Store original extracted PDF text content
+        full_content: extractedText // Store original extracted PDF text content
       };
 
       const report = await storage.createContentReport(reportData);
