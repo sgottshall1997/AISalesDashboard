@@ -840,7 +840,29 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
       
-      const reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      let reportSummary = primaryReport ? primaryReport.parsed_summary : '';
+      
+      // Filter out Article 1 (Strategy & Asset Allocation) from the summary
+      if (reportSummary && reportSummary.includes('Article 1')) {
+        // Remove Article 1 content from summary
+        const lines = reportSummary.split('\n');
+        const filteredLines = [];
+        let inArticle1 = false;
+        
+        for (const line of lines) {
+          if (line.includes('Article 1') || line.includes('STRATEGY & ASSET ALLOCATION')) {
+            inArticle1 = true;
+            continue;
+          }
+          if (line.includes('Article 2') || line.includes('Article 3') || line.includes('Article 4')) {
+            inArticle1 = false;
+          }
+          if (!inArticle1) {
+            filteredLines.push(line);
+          }
+        }
+        reportSummary = filteredLines.join('\n').trim();
+      }
 
       // Extract non-market topics from article content
       let nonMarketTopics = '';
@@ -897,6 +919,7 @@ HARD RULES:
 • Use **friendly but professional tone**
 • Paragraph format is fine, but use bullets for the insights section
 • DO NOT use phrases like "Article 1," "titled," or "the report outlines"
+• SKIP Article 1 (Strategy & Asset Allocation) - do NOT include it in bullet points, only use insights from Articles 2, 3, 4, etc.
 • Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
 
 STRUCTURE TO FOLLOW:
@@ -958,7 +981,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• First market insight with analysis.\n• Second market insight with implications.\n• Third market insight with strategic perspective.\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS."
+            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. CRITICAL RULE: SKIP Article 1 (Strategy & Asset Allocation) - only use insights from Articles 2, 3, 4, etc. for your bullet points. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• Market insight from Article 2 with analysis.\n• Market insight from Article 3 with implications.\n• Market insight from Article 4 with strategic perspective.\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS. IGNORE Article 1."
           },
           {
             role: "user",
