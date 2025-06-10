@@ -368,12 +368,19 @@ export default function ContentSection() {
                             )}
                             <Button 
                               size="sm" 
-                              className={styles.buttonClass}
                               onClick={() => {
                                 setCurrentSuggestion(suggestion);
                                 generateEmailMutation.mutate(suggestion);
                               }}
                               disabled={generateEmailMutation.isPending}
+                              style={{
+                                backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
+                                               suggestion.type === "emerging_trend" ? "#059669" :
+                                               suggestion.type === "cross_sector" ? "#7c3aed" :
+                                               suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563",
+                                color: "white",
+                                border: "none"
+                              }}
                             >
                               {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
                                 <RefreshCw className="h-4 w-4 animate-spin mr-1" />
