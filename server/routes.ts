@@ -1,6 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
+import { eq, sql } from "drizzle-orm";
 import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
@@ -55,9 +57,8 @@ Structure your analysis for investment professionals who need to make portfolio 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
+  insertEmailHistorySchema, clients, invoices, client_engagements, email_history
 } from "@shared/schema";
-import { db } from "./db";
 
 // WATMTU Report Parser - For market analysis reports
 function parseWATMTUReport(content: string) {
@@ -252,6 +253,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Dashboard stats error:", error);
       res.status(500).json({ message: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Dashboard overview with stats and priority actions
+  app.get("/api/dashboard/overview", async (req, res) => {
+    try {
+      const stats = await storage.getDashboardStats();
+      
+      // Get hot leads count
+      const hotLeads = await db.select({ count: sql`COUNT(*)` }).from(leads)
+        .where(eq(leads.likelihood_of_closing, "high"));
+      
+      const overview = {
+        stats: {
+          ...stats,
+          hotLeads: Number(hotLeads[0]?.count || 0)
+        },
+        recentActivity: [], // Empty array since we replaced this section
+        priorityActions: [
+          {
+            type: "urgent",
+            title: "Overdue Invoice",
+            description: "Acme Corp - $15,000 (20 days overdue)",
+            action: "Send Reminder"
+          },
+          {
+            type: "warning", 
+            title: "Renewal Due Soon",
+            description: "Beta Fund - Expires in 15 days",
+            action: "Draft Follow-up"
+          },
+          {
+            type: "info",
+            title: "Hot Lead",
+            description: "Jane Doe (ABC Capital) - Schedule discovery call",
+            action: "Schedule Call"
+          }
+        ]
+      };
+      
+      res.json(overview);
+    } catch (error) {
+      console.error("Dashboard overview error:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard overview" });
     }
   });
 
