@@ -1788,6 +1788,42 @@ Keep the summary under 200 words and focus on actionable insights.`;
     }
   });
 
+  // Generate theme-based email
+  app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
+    try {
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI email generation." 
+        });
+      }
+
+      const { theme, emailAngle, description, keyPoints, supportingReports } = req.body;
+      
+      // Get all reports for content analysis
+      const reports = await storage.getAllContentReports();
+      
+      if (reports.length === 0) {
+        return res.status(400).json({ error: "No reports available for email generation" });
+      }
+
+      const { generateThemeBasedEmail } = await import("./ai");
+      const email = await generateThemeBasedEmail(
+        theme,
+        emailAngle,
+        description,
+        keyPoints,
+        supportingReports,
+        reports
+      );
+      
+      res.json({ email });
+    } catch (error) {
+      console.error("Error generating theme-based email:", error);
+      res.status(500).json({ error: "Failed to generate email" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

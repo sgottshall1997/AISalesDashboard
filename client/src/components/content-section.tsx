@@ -1,8 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, MousePointer, Send, Lightbulb, Bot, TrendingUp, BarChart3, RefreshCw, FileText, Target } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
+import { Mail, MousePointer, Send, Lightbulb, Bot, TrendingUp, BarChart3, RefreshCw, FileText, Target, Copy } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function ContentSection() {
   const { data: reports, isLoading: reportsLoading } = useQuery({
@@ -17,6 +22,64 @@ export default function ContentSection() {
     queryKey: ["/api/ai/content-suggestions"],
     enabled: false, // Don't auto-fetch, only when button is clicked
   });
+
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState("");
+  const [currentSuggestion, setCurrentSuggestion] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const generateEmailMutation = useMutation({
+    mutationFn: async (suggestion: any) => {
+      const response = await fetch('/api/ai/generate-theme-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          theme: suggestion.title,
+          emailAngle: suggestion.emailAngle,
+          description: suggestion.description,
+          keyPoints: suggestion.keyPoints,
+          supportingReports: suggestion.supportingReports
+        })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate email');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedEmail(data.email);
+      setEmailDialogOpen(true);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate email",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: "Email copied to clipboard",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (reportsLoading || clientsLoading) {
     return (
@@ -253,8 +316,21 @@ export default function ContentSection() {
                                 {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
                               </p>
                             )}
-                            <Button size="sm" className={`bg-${color}-600 hover:bg-${color}-700 text-white`}>
-                              Build Email
+                            <Button 
+                              size="sm" 
+                              className={`bg-${color}-600 hover:bg-${color}-700 text-white`}
+                              onClick={() => {
+                                setCurrentSuggestion(suggestion);
+                                generateEmailMutation.mutate(suggestion);
+                              }}
+                              disabled={generateEmailMutation.isPending}
+                            >
+                              {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
+                                <RefreshCw className="h-4 w-4 animate-spin mr-1" />
+                              ) : (
+                                <Mail className="h-4 w-4 mr-1" />
+                              )}
+                              Generate Email
                             </Button>
                           </div>
                         </div>
@@ -273,6 +349,38 @@ export default function ContentSection() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Email Generation Dialog */}
+        <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Generated Email</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Textarea
+                value={generatedEmail}
+                onChange={(e) => setGeneratedEmail(e.target.value)}
+                className="min-h-[400px] font-mono text-sm"
+                placeholder="Generated email will appear here..."
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => copyToClipboard(generatedEmail)}
+                  disabled={!generatedEmail}
+                >
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Email
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setEmailDialogOpen(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Client Engagement Details */}
         <Card>
