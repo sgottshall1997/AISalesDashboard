@@ -543,9 +543,11 @@ For each article, analyze and format exactly as follows:
 
 Separate each article analysis with a horizontal line (---) and maintain consistent formatting throughout.`;
 
-        userPrompt = `Please analyze this WILTW report titled "${title}" and parse it according to the format specified:
+        userPrompt = `Please analyze this complete WILTW report titled "${title}" and parse ALL articles (1-10) according to the format specified. Make sure to process the entire document and provide analysis for every numbered article section:
 
-${content}`;
+${content}
+
+IMPORTANT: Analyze ALL 10 articles in the report. Do not stop at article 5 - continue through articles 6, 7, 8, 9, and 10. Each article should follow the exact formatting structure with Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
       } else {
         // Fallback to general summarization
         systemPrompt = "You are an expert investment research analyst. Provide a comprehensive summary of the given report.";
@@ -566,7 +568,7 @@ ${content}`;
             content: userPrompt
           }
         ],
-        max_tokens: 2000,
+        max_tokens: 4000,
         temperature: 0.3
       });
 
