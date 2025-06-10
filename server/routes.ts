@@ -1055,6 +1055,13 @@ IMPORTANT: Focus on extracting specific investment names, performance percentage
 ${content}`;
       }
 
+      console.log('OpenAI request debug:', {
+        systemPromptLength: systemPrompt.length,
+        userPromptLength: userPrompt.length,
+        contentIncluded: userPrompt.includes('WATMTU Market Analysis'),
+        promptPreview: userPrompt.substring(0, 300)
+      });
+
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
