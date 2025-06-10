@@ -909,7 +909,7 @@ Hi ${lead.name},
 
 [Natural greeting with seasonal/personal touch] I was going through one of our latest reports and [conversational transition about why this matters to them based on their interests].
 
-[Present insights in a flowing, conversational way - mix of bullets and natural sentences]
+[Present 3 market insights as bullet points with detailed analysis and implications]
 
 More broadly, [broader market perspective in casual, natural language].
 
@@ -927,7 +927,7 @@ TONE GUIDELINES:
 • Use natural, conversational language: "Hope you're doing well", "I was going through", "thought you might find this interesting"
 • Vary sentence structure - mix short punchy statements with longer explanatory ones
 • Include casual transitions: "More broadly", "And", "Plus"
-• Weave insights naturally into conversation rather than rigid bullet format
+• Present 3 market insights as clear bullet points with substantive detail
 • End casually: "Let me know if you'd like me to dig up anything specific"
 • Avoid corporate speak - sound human and approachable
 • Use seasonal references: "Hope you're enjoying the start of summer"
@@ -943,9 +943,9 @@ Hi Monica,
 
 I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
 
-• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges. (Article 2 in WILTW)
-• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool. (Article 3 in WILTW)
-• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities. (Article 5 in WILTW)
+• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges.
+• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool.
+• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities.
 
 We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
 
@@ -958,7 +958,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research writing a polished but conversational email. Use this exact structure: Start with 'Hope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [their interests]:' Present 3 market insights as separate paragraphs (no bullets), each starting directly with the insight. Follow with 'More broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.' Add 'On a different note, the report also explores [non-market topic]—an unexpected but thought-provoking angle.' End with 'Let me know if you'd like me to send over past reports aligned with any of these themes.' Professional yet warm tone. NO citations. 280 words max."
+            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• First market insight with analysis.\n• Second market insight with implications.\n• Third market insight with strategic perspective.\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS."
           },
           {
             role: "user",
