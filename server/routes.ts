@@ -942,6 +942,13 @@ Format as a complete email ready to send.`;
       // Use only actual PDF content - no fallbacks or sample data
       let actualContent = report.full_content;
       
+      console.log('Content retrieval debug:', {
+        hasContent: !!actualContent,
+        contentLength: actualContent?.length || 0,
+        contentType: typeof actualContent,
+        firstChars: actualContent?.substring(0, 200) || 'No content'
+      });
+      
       if (!actualContent || actualContent.trim().length < 100) {
         return res.status(400).json({ 
           error: "No PDF content available for this report. Please re-upload the PDF file to extract the actual content." 
@@ -1035,9 +1042,9 @@ Analyze the report and format as follows:
 
 - **Category Tags:** [Choose relevant tags: Technical Analysis, Precious Metals, Commodities, Asset Allocation, Market Trends, ETFs, Mining, Currency]`;
 
-        userPrompt = `Please analyze this WATMTU report titled "${title}" focusing on the market analysis, technical patterns, and investment recommendations. Extract specific performance data, ETF names, percentage allocations, and technical analysis:
+        userPrompt = `Please analyze this WATMTU report titled "${title || report.title}" focusing on the market analysis, technical patterns, and investment recommendations. Extract specific performance data, ETF names, percentage allocations, and technical analysis:
 
-${content}
+${actualContent}
 
 IMPORTANT: Focus on extracting specific investment names, performance percentages, technical breakout patterns, and asset allocation percentages mentioned in the report.`;
       } else {
