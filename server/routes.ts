@@ -833,15 +833,14 @@ ${selectedReportSummaries.map((summary: any, index: number) =>
 ).join('\n\n')}
 ` : ''}
 
-REQUIREMENTS:
-- HARD LIMIT: 250 words MAXIMUM for entire email
-- Reference their specific interests and how the selected report content directly benefits their focus areas
-- If email history exists, acknowledge previous conversations naturally
-- Include prospect notes context if relevant
-- Use bullet points for key insights (3-4 max)
-- NO academic phrases like "Article 1," "titled," "the report outlines"
-- Connect report insights to their investment strategy/portfolio needs
-- Professional but conversational tone
+ULTRA-STRICT REQUIREMENTS:
+- ABSOLUTE HARD LIMIT: 250 words MAXIMUM - COUNT EVERY WORD
+- Use ONLY bullet points for insights - NO paragraphs
+- NO academic language ("Article 1," "titled," "the report outlines," "the analysis shows")
+- NO filler words or pleasantries beyond brief greeting
+- MAXIMUM 3 bullet points, each under 35 words
+- Connect insights directly to their investment needs
+- End with simple 10-word CTA maximum
 
 MANDATORY FORMAT:
 Subject: [Specific market insight - max 10 words]
@@ -879,7 +878,15 @@ ENFORCE: Total must be under 250 words. Focus on VALUE and RELEVANCE to their sp
         temperature: 0.7
       });
 
-      const emailSuggestion = emailResponse.choices[0].message.content;
+      let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
+      
+      // Enforce strict 250-word limit with post-processing
+      const words = emailSuggestion.split(/\s+/);
+      if (words.length > 250) {
+        // Truncate to 250 words and ensure proper ending
+        const truncated = words.slice(0, 248).join(' ');
+        emailSuggestion = truncated + "... Let me know if you'd like to discuss further.";
+      }
       
       res.json({ emailSuggestion });
     } catch (error) {
