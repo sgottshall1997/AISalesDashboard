@@ -842,26 +842,16 @@ Provide a JSON response with actionable prospecting insights:
       
       let reportSummary = primaryReport ? primaryReport.parsed_summary : '';
       
-      // Filter out Article 1 (Strategy & Asset Allocation) from the summary
-      if (reportSummary && reportSummary.includes('Article 1')) {
-        // Remove Article 1 content from summary
-        const lines = reportSummary.split('\n');
-        const filteredLines = [];
-        let inArticle1 = false;
-        
-        for (const line of lines) {
-          if (line.includes('Article 1') || line.includes('STRATEGY & ASSET ALLOCATION')) {
-            inArticle1 = true;
-            continue;
-          }
-          if (line.includes('Article 2') || line.includes('Article 3') || line.includes('Article 4')) {
-            inArticle1 = false;
-          }
-          if (!inArticle1) {
-            filteredLines.push(line);
-          }
-        }
-        reportSummary = filteredLines.join('\n').trim();
+      // Filter out Strategy & Asset Allocation content from the summary (equivalent to Article 1)
+      if (reportSummary) {
+        // Remove content related to asset allocation, portfolio recommendations, and broad strategy
+        reportSummary = reportSummary
+          .replace(/- \*\*Core Investment Thesis:\*\*[^-]*(?=- \*\*|$)/g, '')
+          .replace(/- \*\*Portfolio Allocation Recommendations:\*\*[^-]*(?=- \*\*|$)/g, '')
+          .replace(/- \*\*Strategic positioning advice:\*\*[^-]*(?=- \*\*|$)/g, '')
+          .replace(/\*\*Percentage allocations by sector\/asset class:\*\*[^-\*]*(?=- \*\*|\*\*|$)/g, '')
+          .replace(/\*\*Asset allocation recommendations:\*\*[^-\*]*(?=- \*\*|\*\*|$)/g, '')
+          .trim();
       }
 
       // Extract non-market topics from article content
@@ -981,15 +971,16 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. CRITICAL RULE: SKIP Article 1 (Strategy & Asset Allocation) - only use insights from Articles 2, 3, 4, etc. for your bullet points. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• Market insight from Article 2 with analysis.\n• Market insight from Article 3 with implications.\n• Market insight from Article 4 with strategic perspective.\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS. IGNORE Article 1."
+            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: Use bullet points with '•' symbols for market insights. CRITICAL EXCLUSIONS: DO NOT mention portfolio allocation percentages, broad investment thesis, or general strategy recommendations. Focus ONLY on specific market developments, technical patterns, sector performance, and individual stock/ETF insights. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• Specific technical breakout or market development\n• Individual sector or stock performance insight\n• Concrete market trend or pattern observation\n\nMore broadly, we're seeing a meaningful shift into [specific theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nUSE BULLETS. AVOID STRATEGY/ALLOCATION CONTENT."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 500,
-        temperature: 0.7
+        max_tokens: 400,
+        temperature: 0.7,
+        timeout: 10000
       });
 
       let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
