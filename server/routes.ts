@@ -880,13 +880,47 @@ Provide a JSON response with actionable prospecting insights:
         }
       }
 
-      // Filter out Article 1 content from summary
+      // Filter out Article 1 content from summary - aggressive approach
       let filteredSummary = reportSummary;
-      if (reportSummary && reportSummary.includes('ARTICLE')) {
-        filteredSummary = reportSummary
-          .split('ARTICLE ')
-          .filter(article => !article.includes('1 – Strategy & Asset Allocation') && !article.includes('1: Strategy & Asset Allocation'))
-          .join('ARTICLE ');
+      if (reportSummary) {
+        // Split into lines and filter out problematic sections
+        const lines = filteredSummary.split('\n');
+        const filteredLines = [];
+        let skipSection = false;
+        
+        for (const line of lines) {
+          // Check if we're starting a section to skip
+          if (line.includes('**Core Investment Thesis:**') ||
+              line.includes('**Asset allocation recommendations:**') ||
+              line.includes('**Portfolio Allocation Recommendations:**') ||
+              line.includes('**Percentage allocations by sector/asset class:**') ||
+              line.includes('**Strategic positioning advice:**')) {
+            skipSection = true;
+            continue;
+          }
+          
+          // Check if we're ending a section to skip
+          if (skipSection && (line.startsWith('- **') || line.startsWith('**'))) {
+            skipSection = false;
+          }
+          
+          // Skip lines with problematic phrases
+          if (line.includes('outperform major stock indices') ||
+              line.includes('outperform major U.S. indices') ||
+              line.includes('strategic asset allocation') ||
+              line.includes('Gold, silver, and mining stocks (') ||
+              line.includes('commodities and related sectors (') ||
+              line.includes('Chinese equity markets (')) {
+            continue;
+          }
+          
+          // Add line if we're not skipping
+          if (!skipSection) {
+            filteredLines.push(line);
+          }
+        }
+        
+        filteredSummary = filteredLines.join('\n').trim();
       }
 
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
