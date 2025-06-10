@@ -82,8 +82,8 @@ function SeverelyOverdueInvoices() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {overdueInvoices.slice(0, 5).map((invoice: any) => {
+        <div className="space-y-3">
+          {overdueInvoices.map((invoice: any) => {
             const daysOverdue = Math.floor(
               (new Date().getTime() - new Date(invoice.due_date).getTime()) / (1000 * 60 * 60 * 24)
             );
@@ -93,6 +93,7 @@ function SeverelyOverdueInvoices() {
                 <div className="flex items-center gap-2">
                   <CircleAlert className="h-4 w-4 text-red-500" />
                   <span className="font-medium text-red-800">{invoice.client?.name || 'Unknown Client'}</span>
+                  <span className="text-sm text-red-700">${parseFloat(invoice.amount).toLocaleString()}</span>
                 </div>
                 <div className="text-sm font-medium text-red-700">
                   {daysOverdue} days
@@ -100,13 +101,6 @@ function SeverelyOverdueInvoices() {
               </div>
             );
           })}
-          {overdueInvoices.length > 5 && (
-            <div className="text-center pt-2">
-              <Button variant="outline" size="sm">
-                View All {overdueInvoices.length} Overdue
-              </Button>
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>
