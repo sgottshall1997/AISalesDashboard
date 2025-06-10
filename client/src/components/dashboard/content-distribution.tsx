@@ -110,8 +110,15 @@ export function ContentDistribution() {
       const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
       const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
-      const response = await apiRequest("POST", "/api/ai/summarize-report", {
+      console.log('Frontend debug - sending summarization request:', {
         reportId: report.id,
+        reportIdType: typeof report.id,
+        title: report.title,
+        promptType: promptType
+      });
+
+      const response = await apiRequest("POST", "/api/ai/summarize-report", {
+        reportId: report.id.toString(),
         title: report.title,
         content: report.full_content || report.content_summary,
         promptType: promptType

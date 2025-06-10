@@ -805,6 +805,12 @@ Format as a complete email ready to send.`;
       const reports = await storage.getAllContentReports();
       const report = reports.find(r => r.id.toString() === reportId);
       
+      console.log('Summarization debug:', {
+        requestedReportId: reportId,
+        availableReports: reports.map(r => ({ id: r.id, title: r.title })),
+        foundReport: report ? { id: report.id, title: report.title, hasContent: !!report.full_content } : null
+      });
+      
       if (!report) {
         return res.status(404).json({ 
           error: "Report not found. Please re-upload the PDF file." 
