@@ -1,0 +1,1 @@
+ALTER TABLE "leads" ADD COLUMN "engagement_level" text DEFAULT 'none';

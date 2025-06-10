@@ -468,6 +468,36 @@ export default function LeadDetail() {
                     />
                   </div>
                   
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="likelihood">Likelihood of Closing</Label>
+                      <select
+                        id="likelihood"
+                        value={editData.likelihood_of_closing || "medium"}
+                        onChange={(e) => setEditData({...editData, likelihood_of_closing: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="engagement">Engagement Level</Label>
+                      <select
+                        id="engagement"
+                        value={editData.engagement_level || "none"}
+                        onChange={(e) => setEditData({...editData, engagement_level: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="none">None</option>
+                        <option value="medium">Medium</option>
+                        <option value="full">Full</option>
+                      </select>
+                    </div>
+                  </div>
+                  
                   <div>
                     <Label htmlFor="howHeard">How did you hear about 13D?</Label>
                     <Input
@@ -516,6 +546,30 @@ export default function LeadDetail() {
                       </div>
                     </div>
                   )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <span className="font-medium mr-2">Likelihood:</span>
+                      <Badge variant="outline" className={`${
+                        lead.likelihood_of_closing === 'high' ? 'bg-green-100 text-green-800' :
+                        lead.likelihood_of_closing === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {lead.likelihood_of_closing || 'medium'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <span className="font-medium mr-2">Engagement:</span>
+                      <Badge variant="outline" className={`${
+                        lead.engagement_level === 'full' ? 'bg-blue-100 text-blue-800' :
+                        lead.engagement_level === 'medium' ? 'bg-purple-100 text-purple-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {lead.engagement_level || 'none'}
+                      </Badge>
+                    </div>
+                  </div>
                   
                   {lead.how_heard && (
                     <div className="flex items-center">

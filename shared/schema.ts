@@ -43,6 +43,7 @@ export const leads = pgTable("leads", {
   company: text("company").notNull(),
   stage: text("stage").notNull().default("prospect"), // prospect, qualified, proposal, closed_won, closed_lost
   likelihood_of_closing: text("likelihood_of_closing").default("medium"), // low, medium, high
+  engagement_level: text("engagement_level").default("none"), // none, medium, full
   last_contact: timestamp("last_contact"),
   next_step: text("next_step"),
   notes: text("notes"),
