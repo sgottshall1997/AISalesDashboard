@@ -89,36 +89,49 @@ function buildEmailPrompt(request: EmailGenerationRequest): string {
       break;
       
     case "lead_nurture":
-      basePrompt += `This is for nurturing a lead in the ${context.stage || "prospect"} stage. Interest areas: ${context.interestTags?.join(", ") || "investment research"}. ${context.proposalAmount ? `Proposal amount: $${context.proposalAmount}. ` : ""}`;
+      basePrompt += `Generate a HIGH-RELEVANCE, CONCISE prospect email for ${recipientName} at ${recipientCompany}. This is a ${context.stage || "prospect"} stage lead with interests in: ${context.interestTags?.join(", ") || "investment research"}.`;
       
       if (context.reportTitle) {
-        basePrompt += `Reference our recent report "${context.reportTitle}" in the email. `;
+        basePrompt += ` Reference our recent report "${context.reportTitle}"`;
         
         if (context.reportSummary) {
-          basePrompt += `Report summary: "${context.reportSummary}". `;
-        }
-        
-        if (context.reportType) {
-          basePrompt += `This is a ${context.reportType} report. `;
+          basePrompt += ` with this content: "${context.reportSummary}"`;
         }
         
         if (context.reportTags && context.reportTags.length > 0) {
-          basePrompt += `Report covers topics: ${context.reportTags.join(", ")}. `;
+          basePrompt += ` covering: ${context.reportTags.join(", ")}`;
         }
       }
       
-      if (context.engagementRate && context.engagementRate > 0) {
-        basePrompt += `They have a ${context.engagementRate}% open rate with our content, showing ${context.engagementRate > 30 ? "high" : "moderate"} engagement. `;
-      }
-      
-      basePrompt += `Structure the email with proper spacing and follow this format:
+      basePrompt += `
 
-1. Brief personal greeting
-2. Report reference with title and key highlights
-3. Explain how the report would be helpful for their company and investing style
-4. End with: "I'd be happy to search for any other relevant reports you may be interested in."
+CRITICAL REQUIREMENTS:
+- Word count: 250 words maximum
+- Start with a relevant hook that ties their investment focus to current market developments
+- Use max 3 bullet points or short paragraphs for key insights
+- Be direct and actionable - minimize generic phrases
+- End with simple CTA like "Want me to send over a deeper summary?" or "Let me know if this is of interest"
+- Match the tone and style of this example:
 
-Use proper line breaks and spacing for readability. Focus on building trust and demonstrating value through our research insights.`;
+EXAMPLE EMAIL:
+Subject: Bullish Signals for Gold and Silver Align with Your Strategy
+
+Hi Monica,
+
+I wanted to flag a few insights from recent reports that directly align with your focus on precious metals:
+
+• Silver Miners Breaking Out: SIL and SILJ hit new highs, confirming upside momentum in the space you already lean into.
+
+• Gold-to-CPI Ratio Surges: A major breakout from a 45-year trend suggests inflation-driven upside — a rare technical confirmation.
+
+• USD Weakness Builds Case for Hard Assets: Our WILTW piece lays out a scenario where gold is poised to benefit from dollar erosion and global capital shifts.
+
+Happy to send over the full recaps or hop on a quick call to go deeper. Just let me know.
+
+Best,
+[Your Name]
+
+Generate an email following this exact format and style, tailored to their specific interests and recent report content.`;
       break;
       
     case "upsell":
@@ -159,8 +172,8 @@ function generateFallbackEmail(request: EmailGenerationRequest): EmailResponse {
       priority: "medium" as const
     },
     lead_nurture: {
-      subject: "Investment Research Insights for ${recipientCompany}",
-      body: `Hello ${recipientName},\n\nI hope this finds you well. I wanted to share some insights that might be relevant to ${recipientCompany}'s investment strategy.\n\nI'd love to discuss how 13D Research can support your decision-making process.\n\nBest regards,\n13D Research Team`,
+      subject: `Market Insights Align with ${recipientCompany}'s Strategy`,
+      body: `Hi ${recipientName},\n\nI wanted to flag a few insights from our recent reports that align with ${recipientCompany}'s investment focus:\n\n• Market dynamics showing strong momentum in your areas of interest\n• Technical indicators confirming trends you've been tracking\n• Institutional flow data supporting your thesis\n\nWant me to send over the detailed analysis? Just let me know.\n\nBest,\n13D Research Team`,
       tone: "professional",
       priority: "medium" as const
     },
