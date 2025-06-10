@@ -6,38 +6,54 @@ const openai = new OpenAI({
 });
 
 export interface ContentSuggestion {
-  type: "high_engagement" | "low_engagement" | "topic_match" | "renewal_opportunity";
+  type: "frequent_theme" | "emerging_trend" | "cross_sector" | "deep_dive";
   title: string;
   description: string;
-  action: string;
+  emailAngle: string;
+  supportingReports: string[];
+  keyPoints: string[];
   priority: "low" | "medium" | "high";
-  clientsAffected: number;
 }
 
-export async function generateContentSuggestions(
-  reports: any[],
-  engagementData: any[]
+export async function generateThemeBasedEmailSuggestions(
+  reports: any[]
 ): Promise<ContentSuggestion[]> {
   try {
-    const prompt = `Analyze the following WILTW report performance and client engagement data to generate actionable content suggestions for 13D Research:
+    const reportData = reports.map(report => ({
+      title: report.title,
+      tags: report.tags || [],
+      summary: report.content_summary || '',
+      content: report.full_content ? report.full_content.substring(0, 1500) : '',
+      publishedDate: report.published_date
+    }));
 
-Reports: ${JSON.stringify(reports)}
-Engagement Data: ${JSON.stringify(engagementData)}
+    const prompt = `Analyze the following WILTW research reports to identify frequent themes and suggest email topics for 13D Research:
 
-Generate suggestions for:
-1. High-performing content to leverage
-2. Low-performing content to improve
-3. Topic opportunities based on client interests
-4. Renewal opportunities based on engagement
+Reports: ${JSON.stringify(reportData)}
 
-Return JSON array with objects containing: type, title, description, action, priority, clientsAffected`;
+Based on this content, identify:
+1. FREQUENT THEMES - Topics that appear across multiple reports (e.g., Federal Reserve policy, China relations, energy markets)
+2. EMERGING TRENDS - New themes gaining traction in recent reports
+3. CROSS-SECTOR CONNECTIONS - How themes connect across different sectors/markets
+4. DEEP DIVE OPPORTUNITIES - Complex topics that warrant detailed follow-up emails
+
+For each suggestion, provide:
+- type: one of "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
+- title: catchy email subject line
+- description: what the email would cover
+- emailAngle: specific perspective/hook for the email
+- supportingReports: array of report titles that support this theme
+- keyPoints: 3-4 bullet points the email should cover
+- priority: "high", "medium", or "low"
+
+Return JSON with "suggestions" array containing these objects.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
           role: "system",
-          content: "You are a content strategy expert for investment research. Analyze engagement data and provide actionable insights to improve client satisfaction and retention."
+          content: "You are an expert investment research analyst and email marketing strategist. Identify patterns in research content to suggest compelling email topics that would engage institutional investors."
         },
         {
           role: "user",
@@ -45,13 +61,13 @@ Return JSON array with objects containing: type, title, description, action, pri
         }
       ],
       response_format: { type: "json_object" },
-      temperature: 0.5,
+      temperature: 0.3,
     });
 
     const result = JSON.parse(response.choices[0].message.content || "{}");
     return result.suggestions || [];
   } catch (error) {
-    console.error("AI content suggestions failed:", error);
+    console.error("Theme-based email suggestions failed:", error);
     return [];
   }
 }

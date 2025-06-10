@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Mail, MousePointer, Send, Lightbulb, Bot, TrendingUp, BarChart3 } from "lucide-react";
+import { Mail, MousePointer, Send, Lightbulb, Bot, TrendingUp, BarChart3, RefreshCw, FileText, Target } from "lucide-react";
 
 export default function ContentSection() {
   const { data: reports, isLoading: reportsLoading } = useQuery({
@@ -11,6 +11,11 @@ export default function ContentSection() {
 
   const { data: clients, isLoading: clientsLoading } = useQuery({
     queryKey: ["/api/clients"],
+  });
+
+  const { data: suggestions, isLoading: suggestionsLoading, refetch: refetchSuggestions } = useQuery({
+    queryKey: ["/api/ai/content-suggestions"],
+    enabled: false, // Don't auto-fetch, only when button is clicked
   });
 
   if (reportsLoading || clientsLoading) {
