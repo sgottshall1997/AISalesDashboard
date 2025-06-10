@@ -363,18 +363,45 @@ export default function LeadPipeline() {
             </Dialog>
           </div>
           
-          {/* Search Bar */}
+          {/* Search and Sort Controls */}
           <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search prospects by name, company, email, or interests..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 w-full"
-              />
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  type="text"
+                  placeholder="Search prospects by name, company, email, or interests..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full"
+                />
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Label className="text-sm font-medium text-gray-700">Sort by:</Label>
+                <Select value={sortBy} onValueChange={(value: "created_at" | "name" | "company") => setSortBy(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Created Date</SelectItem>
+                    <SelectItem value="name">Name</SelectItem>
+                    <SelectItem value="company">Company</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                  className="px-3"
+                  title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+                >
+                  {sortOrder === "asc" ? "↑" : "↓"}
+                </Button>
+              </div>
             </div>
+            
             {searchTerm && (
               <p className="text-sm text-gray-600 mt-2">
                 Showing results for "{searchTerm}"
@@ -440,6 +467,11 @@ export default function LeadPipeline() {
                                   <Badge variant="outline" className="text-xs">
                                     {lead.company}
                                   </Badge>
+                                  {lead.created_at && (
+                                    <span className="text-xs text-gray-500">
+                                      Created {new Date(lead.created_at).toLocaleDateString()}
+                                    </span>
+                                  )}
                                 </div>
                                 
                                 <div className="flex items-center gap-4 mb-3">
