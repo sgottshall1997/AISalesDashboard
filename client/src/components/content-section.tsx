@@ -294,6 +294,9 @@ export default function ContentSection() {
                 <div className="space-y-4">
                   {suggestions.map((suggestion: any, index: number) => {
                     console.log('Rendering suggestion:', suggestion.type, suggestion.title);
+                    
+                    // Force color for testing
+                    const testColor = index === 0 ? "#2563eb" : index === 1 ? "#059669" : index === 2 ? "#7c3aed" : "#ea580c";
                     const getTypeIcon = (type: string) => {
                       switch (type) {
                         case "frequent_theme": return <TrendingUp className="h-5 w-5" />;
@@ -404,18 +407,28 @@ export default function ContentSection() {
                             <div className="mt-3">
                               <button
                                 onClick={() => {
-                                  console.log('Button clicked for:', suggestion.title);
+                                  console.log('Button clicked for:', suggestion.title, suggestion.type);
                                   setCurrentSuggestion(suggestion);
                                   generateEmailMutation.mutate(suggestion);
                                 }}
                                 disabled={generateEmailMutation.isPending && currentSuggestion === suggestion}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md transition-all hover:opacity-90 disabled:opacity-50"
                                 style={{
-                                  backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
-                                                 suggestion.type === "emerging_trend" ? "#059669" :
-                                                 suggestion.type === "cross_sector" ? "#7c3aed" :
-                                                 suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563"
+                                  backgroundColor: testColor,
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "8px",
+                                  padding: "10px 16px",
+                                  fontSize: "14px",
+                                  fontWeight: "500",
+                                  cursor: "pointer",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                  opacity: generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1",
+                                  transition: "all 0.2s"
                                 }}
+                                onMouseOver={(e) => e.currentTarget.style.opacity = "0.9"}
+                                onMouseOut={(e) => e.currentTarget.style.opacity = generateEmailMutation.isPending && currentSuggestion === suggestion ? "0.5" : "1"}
                               >
                                 {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
                                   <RefreshCw className="h-4 w-4 animate-spin" />
