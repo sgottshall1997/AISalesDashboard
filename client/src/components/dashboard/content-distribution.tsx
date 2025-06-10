@@ -31,7 +31,7 @@ export function ContentDistribution() {
   const [reportType, setReportType] = useState<string>("wiltw");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
     queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
@@ -76,16 +76,16 @@ export function ContentDistribution() {
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('reportType', reportType);
-      
+
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
         body: formData,
       });
-      
+
       if (!response.ok) {
         throw new Error('Upload failed');
       }
-      
+
       return response.json();
     },
     onSuccess: (data) => {
@@ -173,11 +173,11 @@ export function ContentDistribution() {
 
   const loadSavedSummary = () => {
     if (!selectedReport) return;
-    
+
     const savedSummary = savedSummaries.find((summary: any) => 
       summary.content_report_id.toString() === selectedReport
     );
-    
+
     if (savedSummary) {
       setReportSummary(savedSummary.parsed_summary);
       const report = reports.find((r: any) => r.id.toString() === selectedReport);
@@ -300,7 +300,7 @@ export function ContentDistribution() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <label htmlFor="pdf-upload" className="block text-sm font-medium mb-2">
                 Select PDF Report
@@ -314,7 +314,7 @@ export function ContentDistribution() {
               />
             </div>
           </div>
-          
+
           {selectedFile && (
             <div className="p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export function ContentDistribution() {
                         const response = await fetch(`/api/report-summaries`);
                         const summaries = await response.json();
                         const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
-                        
+
                         console.log('Load saved summary debug:', {
                           selectedReport,
                           selectedReportType: typeof selectedReport,
@@ -464,7 +464,7 @@ export function ContentDistribution() {
                             preview: s.parsed_summary?.substring(0, 100)
                           }))
                         });
-                        
+
                         if (reportSummary) {
                           console.log('Setting summary content:', {
                             summaryId: reportSummary.id,
