@@ -28,37 +28,67 @@ export default function ContentSection() {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [generatedEmail, setGeneratedEmail] = useState("");
   const [currentSuggestion, setCurrentSuggestion] = useState<any>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [estimatedTime, setEstimatedTime] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const generateEmailMutation = useMutation({
     mutationFn: async (suggestion: any) => {
-      const response = await fetch('/api/ai/generate-theme-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          theme: suggestion.title,
-          emailAngle: suggestion.emailAngle,
-          description: suggestion.description,
-          keyPoints: suggestion.keyPoints,
-          supportingReports: suggestion.supportingReports
-        })
-      });
+      // Start loading progress simulation
+      const startTime = Date.now();
+      setLoadingProgress(0);
+      setEstimatedTime(25); // Estimate 25 seconds
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate email');
+      const progressInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const progress = Math.min((elapsed / 25) * 100, 95); // Cap at 95% until completion
+        const remaining = Math.max(25 - elapsed, 1);
+        setLoadingProgress(progress);
+        setEstimatedTime(Math.ceil(remaining));
+      }, 500);
+
+      try {
+        const response = await fetch('/api/ai/generate-theme-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            theme: suggestion.title,
+            emailAngle: suggestion.emailAngle,
+            description: suggestion.description,
+            keyPoints: suggestion.keyPoints,
+            supportingReports: suggestion.supportingReports
+          })
+        });
+        
+        clearInterval(progressInterval);
+        setLoadingProgress(100);
+        setEstimatedTime(0);
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate email');
+        }
+        
+        return response.json();
+      } catch (error) {
+        clearInterval(progressInterval);
+        setLoadingProgress(0);
+        setEstimatedTime(0);
+        throw error;
       }
-      
-      return response.json();
     },
     onSuccess: (data) => {
       setGeneratedEmail(data.email);
       setEmailDialogOpen(true);
+      setLoadingProgress(0);
+      setEstimatedTime(0);
     },
     onError: (error: any) => {
+      setLoadingProgress(0);
+      setEstimatedTime(0);
       toast({
         title: "Error",
         description: error.message || "Failed to generate email",
@@ -371,29 +401,47 @@ export default function ContentSection() {
                                 {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
                               </p>
                             )}
-                            <Button 
-                              size="sm" 
-                              onClick={() => {
-                                setCurrentSuggestion(suggestion);
-                                generateEmailMutation.mutate(suggestion);
-                              }}
-                              disabled={generateEmailMutation.isPending}
-                              style={{
-                                backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
-                                               suggestion.type === "emerging_trend" ? "#059669" :
-                                               suggestion.type === "cross_sector" ? "#7c3aed" :
-                                               suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563",
-                                color: "white",
-                                border: "none"
-                              }}
-                            >
-                              {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
-                                <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-                              ) : (
-                                <Mail className="h-4 w-4 mr-1" />
+                            <div className="flex flex-col gap-2">
+                              <button
+                                onClick={() => {
+                                  setCurrentSuggestion(suggestion);
+                                  generateEmailMutation.mutate(suggestion);
+                                }}
+                                disabled={generateEmailMutation.isPending}
+                                className={`px-4 py-2 rounded-md text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                                  suggestion.type === "frequent_theme" ? "bg-blue-600 hover:bg-blue-700" :
+                                  suggestion.type === "emerging_trend" ? "bg-green-600 hover:bg-green-700" :
+                                  suggestion.type === "cross_sector" ? "bg-purple-600 hover:bg-purple-700" :
+                                  suggestion.type === "deep_dive" ? "bg-orange-600 hover:bg-orange-700" : 
+                                  "bg-gray-600 hover:bg-gray-700"
+                                }`}
+                              >
+                                {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                                Generate Email
+                              </button>
+                              
+                              {generateEmailMutation.isPending && currentSuggestion === suggestion && (
+                                <div className="bg-gray-50 rounded-md p-3 border">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm font-medium text-gray-700">Generating email...</span>
+                                    <span className="text-sm text-gray-500">{estimatedTime}s remaining</span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                      className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+                                      style={{ width: `${loadingProgress}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Analyzing reports and crafting personalized content...
+                                  </div>
+                                </div>
                               )}
-                              Generate Email
-                            </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
