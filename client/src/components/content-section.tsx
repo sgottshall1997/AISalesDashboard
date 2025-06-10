@@ -407,13 +407,24 @@ export default function ContentSection() {
                                   generateEmailMutation.mutate(suggestion);
                                 }}
                                 disabled={generateEmailMutation.isPending}
-                                className={`px-4 py-2 rounded-md text-white font-medium text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
-                                  suggestion.type === "frequent_theme" ? "bg-blue-600 hover:bg-blue-700" :
-                                  suggestion.type === "emerging_trend" ? "bg-green-600 hover:bg-green-700" :
-                                  suggestion.type === "cross_sector" ? "bg-purple-600 hover:bg-purple-700" :
-                                  suggestion.type === "deep_dive" ? "bg-orange-600 hover:bg-orange-700" : 
-                                  "bg-gray-600 hover:bg-gray-700"
-                                }`}
+                                style={{
+                                  backgroundColor: suggestion.type === "frequent_theme" ? "#2563eb" :
+                                                 suggestion.type === "emerging_trend" ? "#059669" :
+                                                 suggestion.type === "cross_sector" ? "#7c3aed" :
+                                                 suggestion.type === "deep_dive" ? "#ea580c" : "#4b5563",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "6px",
+                                  padding: "8px 16px",
+                                  fontSize: "14px",
+                                  fontWeight: "500",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  gap: "8px",
+                                  cursor: "pointer",
+                                  opacity: generateEmailMutation.isPending ? "0.5" : "1"
+                                }}
                               >
                                 {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
                                   <RefreshCw className="h-4 w-4 animate-spin" />
