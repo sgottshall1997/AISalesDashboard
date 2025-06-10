@@ -1391,8 +1391,37 @@ Keep the summary under 200 words and focus on actionable insights.`;
       const file = req.file;
       const type = req.body.type;
 
+      // Enhanced validation with specific error messages
       if (!file) {
-        return res.status(400).json({ error: 'No CSV file uploaded' });
+        return res.status(400).json({ 
+          success: false,
+          message: 'No file was uploaded. Please select a CSV file to upload.',
+          error: 'FILE_MISSING'
+        });
+      }
+
+      if (!file.buffer) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'The uploaded file appears to be corrupted or empty.',
+          error: 'FILE_CORRUPTED'
+        });
+      }
+
+      if (!type || !['prospects', 'invoices'].includes(type)) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid upload type. Please specify either "prospects" or "invoices".',
+          error: 'INVALID_TYPE'
+        });
+      }
+
+      if (file.mimetype !== 'text/csv' && !file.originalname?.endsWith('.csv')) {
+        return res.status(400).json({ 
+          success: false,
+          message: 'Invalid file format. Please upload a CSV file (.csv extension).',
+          error: 'INVALID_FORMAT'
+        });
       }
 
       const results: any[] = [];
@@ -1400,13 +1429,22 @@ Keep the summary under 200 words and focus on actionable insights.`;
       let processed = 0;
       let duplicates = 0;
 
-      // Parse CSV file
+      // Parse CSV from buffer (since we're using memoryStorage)
+      const csvString = file.buffer.toString('utf8');
+      
       await new Promise((resolve, reject) => {
-        fs.createReadStream(file.path)
+        const { Readable } = require('stream');
+        const readable = new Readable();
+        readable.push(csvString);
+        readable.push(null);
+        
+        readable
           .pipe(csv())
-          .on('data', (data) => results.push(data))
+          .on('data', (data: any) => results.push(data))
           .on('end', resolve)
-          .on('error', reject);
+          .on('error', (err: any) => {
+            reject(new Error(`CSV parsing failed: ${err.message}. Please check that your file is a valid CSV format.`));
+          });
       });
 
       if (type === 'prospects') {
@@ -1477,25 +1515,49 @@ Keep the summary under 200 words and focus on actionable insights.`;
         }
       }
 
-      // Clean up uploaded file
-      if (fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
-      }
-
       res.json({
         success: true,
         processed,
         errors,
         duplicates,
-        total: results.length
+        total: results.length,
+        message: `Successfully processed ${processed} records. ${duplicates > 0 ? `Skipped ${duplicates} duplicates. ` : ''}${errors.length > 0 ? `${errors.length} errors encountered.` : ''}`
       });
 
     } catch (error) {
       console.error('CSV upload error:', error);
+      
+      // Provide specific error messages based on error type
+      let errorMessage = "Failed to process CSV file";
+      let errorCode = "PROCESSING_ERROR";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('CSV parsing failed')) {
+          errorMessage = error.message;
+          errorCode = "CSV_PARSE_ERROR";
+        } else if (error.message.includes('ENOENT') || error.message.includes('file')) {
+          errorMessage = "The uploaded file could not be read. Please try uploading the file again.";
+          errorCode = "FILE_READ_ERROR";
+        } else if (error.message.includes('duplicate key') || error.message.includes('UNIQUE constraint')) {
+          errorMessage = "Some records could not be added due to duplicate entries in the database.";
+          errorCode = "DATABASE_CONSTRAINT_ERROR";
+        } else if (error.message.includes('database') || error.message.includes('connection')) {
+          errorMessage = "Database connection error. Please try again in a moment.";
+          errorCode = "DATABASE_CONNECTION_ERROR";
+        } else {
+          errorMessage = `Processing error: ${error.message}`;
+        }
+      }
+      
       res.status(500).json({
         success: false,
-        message: "Failed to process CSV file",
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: errorMessage,
+        error: errorCode,
+        details: error instanceof Error ? error.message : 'Unknown error',
+        processed: 0,
+        duplicates: 0,
+        errors: [],
+        total: 0
       });
     }
   });

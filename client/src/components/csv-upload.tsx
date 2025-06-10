@@ -38,18 +38,24 @@ export default function CsvUpload() {
         body: formData,
       });
       
+      const result = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Upload failed');
+        // Use detailed error message from server
+        throw new Error(result.message || 'Upload failed');
       }
       
-      return response.json();
+      return result;
     },
     onSuccess: (result: UploadResult) => {
       setUploadResult(result);
       if (result.success) {
+        const duplicateText = result.duplicates > 0 ? `, ${result.duplicates} duplicates skipped` : '';
+        const errorText = result.errors && result.errors.length > 0 ? `, ${result.errors.length} errors` : '';
+        
         toast({
           title: "Upload successful",
-          description: `Processed ${result.processed} records successfully`,
+          description: result.message || `Processed ${result.processed} records successfully${duplicateText}${errorText}`,
         });
         // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: ['/api/clients'] });
@@ -59,7 +65,7 @@ export default function CsvUpload() {
       } else {
         toast({
           title: "Upload completed with errors",
-          description: `${result.processed} records processed, ${result.errors.length} errors`,
+          description: result.message || `${result.processed} records processed, ${result.errors?.length || 0} errors`,
           variant: "destructive",
         });
       }
