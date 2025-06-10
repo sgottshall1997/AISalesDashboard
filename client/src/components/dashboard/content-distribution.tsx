@@ -47,6 +47,11 @@ export function ContentDistribution() {
     queryFn: () => dashboardApi.getContentSuggestions(),
   });
 
+  const { data: savedSummaries = [] } = useQuery({
+    queryKey: ["/api/report-summaries"],
+    queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
+  });
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -86,11 +91,10 @@ export function ContentDistribution() {
     onSuccess: (data) => {
       toast({
         title: "Report uploaded successfully",
-        description: `${reportType.toUpperCase()} report "${data.report.title}" has been processed.`,
+        description: `${reportType.toUpperCase()} report "${data.report.title}" uploaded with ${data.report.contentLength.toLocaleString()} characters stored.`,
       });
       setSelectedFile(null);
-      // Refresh reports list
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
     },
     onError: (error) => {
       toast({
@@ -128,11 +132,12 @@ export function ContentDistribution() {
     onSuccess: (data) => {
       setReportSummary(data.summary);
       setIsGeneratingSummary(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
       const report = reports.find((r: any) => r.id.toString() === selectedReport);
       const isWATMTU = report?.title.includes("WATMTU") || report?.type === "WATMTU Report";
       toast({
-        title: "Report Summarized",
-        description: `${isWATMTU ? "WATMTU market analysis" : "WILTW article analysis"} completed successfully.`,
+        title: "Report Parsed & Saved",
+        description: `${isWATMTU ? "WATMTU market analysis" : "WILTW article analysis"} completed and saved to database.`,
       });
     },
     onError: () => {
@@ -165,6 +170,30 @@ export function ContentDistribution() {
       });
     },
   });
+
+  const loadSavedSummary = () => {
+    if (!selectedReport) return;
+    
+    const savedSummary = savedSummaries.find((summary: any) => 
+      summary.content_report_id.toString() === selectedReport
+    );
+    
+    if (savedSummary) {
+      setReportSummary(savedSummary.parsed_summary);
+      const report = reports.find((r: any) => r.id.toString() === selectedReport);
+      const isWATMTU = report?.title.includes("WATMTU") || report?.type === "WATMTU Report";
+      toast({
+        title: "Saved Summary Loaded",
+        description: `Previously parsed ${isWATMTU ? "WATMTU" : "WILTW"} summary loaded successfully.`,
+      });
+    } else {
+      toast({
+        title: "No Saved Summary",
+        description: "No parsed summary found for this report. Please parse it first.",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (reportsLoading) {
     return (
