@@ -316,53 +316,7 @@ export default function Overview() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <SeverelyOverdueInvoices />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Priority Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="flex-shrink-0">
-                    <CircleAlert className="h-5 w-5 text-destructive" />
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-red-800">Overdue Invoice</p>
-                    <p className="text-sm text-red-700">Acme Corp - $15,000 (20 days overdue)</p>
-                  </div>
-                  <Button variant="destructive" size="sm" className="ml-4">
-                    Send Reminder
-                  </Button>
-                </div>
-
-                <div className="flex items-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="flex-shrink-0">
-                    <Clock className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-yellow-800">Renewal Due Soon</p>
-                    <p className="text-sm text-yellow-700">Beta Fund - Expires in 15 days</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="ml-4 border-amber-300 text-amber-700 hover:bg-amber-50">
-                    Draft Follow-up
-                  </Button>
-                </div>
-
-                <div className="flex items-center p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <div className="flex-shrink-0">
-                    <UserPlus className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="ml-3 flex-1">
-                    <p className="text-sm font-medium text-blue-800">Hot Lead</p>
-                    <p className="text-sm text-blue-700">Jane Doe (ABC Capital) - Schedule discovery call</p>
-                  </div>
-                  <Button size="sm" className="ml-4">
-                    Schedule Call
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <OpenTasks />
         </div>
       </div>
     </div>
