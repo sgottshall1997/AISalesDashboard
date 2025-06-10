@@ -103,18 +103,23 @@ export function ContentDistribution() {
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
-      const report = reports.find((r: any) => r.id.toString() === reportId);
-      if (!report) throw new Error("Report not found");
+      const report = safeReports.find((r: any) => r.id.toString() === reportId);
+      if (!report) {
+        console.error('Report not found. Available reports:', safeReports.map(r => ({ id: r.id, title: r.title })));
+        throw new Error("Report not found");
+      }
 
       // Automatically detect report type and use appropriate parser
       const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
       const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
       console.log('Frontend debug - sending summarization request:', {
-        reportId: report.id,
+        selectedReportId: reportId,
+        foundReportId: report.id,
+        reportTitle: report.title,
         reportIdType: typeof report.id,
-        title: report.title,
-        promptType: promptType
+        promptType: promptType,
+        allAvailableReports: safeReports.map(r => ({ id: r.id, title: r.title }))
       });
 
       const response = await apiRequest("POST", "/api/ai/summarize-report", {
@@ -385,14 +390,23 @@ export function ContentDistribution() {
                 <label htmlFor="report-select" className="block text-sm font-medium text-gray-700 mb-2">
                   Select Report to Summarize
                 </label>
-                <Select value={selectedReport} onValueChange={setSelectedReport}>
+                <Select 
+                  value={selectedReport} 
+                  onValueChange={(value) => {
+                    console.log('Report selection changed:', {
+                      selectedValue: value,
+                      reportTitle: safeReports.find(r => r.id.toString() === value)?.title
+                    });
+                    setSelectedReport(value);
+                  }}
+                >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Choose a WILTW report..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {reports.map((report: any) => (
+                    {safeReports.map((report: any) => (
                       <SelectItem key={report.id} value={report.id.toString()}>
-                        {report.title}
+                        {report.title} (ID: {report.id})
                       </SelectItem>
                     ))}
                   </SelectContent>
