@@ -930,23 +930,27 @@ ${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior rela
 ${primaryReport ? `Reference the recent 13D report titled "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the report content: "${filteredSummary}". The report covers: ${reportTags}.
 
 ${selectedReportIds && selectedReportIds.length > 1 ? 
-`MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from the report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
+`MANDATORY REQUIREMENT: You MUST end every single bullet point with (REPORT_TITLE - Article X) where REPORT_TITLE is the specific report name and X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers from potentially different reports - never repeat the same article number twice. This is absolutely required - no exceptions.
 
-The report contains these article numbers - use them:
+Available reports and their articles:
+${selectedReportSummaries.map(summary => {
+  const contentReport = contentReports?.find((report: any) => report.id === summary.content_report_id);
+  return contentReport ? `${contentReport.title}:
 Article 2 = Critical minerals supply chain
 Article 3 = AI tech infrastructure  
 Article 4 = Mining stocks performance
 Article 5 = Teenagers phone experiment
 Article 6 = Loneliness investment theme
 Article 7 = Russia analysis
-Article 8 = European agriculture
+Article 8 = European agriculture` : '';
+}).join('\n\n')}
 
-Example format (MANDATORY - notice 3 DIFFERENT articles):
-• China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (Article 2).
-• Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (Article 4).
-• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (Article 7).
+Example format (MANDATORY - notice 3 DIFFERENT citations with report titles):
+• China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (WILTW_2025-06-05 - Article 2).
+• Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (WILTW_2025-05-29 - Article 4).
+• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-06-05 - Article 7).
 
-CRITICAL: Each bullet point MUST reference a DIFFERENT article number. Never use the same article twice in one email.` :
+CRITICAL: Each bullet point MUST include the specific report title and a DIFFERENT article number. Never use the same article twice in one email.` :
 `IMPORTANT: Since only one report is selected, DO NOT include article citations or reference numbers. Present the insights naturally without any (Article X) citations.`}` : ''}
 
 GOALS:
