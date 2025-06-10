@@ -447,10 +447,19 @@ Investment Implications:
         const dateMatch = file.originalname.match(/(\d{4}-\d{2}-\d{2})/);
         const dateStr = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
         
-        // Use actual PDF content for WILTW reports
+        // Use actual PDF content for WILTW reports - preserve raw content
         parsedData = parseWILTWReport(extractedText);
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
+        
+        console.log('PDF Upload Debug:', {
+          reportTitle,
+          extractedTextLength: extractedText.length,
+          extractedTextPreview: extractedText.substring(0, 500),
+          containsWeaponization: extractedText.includes('weaponization'),
+          containsCriticalMinerals: extractedText.includes('critical-minerals'),
+          containsMining: extractedText.includes('mining')
+        });
       }
 
       // Create report entry in database
