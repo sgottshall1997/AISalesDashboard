@@ -33,6 +33,12 @@ export function ContentDistribution() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [reportType, setReportType] = useState<string>("wiltw");
   const [isUploadingMultiple, setIsUploadingMultiple] = useState(false);
+  const [bulkUploadProgress, setBulkUploadProgress] = useState<{
+    current: number;
+    total: number;
+    currentFile: string;
+    completedFiles: string[];
+  } | null>(null);
   const [generatedEmails, setGeneratedEmails] = useState<{ [key: number]: string }>({});
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
@@ -286,59 +292,108 @@ export function ContentDistribution() {
     },
   });
 
-  const multipleUploadMutation = useMutation({
-    mutationFn: async (files: File[]) => {
-      const formData = new FormData();
-      files.forEach(file => {
+  const processBulkUpload = async (files: File[]) => {
+    setIsUploadingMultiple(true);
+    setBulkUploadProgress({
+      current: 0,
+      total: files.length,
+      currentFile: '',
+      completedFiles: []
+    });
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+    const completedFiles: string[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      setBulkUploadProgress(prev => prev ? {
+        ...prev,
+        current: i + 1,
+        currentFile: file.name
+      } : null);
+
+      try {
+        // Upload file
+        const formData = new FormData();
         formData.append('pdf', file);
-      });
-      formData.append('reportType', reportType);
-      formData.append('parserType', 'auto_detect');
-      
-      const response = await fetch('/api/upload-pdf', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (!response.ok) {
-        throw new Error('Batch upload failed');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      const { results, errors, successCount, errorCount } = data;
-      
-      if (successCount > 0) {
-        toast({
-          title: "Batch Upload Completed",
-          description: `Successfully processed ${successCount} PDFs. ${errorCount > 0 ? `${errorCount} files failed.` : ''}`,
+        formData.append('reportType', reportType);
+        
+        const uploadResponse = await fetch('/api/upload-pdf', {
+          method: 'POST',
+          body: formData,
         });
-      }
-      
-      if (errorCount > 0) {
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed for ${file.name}`);
+        }
+        
+        const uploadResult = await uploadResponse.json();
+        const uploadedReports = uploadResult.results || [uploadResult];
+        
+        // Parse each uploaded report
+        for (const report of uploadedReports) {
+          if (report && report.id) {
+            const isWATMTU = report.title.includes("WATMTU") || reportType === "watmtu";
+            const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
+
+            const parseResponse = await apiRequest("POST", "/api/ai/summarize-report", {
+              reportId: report.id.toString(),
+              title: report.title,
+              content: report.full_content || report.content_summary,
+              promptType: promptType
+            });
+            
+            await parseResponse.json();
+          }
+        }
+        
+        successCount++;
+        completedFiles.push(file.name);
+        
+        setBulkUploadProgress(prev => prev ? {
+          ...prev,
+          completedFiles: [...completedFiles]
+        } : null);
+        
         toast({
-          title: "Some Uploads Failed",
-          description: `${errorCount} files could not be processed. Check console for details.`,
+          title: `Parsed: ${file.name}`,
+          description: `Successfully uploaded and parsed (${i + 1}/${files.length})`,
+        });
+        
+      } catch (error) {
+        errorCount++;
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`${file.name}: ${errorMsg}`);
+        
+        toast({
+          title: `Failed: ${file.name}`,
+          description: errorMsg,
           variant: "destructive",
         });
-        console.error('Upload errors:', errors);
       }
       
-      setSelectedFiles([]);
-      setIsUploadingMultiple(false);
+      // Refresh data after each file
       queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
-    },
-    onError: (error) => {
-      console.error('Batch upload error:', error);
-      toast({
-        title: "Batch Upload Failed",
-        description: "Failed to process PDFs. Please try again.",
-        variant: "destructive",
-      });
-      setIsUploadingMultiple(false);
-    },
-  });
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
+    }
+
+    // Final completion
+    setBulkUploadProgress(null);
+    setIsUploadingMultiple(false);
+    setSelectedFiles([]);
+    
+    toast({
+      title: "Bulk Processing Complete",
+      description: `${successCount} files processed successfully. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+    });
+    
+    if (errors.length > 0) {
+      console.error('Processing errors:', errors);
+    }
+  };
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
@@ -566,19 +621,54 @@ export function ContentDistribution() {
                   <Button 
                     onClick={() => {
                       if (selectedFiles.length > 0) {
-                        setIsUploadingMultiple(true);
-                        multipleUploadMutation.mutate(selectedFiles);
+                        processBulkUpload(selectedFiles);
                       }
                     }}
-                    disabled={selectedFiles.length === 0 || multipleUploadMutation.isPending}
+                    disabled={selectedFiles.length === 0 || isUploadingMultiple}
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                   >
                     <Upload className="w-4 h-4" />
-                    {multipleUploadMutation.isPending ? `Processing ${selectedFiles.length} files...` : `Upload & Parse ${selectedFiles.length} Files`}
+                    {isUploadingMultiple ? `Processing ${selectedFiles.length} files...` : `Upload & Parse ${selectedFiles.length} Files`}
                   </Button>
                 </div>
                 
-                {selectedFiles.length > 0 && (
+                {bulkUploadProgress && (
+                  <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                      <p className="text-sm font-medium text-blue-800">
+                        Processing Files ({bulkUploadProgress.current}/{bulkUploadProgress.total})
+                      </p>
+                      <span className="text-xs text-blue-600">
+                        {Math.round((bulkUploadProgress.current / bulkUploadProgress.total) * 100)}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${(bulkUploadProgress.current / bulkUploadProgress.total) * 100}%` }}
+                      ></div>
+                    </div>
+                    {bulkUploadProgress.currentFile && (
+                      <p className="text-sm text-blue-700 mb-1">
+                        Currently parsing: <strong>{bulkUploadProgress.currentFile}</strong>
+                      </p>
+                    )}
+                    {bulkUploadProgress.completedFiles.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs text-blue-600 mb-1">Completed:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {bulkUploadProgress.completedFiles.map((file, index) => (
+                            <span key={index} className="inline-block bg-green-100 text-green-700 text-xs px-2 py-1 rounded">
+                              {file}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedFiles.length > 0 && !bulkUploadProgress && (
                   <div className="mt-4 p-4 bg-green-50 rounded-lg">
                     <p className="text-sm font-medium text-green-800 mb-2">
                       Selected Files ({selectedFiles.length}):
