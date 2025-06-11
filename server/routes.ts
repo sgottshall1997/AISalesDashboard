@@ -679,11 +679,13 @@ Generate a JSON response with exactly this structure:
     }
   ],
   "smartQuestions": [
-    "What are your current views on [relevant macro theme from recent 13D reports] and how does it align with your portfolio positioning?",
-    "Which sectors or geographies are you most focused on for new opportunities in the next 6-12 months?",
-    "How do you typically evaluate and size positions when considering new investment themes?",
-    "What information sources do you find most valuable for staying ahead of market developments?",
-    "Are there any emerging themes or contrarian views you're exploring that might not be on most investors' radar?"
+    "What themes or sectors are most top-of-mind for you right now?",
+    "What types of research formats do you and your team find most useful—quick summaries, charts, deep dives?",
+    "What triggers a deeper look from your team—a chart, a macro signal, a contrarian thesis?",
+    "Is there anyone else on your team I should loop in for certain themes or decisions?",
+    "What's the typical timeline for you to act on a new investment idea?",
+    "What is your process for evaluating new research? Is there anyone you already use? What is your budget?",
+    "Given your focus on [relevant theme], are there any specific portfolio themes you're exploring for the next 6-12 months?"
   ]
 }
 
@@ -704,9 +706,7 @@ For talkingPoints, create 5 strategic talking points with detailed sub-bullets t
 - Forward-looking perspectives that show thought leadership
 Make each sub-bullet actionable and impressive - things that would make you sound like an expert.
 
-For smartQuestions, use these exact 5 standardized questions, but customize the first one with a relevant macro theme:
-1. Replace "[relevant macro theme from recent 13D reports]" with an appropriate theme based on the prospect's interests or current market focus (commodities, de-dollarization, AI infrastructure, reshoring, China, precious metals, energy transition)
-2-5. Use the remaining questions exactly as specified in the JSON structure
+For smartQuestions, use the exact 7 questions as specified in the JSON structure. For the 7th question, replace "[relevant theme]" with an appropriate theme based on the prospect's interests or current market focus (such as technology, healthcare, commodities, AI infrastructure, energy transition, etc.)
 
 If the input is limited, use generalized themes from current macro research to anchor ideas.
 Make it crisp, useful, and professional. Focus on actionable insights that would help during an actual sales call.
@@ -783,11 +783,13 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
           ],
           
           smartQuestions: [
-            `How are you positioning for ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'emerging market'} opportunities in the next 6-12 months?`,
-            "What process do you use to evaluate new investment themes and allocate capital?",
-            "What are your primary information sources for staying ahead of market developments?",
-            `Are there any contrarian views you're exploring in ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'current markets'}?`,
-            "What emerging themes are you most excited about for institutional portfolios?"
+            "What themes or sectors are most top-of-mind for you right now?",
+            "What types of research formats do you and your team find most useful—quick summaries, charts, deep dives?",
+            "What triggers a deeper look from your team—a chart, a macro signal, a contrarian thesis?",
+            "Is there anyone else on your team I should loop in for certain themes or decisions?",
+            "What's the typical timeline for you to act on a new investment idea?",
+            "What is your process for evaluating new research? Is there anyone you already use? What is your budget?",
+            `Given your focus on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'institutional investing'}, are there any specific ${firmName ? `${firmName}` : 'firm'} initiatives or portfolio themes you're exploring for the next 6-12 months?`
           ]
         };
 
