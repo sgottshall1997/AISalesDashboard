@@ -805,8 +805,8 @@ CRITICAL:
 
       let emailSuggestion = response.choices[0].message.content || "Unable to generate email";
       
-      // Remove all * symbols from output (including **, ***, etc.)
-      emailSuggestion = emailSuggestion.replace(/\*+/g, '');
+      // Remove all * and # symbols from output
+      emailSuggestion = emailSuggestion.replace(/[\*#]+/g, '');
       
       // Aggressively strip any subject lines
       emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
@@ -928,8 +928,8 @@ CRITICAL:
 
       let emailContent = response.choices[0].message.content || "Unable to generate email";
       
-      // Remove all * symbols from output (including **, ***, etc.)
-      emailContent = emailContent.replace(/\*+/g, '');
+      // Remove all * and # symbols from output
+      emailContent = emailContent.replace(/[\*#]+/g, '');
       
       // Aggressively strip any subject lines
       emailContent = emailContent.replace(/^Subject:.*$/gm, '');
@@ -1448,6 +1448,9 @@ Focus on extracting actionable intelligence for investment decision-making.`;
             });
 
             summary = response.choices[0].message.content || '';
+            
+            // Remove all * and # symbols from output
+            summary = summary.replace(/[\*#]+/g, '');
           }
 
           // Save the summary to the database
