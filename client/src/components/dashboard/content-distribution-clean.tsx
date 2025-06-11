@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +14,9 @@ import {
   Upload,
   Trash2,
   Bot,
-  FileText
+  FileText,
+  Users,
+  Target
 } from "lucide-react";
 
 export function ContentDistribution() {
@@ -30,6 +33,9 @@ export function ContentDistribution() {
     currentFile: string;
     completedFiles: string[];
   } | null>(null);
+  const [prospectMatches, setProspectMatches] = useState<any[]>([]);
+  const [isMatchingProspects, setIsMatchingProspects] = useState(false);
+  const [showProspectDialog, setShowProspectDialog] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -373,6 +379,37 @@ export function ContentDistribution() {
       });
     },
   });
+
+  const prospectMatchMutation = useMutation({
+    mutationFn: async (reportSummary: string) => {
+      const response = await apiRequest("POST", "/api/match-prospect-themes", {
+        reportContent: reportSummary
+      });
+      return response.json();
+    },
+    onMutate: () => {
+      setIsMatchingProspects(true);
+    },
+    onSuccess: (data) => {
+      setProspectMatches(data.matches || []);
+      setShowProspectDialog(true);
+      setIsMatchingProspects(false);
+      toast({
+        title: "Prospect Match Complete",
+        description: `Found ${data.matches?.length || 0} relevant prospects for this report.`,
+      });
+    },
+    onError: () => {
+      setIsMatchingProspects(false);
+      toast({
+        title: "Matching Failed",
+        description: "Failed to match prospects. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+
 
   if (reportsLoading) {
     return (
