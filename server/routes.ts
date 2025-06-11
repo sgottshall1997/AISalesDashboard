@@ -754,25 +754,17 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}`
       ).join('\n\n---\n\n') || 'No previous email history';
 
-      const emailPrompt = `Generate ONLY the email body below, nothing else. Do not include subject lines or signatures beyond "Best, Spencer".
-
-LEAD: ${lead.name} at ${lead.company}
-INTERESTS: ${lead.interest_tags?.join(', ') || 'General investment research'}
-
-REPORTS TO USE:
-${reportContext || 'No reports selected'}
-
-OUTPUT EXACTLY THIS FORMAT (replace bracketed content):
+      const emailPrompt = `Generate ONLY this exact format. Do NOT deviate from this structure:
 
 Hi ${lead.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold Headline from Article 1]**: [Specific insight with data/ratios from first article]. (Article 1)
+• **[Topic from Article 1]**: [Specific data/insight from first article]. (Article 1)
 
-• **[Bold Headline from Article 2]**: [Specific insight with data/ratios from second article]. (Article 2)  
+• **[Topic from Article 2]**: [Specific data/insight from second article]. (Article 2)
 
-• **[Bold Headline from Article 3]**: [Specific insight with data/ratios from third article]. (Article 3)
+• **[Topic from Article 3]**: [Specific data/insight from third article]. (Article 3)
 
 These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
 
@@ -781,13 +773,14 @@ I am happy to send over older reports on topics of interest. Please let me know 
 Best,
 Spencer
 
-STRICT RULES:
-- Extract insights from 3 different articles in the reports
-- Use ** for bold headlines  
-- Include specific numbers, ratios, percentages from reports
-- Each bullet must end with (Article X)
-- Maximum 150 words
-- NO formal language, NO subject line, NO extra signatures`;
+REPORTS TO EXTRACT FROM:
+${reportContext || 'No reports selected'}
+
+REQUIREMENTS:
+- Use this EXACT template structure
+- Replace bracketed content with actual insights from 3 different articles
+- Include specific numbers/percentages/ratios from reports
+- Maximum 120 words total`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -803,14 +796,27 @@ STRICT RULES:
 
       let emailSuggestion = response.choices[0].message.content || "Unable to generate email";
       
-      // Strip any subject lines that might have been generated
-      emailSuggestion = emailSuggestion.replace(/^Subject:.*\n\n?/i, '');
-      emailSuggestion = emailSuggestion.replace(/^.*Subject:.*\n\n?/i, '');
+      // Aggressively strip any subject lines
+      emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*Subject:.*$/gm, '');
       
-      // Strip any extra formal signatures beyond "Best, Spencer"
+      // Strip formal opening paragraphs and replace with casual format
+      emailSuggestion = emailSuggestion.replace(/^.*I hope this message finds you well\..*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*Given your.*interest.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*I wanted to follow up.*$/gm, '');
+      
+      // Strip formal closing paragraphs
+      emailSuggestion = emailSuggestion.replace(/I would be delighted.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Looking forward.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Would you be available.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Please let me know.*convenient.*$/gm, '');
+      
+      // Strip formal signatures
       emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
-      emailSuggestion = emailSuggestion.replace(/Looking forward[\s\S]*Best,/i, 'Best,');
       emailSuggestion = emailSuggestion.replace(/13D Research$/, '');
+      
+      // Clean up multiple newlines
+      emailSuggestion = emailSuggestion.replace(/\n{3,}/g, '\n\n').trim();
       
       res.json({ emailSuggestion });
     } catch (error) {
