@@ -236,6 +236,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteInvoice(id: number): Promise<boolean> {
+    // First delete all email history records for this invoice
+    await db
+      .delete(email_history)
+      .where(eq(email_history.invoice_id, id));
+    
+    // Then delete the invoice
     const result = await db
       .delete(invoices)
       .where(eq(invoices.id, id));
