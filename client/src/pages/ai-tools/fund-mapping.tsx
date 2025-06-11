@@ -1,157 +1,277 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Building2, Search, Loader2, Copy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Building2, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-interface FundStrategy {
-  strategyName: string;
-  description: string;
+interface FundMapping {
+  fundName: string;
+  strategy: string;
+  riskProfile: string;
+  thematicAlignment: string[];
+  matchingReports: string[];
   keyThemes: string[];
-  relevantReports: string[];
-  mappedProspects: string[];
-  confidenceScore: number;
+  relevanceScore: number;
 }
 
 export default function FundMapping() {
-  const [strategies, setStrategies] = useState<FundStrategy[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [fundName, setFundName] = useState("");
+  const [strategy, setStrategy] = useState("");
+  const [riskProfile, setRiskProfile] = useState("");
+  const [mapping, setMapping] = useState<FundMapping | null>(null);
   const { toast } = useToast();
 
-  const handleLoadStrategies = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch("/api/fund-strategies");
-      const data = await response.json();
-      setStrategies(data || []);
-    } catch (error) {
+  const mappingMutation = useMutation({
+    mutationFn: async (data: { fundName: string; strategy: string; riskProfile: string }) => {
+      const response = await apiRequest("POST", "/api/map-fund-themes", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setMapping(data);
       toast({
-        title: "Error",
-        description: "Failed to load fund strategies",
+        title: "Mapping Complete",
+        description: `Successfully mapped ${fundName} to research themes`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Mapping Failed",
+        description: "Failed to map fund to themes. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+  });
 
-  const copyStrategyDetails = (strategy: FundStrategy) => {
-    const details = `${strategy.strategyName}\n\n${strategy.description}\n\nKey Themes:\n${strategy.keyThemes.map(theme => `• ${theme}`).join('\n')}`;
-    navigator.clipboard.writeText(details);
-    toast({
-      title: "Copied",
-      description: "Strategy details copied to clipboard",
+  const handleMapFund = () => {
+    if (!fundName.trim() || !strategy || !riskProfile) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    mappingMutation.mutate({
+      fundName: fundName.trim(),
+      strategy,
+      riskProfile
     });
   };
 
-  const getConfidenceColor = (score: number) => {
-    if (score >= 80) return "bg-green-100 text-green-800";
-    if (score >= 60) return "bg-yellow-100 text-yellow-800";
-    return "bg-red-100 text-red-800";
-  };
+  const strategies = [
+    "Select strategy",
+    "Growth",
+    "Value",
+    "Balanced",
+    "Income",
+    "Aggressive Growth",
+    "Conservative",
+    "Sector Focused",
+    "Global Diversified"
+  ];
+
+  const riskLevels = [
+    "Select risk level",
+    "Conservative",
+    "Moderate",
+    "Aggressive",
+    "High Risk",
+    "Ultra High Risk"
+  ];
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fund Mapping</h1>
-          <p className="text-gray-600 mt-2">
-            Map fund strategies to relevant themes and identify matching prospects
-          </p>
-        </div>
-        <Button 
-          onClick={handleLoadStrategies}
-          disabled={isLoading}
-          className="flex items-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading...
-            </>
-          ) : (
-            <>
-              <Search className="h-4 w-4" />
-              Load Strategies
-            </>
-          )}
-        </Button>
+      <div className="flex items-center mb-6">
+        <Building2 className="w-6 h-6 mr-3 text-blue-600" />
+        <h1 className="text-2xl font-bold text-gray-900">Fund Strategy Mapping Tool</h1>
       </div>
 
-      {strategies.length > 0 && (
-        <div className="grid gap-6">
-          {strategies.map((strategy, index) => (
-            <Card key={index} className="border-l-4 border-l-primary">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <CardTitle className="text-xl">{strategy.strategyName}</CardTitle>
-                    <CardDescription>{strategy.description}</CardDescription>
-                    <Badge className={getConfidenceColor(strategy.confidenceScore)}>
-                      {strategy.confidenceScore}% Confidence
-                    </Badge>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyStrategyDetails(strategy)}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Key Investment Themes</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {strategy.keyThemes.map((theme, idx) => (
-                      <Badge key={idx} variant="secondary">
-                        {theme}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
+      <Card className="max-w-4xl">
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            {/* Fund Name */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Fund Name
+              </label>
+              <Input
+                value={fundName}
+                onChange={(e) => setFundName(e.target.value)}
+                placeholder="Enter fund name"
+                className="w-full"
+              />
+            </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Relevant Reports</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {strategy.relevantReports.map((report, idx) => (
-                      <Badge key={idx} variant="outline" className="border-blue-500 text-blue-700">
-                        {report}
-                      </Badge>
+            {/* Investment Strategy and Risk Profile Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Investment Strategy */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Investment Strategy
+                </label>
+                <Select value={strategy} onValueChange={setStrategy}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select strategy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {strategies.map((strat) => (
+                      <SelectItem key={strat} value={strat}>
+                        {strat}
+                      </SelectItem>
                     ))}
-                  </div>
-                </div>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Mapped Prospects</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {strategy.mappedProspects.map((prospect, idx) => (
-                      <Badge key={idx} className="bg-primary/10 text-primary hover:bg-primary/20">
-                        {prospect}
-                      </Badge>
+              {/* Risk Profile */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Risk Profile
+                </label>
+                <Select value={riskProfile} onValueChange={setRiskProfile}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select risk level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {riskLevels.map((risk) => (
+                      <SelectItem key={risk} value={risk}>
+                        {risk}
+                      </SelectItem>
                     ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-      {strategies.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Building2 className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Fund Strategies Loaded</h3>
-            <p className="text-gray-600 text-center mb-4">
-              Click "Load Strategies" to analyze fund strategies and map them to relevant themes and prospects.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+            {/* Map Fund to Research Themes Button */}
+            <div>
+              <Button 
+                onClick={handleMapFund}
+                disabled={mappingMutation.isPending || !fundName.trim() || !strategy || !riskProfile}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2"
+              >
+                {mappingMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Mapping Fund...
+                  </>
+                ) : (
+                  <>
+                    <Search className="w-4 h-4" />
+                    Map Fund to Research Themes
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Results Area */}
+          {mapping ? (
+            <div className="mt-8 space-y-6">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Thematic Mapping for {mapping.fundName}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Fund Details */}
+                <Card className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Fund Profile</h4>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Strategy:</span>
+                        <span className="ml-2 text-sm text-gray-800">{mapping.strategy}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Risk Profile:</span>
+                        <span className="ml-2 text-sm text-gray-800">{mapping.riskProfile}</span>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Relevance Score:</span>
+                        <span className="ml-2 text-sm text-gray-800">{mapping.relevanceScore}%</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Key Themes */}
+                <Card className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Key Themes</h4>
+                    {mapping.keyThemes.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {mapping.keyThemes.map((theme, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                          >
+                            {theme}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">No key themes identified</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Thematic Alignment */}
+              {mapping.thematicAlignment.length > 0 && (
+                <Card className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Thematic Alignment</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {mapping.thematicAlignment.map((alignment, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 bg-gray-50 rounded-lg border"
+                        >
+                          <p className="text-sm text-gray-800">{alignment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Matching Reports */}
+              {mapping.matchingReports.length > 0 && (
+                <Card className="border border-gray-200">
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-gray-900 mb-3">Matching Reports</h4>
+                    <div className="space-y-2">
+                      {mapping.matchingReports.map((report, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center p-2 bg-green-50 rounded border-l-4 border-green-400"
+                        >
+                          <span className="text-sm text-gray-800">{report}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <div className="mt-8 min-h-[200px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <Building2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Fund Mapping Results</p>
+                <p className="text-sm mt-2">
+                  Enter fund details and click 'Map Fund to Research Themes' to see thematic alignment
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

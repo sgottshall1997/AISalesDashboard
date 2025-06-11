@@ -1,194 +1,181 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageCircle, Send, Loader2, Copy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
-interface QAMessage {
-  id: string;
-  question: string;
+interface QAResponse {
   answer: string;
-  timestamp: Date;
+  sourceReports: string[];
+  confidence: number;
 }
 
 export default function AIQnA() {
   const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<QAMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [response, setResponse] = useState<QAResponse | null>(null);
   const { toast } = useToast();
 
-  const handleSubmitQuestion = async () => {
+  const questionMutation = useMutation({
+    mutationFn: async (question: string) => {
+      const response = await apiRequest("POST", "/api/ask-reports", { question });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setResponse(data);
+      toast({
+        title: "Answer Generated",
+        description: "AI has analyzed the report corpus and provided insights",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Query Failed",
+        description: "Failed to process your question. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAskQuestion = () => {
     if (!question.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a question",
+        title: "Missing Question",
+        description: "Please enter a question to ask",
         variant: "destructive",
       });
       return;
     }
 
-    setIsLoading(true);
-    const currentQuestion = question;
-    setQuestion("");
+    questionMutation.mutate(question.trim());
+  };
 
-    try {
-      const response = await fetch("/api/ask-reports", {
-        method: "POST",
-        body: JSON.stringify({ question: currentQuestion }),
-        headers: { "Content-Type": "application/json" }
-      });
-      const data = await response.json();
-
-      const newMessage: QAMessage = {
-        id: Date.now().toString(),
-        question: currentQuestion,
-        answer: data.answer || "No answer provided",
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [newMessage, ...prev]);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to get answer from AI",
-        variant: "destructive",
-      });
-      setQuestion(currentQuestion); // Restore question on error
-    } finally {
-      setIsLoading(false);
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAskQuestion();
     }
   };
 
-  const copyAnswer = (answer: string) => {
-    navigator.clipboard.writeText(answer);
-    toast({
-      title: "Copied",
-      description: "Answer copied to clipboard",
-    });
-  };
+  const suggestedQuestions = [
+    "What's T3D's latest view on inflation?",
+    "What are the key risks in energy markets?",
+    "Which sectors are showing the most promise?",
+    "What's the outlook for precious metals?",
+    "Are there any emerging investment themes?",
+    "What's the current view on Chinese markets?"
+  ];
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">AI Q&A</h1>
-        <p className="text-gray-600 mt-2">
-          Ask questions about your reports and content to get intelligent insights
-        </p>
+      <div className="flex items-center mb-6">
+        <MessageSquare className="w-6 h-6 mr-3 text-blue-600" />
+        <h1 className="text-2xl font-bold text-gray-900">AI Q&A on WILTW/WATMTU Corpus</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Ask a Question
-          </CardTitle>
-          <CardDescription>
-            Ask anything about your reports, market trends, or investment themes
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="e.g., What are the key trends in China's tech sector based on recent reports?"
-            rows={3}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                handleSubmitQuestion();
-              }
-            }}
-          />
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              Press Cmd/Ctrl + Enter to submit
+      <Card className="max-w-4xl">
+        <CardContent className="p-6">
+          {/* Description */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <p className="text-gray-700 text-sm">
+              I can help you find insights from your WILTW and WATMTU report corpus. Ask me questions like "What's 
+              T3D's view on Chinese equities?" or "What are the latest thoughts on gold mining?"
             </p>
-            <Button 
-              onClick={handleSubmitQuestion}
-              disabled={isLoading || !question.trim()}
-              className="flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Thinking...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Ask AI
-                </>
-              )}
-            </Button>
+            <p className="text-gray-500 text-xs mt-2">4:41:56 PM</p>
           </div>
+
+          {/* Question Input */}
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <Input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Ask a question about the reports..."
+                className="flex-1"
+                disabled={questionMutation.isPending}
+              />
+              <Button 
+                onClick={handleAskQuestion}
+                disabled={questionMutation.isPending || !question.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+              >
+                {questionMutation.isPending ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Suggested Questions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Suggested Questions:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {suggestedQuestions.map((suggestedQ, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setQuestion(suggestedQ)}
+                    className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full border transition-colors"
+                    disabled={questionMutation.isPending}
+                  >
+                    {suggestedQ}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Response Area */}
+          {response ? (
+            <div className="mt-8 space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-medium text-green-900 mb-3">AI Response:</h3>
+                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  {response.answer}
+                </div>
+                
+                {response.sourceReports && response.sourceReports.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-green-200">
+                    <h4 className="font-medium text-green-900 mb-2">Source Reports:</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {response.sourceReports.map((report, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                        >
+                          {report}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {response.confidence && (
+                  <div className="mt-3 text-xs text-green-700">
+                    Confidence: {response.confidence}%
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-8 min-h-[200px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">
+              <div className="text-center text-gray-500">
+                <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Ask a Question</p>
+                <p className="text-sm mt-2">
+                  Enter your question above and I'll search through the WILTW and WATMTU reports for insights
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {messages.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Recent Q&A ({messages.length})
-          </h2>
-          
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <Card key={message.id} className="border-l-4 border-l-primary">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-2">Question</h3>
-                      <p className="text-gray-700 bg-blue-50 p-3 rounded-md">
-                        {message.question}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      <span className="text-xs text-gray-500">
-                        {message.timestamp.toLocaleTimeString()}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copyAnswer(message.answer)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <h4 className="font-semibold text-gray-900 mb-2">AI Answer</h4>
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                      {message.answer}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {messages.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <MessageCircle className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Ask Your First Question</h3>
-            <p className="text-gray-600 text-center mb-4">
-              Get intelligent insights from your reports and content. Ask about market trends, investment themes, or specific companies.
-            </p>
-            <div className="text-sm text-gray-500 space-y-1">
-              <p>Example questions:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>"What are the main risks in emerging markets?"</li>
-                <li>"Summarize recent developments in renewable energy"</li>
-                <li>"Which sectors show the most growth potential?"</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
