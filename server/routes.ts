@@ -702,6 +702,111 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
     }
   });
 
+  // AI email generation for leads with report summaries
+  app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
+    try {
+      const { lead, emailHistory, contentReports, selectedReportIds } = req.body;
+      
+      if (!lead) {
+        return res.status(400).json({ error: "Lead data is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      // Get stored summaries for all selected reports
+      let selectedReportSummaries = [];
+      if (selectedReportIds && selectedReportIds.length > 0) {
+        for (const reportId of selectedReportIds) {
+          const summaryRecord = await storage.getReportSummary(reportId);
+          if (summaryRecord && summaryRecord.parsed_summary) {
+            // Parse the three-part summary structure
+            const summary = summaryRecord.parsed_summary;
+            const reportTitle = contentReports?.find((r: any) => r.id === reportId)?.title || `Report ${reportId}`;
+            
+            selectedReportSummaries.push({
+              reportTitle,
+              summaryContent: summary,
+              reportId
+            });
+          }
+        }
+      }
+
+      // Get lead's email history from database if not provided
+      let leadEmailHistory = emailHistory;
+      if (!leadEmailHistory) {
+        leadEmailHistory = await storage.getLeadEmailHistory(lead.id);
+      }
+
+      // Build context from selected report summaries
+      const reportContext = selectedReportSummaries.map(summary => 
+        `Report: ${summary.reportTitle}\n${summary.summaryContent}`
+      ).join('\n\n---\n\n');
+
+      // Build email history context
+      const emailContext = leadEmailHistory?.slice(0, 3).map((email: any) => 
+        `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}`
+      ).join('\n\n---\n\n') || 'No previous email history';
+
+      const emailPrompt = `You are Spencer from 13D Research writing a personalized follow-up email to a lead. Generate a professional, concise email that references specific insights from our research reports.
+
+LEAD INFORMATION:
+- Name: ${lead.name}
+- Company: ${lead.company}
+- Stage: ${lead.stage}
+- Interests: ${lead.interest_tags?.join(', ') || 'General investment research'}
+- Notes: ${lead.notes || 'No additional notes'}
+
+SELECTED REPORT SUMMARIES:
+${reportContext || 'No reports selected'}
+
+RECENT EMAIL HISTORY:
+${emailContext}
+
+Generate a personalized email that:
+1. References specific insights from the selected reports that align with their interests
+2. Maintains professional institutional tone
+3. Includes concrete investment themes or market insights
+4. Suggests a clear next step (call, meeting, or additional research)
+5. Keeps to 250 words maximum
+6. Uses Spencer's direct, knowledgeable communication style
+
+Write the email as plain text, ready to send.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are Spencer from 13D Research, an expert institutional sales professional. Write personalized, insightful emails that demonstrate deep market knowledge and research expertise."
+          },
+          {
+            role: "user",
+            content: emailPrompt
+          }
+        ],
+        max_tokens: 800,
+        temperature: 0.3
+      });
+
+      const emailSuggestion = response.choices[0].message.content || "Unable to generate email";
+      
+      res.json({ emailSuggestion });
+    } catch (error) {
+      console.error("Generate lead email error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate AI email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Theme-based email generation endpoint
   app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
     try {
