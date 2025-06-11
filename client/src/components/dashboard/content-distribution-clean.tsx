@@ -11,6 +11,7 @@ import {
   Trash2,
   Copy,
   CheckCircle,
+  Download,
   Target,
   Layers,
   Bot,
@@ -93,6 +94,38 @@ export function ContentDistribution() {
       toast({
         title: "Error",
         description: "Failed to copy to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const downloadSummary = async (theme: any, email: string) => {
+    try {
+      const response = await apiRequest("POST", "/api/themes/download-summary", {
+        theme,
+        insights: theme.insights,
+        email
+      });
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `theme-summary-${Date.now()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Downloaded!",
+        description: "Theme summary has been downloaded.",
+      });
+    } catch (error) {
+      console.error("Failed to download summary:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download summary.",
         variant: "destructive",
       });
     }
@@ -403,14 +436,27 @@ export function ContentDistribution() {
                     <div className="ml-3 flex-1">
                       <p className="text-sm font-medium text-gray-800">{suggestion.title}</p>
                       <p className="text-sm text-gray-700 mt-1">{suggestion.description}</p>
-                      <div className="mt-2">
+                      
+                      {/* Traceable Insights */}
+                      {suggestion.insights && suggestion.insights.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-gray-600 mb-1">Key Insights:</p>
+                          <ul className="list-disc list-inside pl-2 text-xs text-gray-600 space-y-0.5">
+                            {suggestion.insights.map((insight: string, idx: number) => (
+                              <li key={idx}>{insight}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      <div className="mt-3">
                         <Button 
                           size="sm" 
                           onClick={() => generateEmail(suggestion, index)}
                           disabled={loadingStates[index]}
                           className={`text-xs ${getSuggestionButtonColor(suggestion.type)}`}
                         >
-                          {loadingStates[index] ? "Generating..." : "Generate AI Output"}
+                          {loadingStates[index] ? "Generating..." : "Generate Email"}
                         </Button>
                       </div>
                     </div>
@@ -439,6 +485,17 @@ export function ContentDistribution() {
                         <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
                           {generatedEmails[index]}
                         </pre>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadSummary(suggestion, generatedEmails[index])}
+                          className="flex items-center space-x-1 text-xs"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Download Summary</span>
+                        </Button>
                       </div>
                     </div>
                   )}

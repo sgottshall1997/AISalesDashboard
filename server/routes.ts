@@ -1797,6 +1797,40 @@ Keep the summary under 200 words and focus on actionable insights.`;
     }
   });
 
+  // Download theme summary
+  app.post("/api/themes/download-summary", async (req: Request, res: Response) => {
+    try {
+      const { theme, insights, email } = req.body;
+      
+      const summaryContent = `THEME SUMMARY
+=============
+
+Theme: ${theme.title}
+
+Description:
+${theme.description}
+
+Key Insights:
+${(insights || theme.keyPoints || []).map((insight: string, idx: number) => `${idx + 1}. ${insight}`).join('\n')}
+
+Supporting Reports:
+${(theme.supportingReports || []).join('\n- ')}
+
+Generated Email:
+${email || 'No email generated yet.'}
+
+Generated on: ${new Date().toLocaleString()}
+`;
+
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Disposition', `attachment; filename="theme-summary-${Date.now()}.txt"`);
+      res.send(summaryContent);
+    } catch (error) {
+      console.error("Error generating theme summary:", error);
+      res.status(500).json({ error: "Failed to generate summary" });
+    }
+  });
+
   // Generate theme-based email
   app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
     try {
@@ -1808,7 +1842,7 @@ Keep the summary under 200 words and focus on actionable insights.`;
       }
 
       const { suggestion } = req.body;
-      const { title: theme, emailAngle, description, keyPoints, supportingReports } = suggestion;
+      const { title: theme, emailAngle, description, keyPoints, supportingReports, insights } = suggestion;
       
       // Get all reports for content analysis
       const reports = await storage.getAllContentReports();
@@ -1824,7 +1858,8 @@ Keep the summary under 200 words and focus on actionable insights.`;
         description,
         keyPoints,
         supportingReports,
-        reports
+        reports,
+        insights
       );
       
       res.json({ email });
