@@ -1943,7 +1943,12 @@ ${comprehensiveSummary}`;
         }
       }
       
-      res.json({ summary });
+      res.json({ 
+        summary,
+        structuredSummary,
+        detailedSummary, 
+        comprehensiveSummary 
+      });
     } catch (error) {
       console.error("Summarize report error:", error);
       res.status(500).json({ 
