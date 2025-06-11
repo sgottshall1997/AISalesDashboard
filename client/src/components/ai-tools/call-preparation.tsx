@@ -296,15 +296,15 @@ export function CallPreparation() {
                           {index + 1}
                         </Badge>
                         <span className="text-sm font-medium">
-                          {typeof point === 'string' ? point : point.mainPoint}
+                          {typeof point === 'string' ? point : String(point.mainPoint || '')}
                         </span>
                       </div>
-                      {typeof point === 'object' && point.subBullets && point.subBullets.length > 0 && (
+                      {typeof point === 'object' && point.subBullets && Array.isArray(point.subBullets) && point.subBullets.length > 0 && (
                         <ul className="ml-8 space-y-1">
-                          {point.subBullets.map((bullet: string, bulletIndex: number) => (
+                          {point.subBullets.map((bullet: any, bulletIndex: number) => (
                             <li key={bulletIndex} className="text-sm text-gray-600 flex items-start">
                               <span className="mr-2">•</span>
-                              <span>{bullet}</span>
+                              <span>{String(bullet || '')}</span>
                             </li>
                           ))}
                         </ul>
