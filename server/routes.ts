@@ -448,7 +448,7 @@ async function processSinglePdf(file: Express.Multer.File, reportType: string) {
 }
 
 // Simple password for demo purposes - in production, use environment variables
-const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "salesdashboard2024";
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "spence";
 
 // Authentication middleware
 const requireAuth = (req: Request, res: Response, next: any) => {
