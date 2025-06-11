@@ -46,6 +46,7 @@ export interface IStorage {
   getRecentReports(limit?: number): Promise<ContentReport[]>;
   createContentReport(report: InsertContentReport): Promise<ContentReport>;
   deleteContentReport(id: number): Promise<boolean>;
+  getContentReportsWithoutSummaries(reportType?: string): Promise<ContentReport[]>;
 
   // Client Engagements
   getClientEngagements(clientId: number): Promise<(ClientEngagement & { report: ContentReport })[]>;
@@ -334,6 +335,25 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting content report:', error);
       return false;
     }
+  }
+
+  async getContentReportsWithoutSummaries(reportType?: string): Promise<ContentReport[]> {
+    // Use a subquery to find reports without summaries
+    let query = db
+      .select()
+      .from(content_reports)
+      .where(sql`${content_reports.id} NOT IN (SELECT content_report_id FROM report_summaries WHERE content_report_id IS NOT NULL)`);
+
+    // Exclude parsed summaries
+    query = query.where(sql`${content_reports.title} NOT LIKE 'Parsed Summary%'`);
+
+    // Filter by report type if specified
+    if (reportType) {
+      query = query.where(sql`${content_reports.title} LIKE ${'%' + reportType + '%'}`);
+    }
+
+    const reportsWithoutSummaries = await query.orderBy(desc(content_reports.published_date));
+    return reportsWithoutSummaries;
   }
 
   async getClientEngagements(clientId: number): Promise<(ClientEngagement & { report: ContentReport })[]> {
