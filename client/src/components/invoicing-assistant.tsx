@@ -16,7 +16,8 @@ import {
   Edit,
   ChevronDown,
   ChevronUp,
-  BarChart3
+  BarChart3,
+  Trash2
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -157,6 +158,29 @@ export default function InvoicingAssistant() {
       toast({
         title: "Error",
         description: "Failed to remove invoices",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: number) => {
+      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}`, {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices/overdue"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Invoice Deleted",
+        description: "Invoice has been successfully deleted.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice. Please try again.",
         variant: "destructive",
       });
     },
@@ -363,23 +387,38 @@ export default function InvoicingAssistant() {
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                          {invoice.payment_status !== "paid" && (
+                          <div className="flex space-x-2">
+                            {invoice.payment_status !== "paid" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleGenerateEmail(invoice)}
+                                disabled={isGeneratingEmail}
+                              >
+                                <Bot className="h-4 w-4 mr-1" />
+                                Draft AI Reminder
+                              </Button>
+                            )}
+                            <Link href={`/invoice/${invoice.id}`}>
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4 mr-1" />
+                                View Details
+                              </Button>
+                            </Link>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handleGenerateEmail(invoice)}
-                              disabled={isGeneratingEmail}
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete invoice ${invoice.invoice_number}? This action cannot be undone.`)) {
+                                  deleteInvoiceMutation.mutate(invoice.id);
+                                }
+                              }}
+                              disabled={deleteInvoiceMutation.isPending}
+                              className="text-red-600 hover:text-red-800 hover:bg-red-50"
                             >
-                              <Bot className="h-4 w-4 mr-1" />
-                              Draft AI Reminder
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                          <Link href={`/invoice/${invoice.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4 mr-1" />
-                              View Details
-                            </Button>
-                          </Link>
+                          </div>
                         </td>
                       </tr>
                     );

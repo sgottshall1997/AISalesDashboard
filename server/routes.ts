@@ -1246,6 +1246,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteInvoice(id);
+      
+      if (success) {
+        res.json({ message: "Invoice deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Invoice not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      res.status(500).json({ message: "Failed to delete invoice" });
+    }
+  });
+
   // AI-powered prospecting intelligence endpoint
   app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
     try {
