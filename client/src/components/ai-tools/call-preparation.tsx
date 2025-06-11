@@ -304,7 +304,7 @@ export function CallPreparation() {
                           {point.subBullets.map((bullet: any, bulletIndex: number) => (
                             <li key={bulletIndex} className="text-sm text-gray-600 flex items-start">
                               <span className="mr-2">•</span>
-                              <span>{String(bullet || '')}</span>
+                              <span>{typeof bullet === 'string' ? bullet : JSON.stringify(bullet)}</span>
                             </li>
                           ))}
                         </ul>

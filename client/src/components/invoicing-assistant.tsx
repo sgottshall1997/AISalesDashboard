@@ -45,6 +45,18 @@ interface AIEmailResponse {
   bestSendTime?: string;
 }
 
+interface AgingBucket {
+  count: number;
+  amount: number;
+}
+
+interface AgingData {
+  bucket_0_29: AgingBucket;
+  bucket_30_59: AgingBucket;
+  bucket_60_89: AgingBucket;
+  bucket_90_plus: AgingBucket;
+}
+
 export default function InvoicingAssistant() {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceWithClient | null>(null);
   const [aiEmail, setAiEmail] = useState<AIEmailResponse | null>(null);
@@ -61,7 +73,7 @@ export default function InvoicingAssistant() {
     queryKey: ["/api/invoices/overdue"],
   });
 
-  const { data: agingData } = useQuery({
+  const { data: agingData } = useQuery<AgingData>({
     queryKey: ["/api/invoices/aging"],
   });
 
@@ -306,24 +318,24 @@ export default function InvoicingAssistant() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="text-center p-4 bg-green-50 rounded-lg border">
-                  <div className="text-2xl font-bold text-green-700">{agingData.bucket_0_29.count}</div>
+                  <div className="text-2xl font-bold text-green-700">{agingData?.bucket_0_29?.count || 0}</div>
                   <div className="text-sm text-green-600 mb-1">0-29 Days</div>
-                  <div className="text-lg font-semibold text-green-800">${agingData.bucket_0_29.amount.toLocaleString()}</div>
+                  <div className="text-lg font-semibold text-green-800">${(agingData?.bucket_0_29?.amount || 0).toLocaleString()}</div>
                 </div>
                 <div className="text-center p-4 bg-yellow-50 rounded-lg border">
-                  <div className="text-2xl font-bold text-yellow-700">{agingData.bucket_30_59.count}</div>
+                  <div className="text-2xl font-bold text-yellow-700">{agingData?.bucket_30_59?.count || 0}</div>
                   <div className="text-sm text-yellow-600 mb-1">30-59 Days</div>
-                  <div className="text-lg font-semibold text-yellow-800">${agingData.bucket_30_59.amount.toLocaleString()}</div>
+                  <div className="text-lg font-semibold text-yellow-800">${(agingData?.bucket_30_59?.amount || 0).toLocaleString()}</div>
                 </div>
                 <div className="text-center p-4 bg-orange-50 rounded-lg border">
-                  <div className="text-2xl font-bold text-orange-700">{agingData.bucket_60_89.count}</div>
+                  <div className="text-2xl font-bold text-orange-700">{agingData?.bucket_60_89?.count || 0}</div>
                   <div className="text-sm text-orange-600 mb-1">60-89 Days</div>
-                  <div className="text-lg font-semibold text-orange-800">${agingData.bucket_60_89.amount.toLocaleString()}</div>
+                  <div className="text-lg font-semibold text-orange-800">${(agingData?.bucket_60_89?.amount || 0).toLocaleString()}</div>
                 </div>
                 <div className="text-center p-4 bg-red-50 rounded-lg border">
-                  <div className="text-2xl font-bold text-red-700">{agingData.bucket_90_plus.count}</div>
+                  <div className="text-2xl font-bold text-red-700">{agingData?.bucket_90_plus?.count || 0}</div>
                   <div className="text-sm text-red-600 mb-1">90+ Days</div>
-                  <div className="text-lg font-semibold text-red-800">${agingData.bucket_90_plus.amount.toLocaleString()}</div>
+                  <div className="text-lg font-semibold text-red-800">${(agingData?.bucket_90_plus?.amount || 0).toLocaleString()}</div>
                 </div>
               </div>
             </CardContent>
