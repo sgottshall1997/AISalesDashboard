@@ -854,6 +854,198 @@ Focus on extracting actionable intelligence for investment decision-making.`;
     }
   });
 
+  // Batch process WILTW reports missing comprehensive analysis
+  app.post("/api/ai/batch-process-reports", async (req: Request, res: Response) => {
+    try {
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered report processing." 
+        });
+      }
+
+      // Find all WILTW reports without comprehensive analysis or with incomplete analysis
+      const reportsToProcess = await storage.getContentReportsWithoutSummaries('WILTW');
+      
+      if (reportsToProcess.length === 0) {
+        return res.json({ 
+          message: "All WILTW reports already have comprehensive analysis",
+          processed: 0,
+          skipped: 0
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      let processed = 0;
+      let skipped = 0;
+      const results = [];
+
+      for (const report of reportsToProcess) {
+        try {
+          // Skip if no content available
+          if (!report.full_content && !report.content_summary) {
+            skipped++;
+            results.push({
+              reportId: report.id,
+              title: report.title,
+              status: 'skipped',
+              reason: 'No content available'
+            });
+            continue;
+          }
+
+          const content = report.full_content || report.content_summary;
+          const isWATMTU = report.title.includes("WATMTU");
+          const reportTypeLabel = isWATMTU ? "WATMTU" : "WILTW";
+
+          let summary = '';
+
+          if (isWATMTU) {
+            // WATMTU analysis
+            const systemPrompt = `You are an expert financial analyst specializing in WATMTU (What Are The Markets Telling Us) reports. Your task is to create comprehensive market analysis summaries that extract key insights, technical indicators, and investment themes.`;
+
+            const userPrompt = `Analyze this ${reportTypeLabel} report and create a structured comprehensive analysis:
+
+**Report Title:** ${report.title}
+**Content:** ${content}
+
+Please provide a detailed analysis in this format:
+
+**${reportTypeLabel} Report Analysis: ${report.title}**
+
+- **Core Investment Thesis:** [Main investment themes and market outlook]
+
+- **Key Market Developments:**
+  - *Technical breakouts and pattern analysis:* [Chart patterns, breakouts, technical levels]
+  - *Sector performance and relative strength:* [Sector rotation, outperformers/underperformers]
+  - *Macro economic indicators:* [Economic data, policy impacts, global trends]
+
+- **Investment Opportunities:**
+  - *High conviction themes:* [Top investment themes with rationale]
+  - *Tactical allocations:* [Short to medium term positioning]
+  - *Contrarian plays:* [Counter-trend opportunities]
+
+- **Risk Considerations:**
+  - *Market risks:* [Volatility, correlation, liquidity concerns]
+  - *Geopolitical factors:* [Policy risks, international tensions]
+  - *Technical warnings:* [Chart patterns suggesting caution]
+
+- **Portfolio Positioning:**
+  - *Recommended actions:* [Specific buy/sell/hold recommendations]
+  - *Asset allocation guidance:* [Sector weights, geographic exposure]
+  - *Hedging strategies:* [Risk management approaches]
+
+Focus on actionable insights and specific investment implications.`;
+
+            const response = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+              ],
+              max_tokens: 2000,
+              temperature: 0.3
+            });
+
+            summary = response.choices[0].message.content || '';
+          } else {
+            // WILTW analysis
+            const systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
+
+            const userPrompt = `Please analyze this ${reportTypeLabel} report and provide a comprehensive structured analysis:
+
+**Report Content:** ${content}
+
+Create a detailed analysis in this format:
+
+**${reportTypeLabel} Report Analysis: ${report.title}**
+
+**Article-by-Article Breakdown:**
+[For each article mentioned, provide a section with:]
+- **Article [Number]: [Title/Topic]**
+  - *Core Thesis:* [Main investment argument]
+  - *Key Data Points:* [Important statistics, metrics, or findings]
+  - *Investment Implications:* [How this affects portfolio decisions]
+  - *Risk Factors:* [Potential downsides or concerns]
+  - *Timeline:* [Short/medium/long-term outlook]
+
+**Cross-Article Themes:**
+- *Recurring Investment Themes:* [Common threads across articles]
+- *Sector Implications:* [Which sectors are highlighted]
+- *Geographic Focus:* [Regional opportunities or risks]
+- *Macro Trends:* [Broader economic or market patterns]
+
+**Portfolio Action Items:**
+- *High Priority:* [Immediate actions recommended]
+- *Research Pipeline:* [Areas requiring deeper analysis]
+- *Risk Monitoring:* [Key metrics or events to watch]
+
+**Key Takeaways:**
+[3-5 bullet points summarizing the most important insights]
+
+Focus on extracting actionable intelligence for investment decision-making.`;
+
+            const response = await openai.chat.completions.create({
+              model: "gpt-4o",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt }
+              ],
+              max_tokens: 3000,
+              temperature: 0.3
+            });
+
+            summary = response.choices[0].message.content || '';
+          }
+
+          // Save the summary to the database
+          const summaryData = {
+            content_report_id: report.id,
+            parsed_summary: summary,
+            summary_type: isWATMTU ? 'watmtu_parser' : 'wiltw_parser'
+          };
+
+          const savedSummary = await storage.createReportSummary(summaryData);
+          processed++;
+
+          results.push({
+            reportId: report.id,
+            title: report.title,
+            status: 'processed',
+            summaryId: savedSummary.id,
+            summaryLength: summary.length
+          });
+
+          // Add small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
+        } catch (error) {
+          console.error(`Error processing report ${report.id}:`, error);
+          results.push({
+            reportId: report.id,
+            title: report.title,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+
+      res.json({
+        message: `Batch processing completed. Processed ${processed} reports, skipped ${skipped}`,
+        processed,
+        skipped,
+        totalReports: reportsToProcess.length,
+        results
+      });
+
+    } catch (error) {
+      console.error("Batch processing error:", error);
+      res.status(500).json({
+        message: "Failed to batch process reports",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI-powered prospecting intelligence endpoint
   app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
     try {
