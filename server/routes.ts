@@ -3491,6 +3491,108 @@ This analysis is based on ${topReports.length} relevant research reports from ou
     }
   });
 
+  // Prospect matching endpoint
+  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
+    try {
+      const { reportContent } = req.body;
+
+      if (!reportContent) {
+        return res.status(400).json({ error: "Report content is required" });
+      }
+
+      // Get all leads (prospects) from database
+      const prospects = await db.select().from(leads);
+
+      if (prospects.length === 0) {
+        return res.json({ matches: [] });
+      }
+
+      // Use AI to analyze report content and match with prospects
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are an AI assistant that analyzes investment report content and matches it with relevant prospects based on their investment interests and preferences.
+
+Given a report summary and a list of prospects with their investment interests, identify which prospects would be most interested in this report content.
+
+For each relevant match, provide:
+1. The prospect's name and company
+2. A relevance score (0-100) based on how well the report aligns with their interests
+3. Specific reasoning for why this prospect would be interested
+4. Which sections or topics from the report would be most relevant to them
+5. Suggested approach for sharing this content
+
+Only include prospects with a relevance score of 50 or higher. Rank by relevance score (highest first).`
+          },
+          {
+            role: "user",
+            content: `Report Content to analyze:
+${reportContent}
+
+Prospects to match against:
+${prospects.map(p => `
+Name: ${p.name}
+Company: ${p.company}
+Investment Focus: ${p.investment_focus || 'General investing'}
+Risk Tolerance: ${p.risk_tolerance || 'Medium'}
+Investment Timeline: ${p.investment_timeline || 'Medium-term'}
+Notes: ${p.notes || 'No additional notes'}
+Tags: ${p.tags?.join(', ') || 'No tags'}
+`).join('\n---\n')}
+
+Please analyze this report content and identify which prospects would be most interested, providing detailed matching information in the following JSON format:
+
+{
+  "matches": [
+    {
+      "name": "prospect name",
+      "company": "company name", 
+      "relevanceScore": 85,
+      "interests": ["matched interest 1", "matched interest 2"],
+      "reasoning": "Detailed explanation of why this prospect matches",
+      "suggestedContent": "Specific sections or insights to highlight when sharing"
+    }
+  ]
+}`
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      });
+
+      const aiResponse = completion.choices[0]?.message?.content;
+      
+      if (!aiResponse) {
+        return res.status(500).json({ error: "Failed to generate prospect matches" });
+      }
+
+      try {
+        const parsedResponse = JSON.parse(aiResponse);
+        
+        // Validate and clean the response
+        const matches = parsedResponse.matches?.filter((match: any) => 
+          match.name && match.relevanceScore >= 50
+        ).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore) || [];
+
+        res.json({ 
+          matches,
+          total: matches.length,
+          analysisDate: new Date().toISOString()
+        });
+
+      } catch (parseError) {
+        console.error("Error parsing AI response:", parseError);
+        res.status(500).json({ error: "Failed to parse prospect matching results" });
+      }
+
+    } catch (error) {
+      console.error("Error in prospect matching:", error);
+      res.status(500).json({ error: "Failed to match prospects" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
