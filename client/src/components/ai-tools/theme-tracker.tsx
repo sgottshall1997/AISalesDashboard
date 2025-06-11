@@ -107,11 +107,37 @@ export function ThemeTracker() {
                     <SelectValue placeholder="Choose a theme..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {themes.map((theme: any) => (
-                      <SelectItem key={theme.theme} value={theme.theme}>
-                        {theme.theme} ({theme.totalCount} mentions)
+                    {/* Permanent 13D themes section */}
+                    <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100">
+                      13D Core Investment Themes
+                    </div>
+                    {permanent13DThemes.map((theme) => (
+                      <SelectItem key={theme} value={theme}>
+                        {theme}
                       </SelectItem>
                     ))}
+                    
+                    {/* Dynamic themes from reports */}
+                    {dynamicThemes.length > 0 && (
+                      <>
+                        <div className="px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 mt-2">
+                          Report-Based Themes
+                        </div>
+                        {dynamicThemes
+                          .filter((themeData: any) => 
+                            !permanent13DThemes.some(permanentTheme => 
+                              permanentTheme.toLowerCase().includes(themeData.theme.toLowerCase()) ||
+                              themeData.theme.toLowerCase().includes(permanentTheme.toLowerCase())
+                            )
+                          )
+                          .map((themeData: any) => (
+                            <SelectItem key={themeData.theme} value={themeData.theme}>
+                              {themeData.theme} ({themeData.count} mentions)
+                            </SelectItem>
+                          ))
+                        }
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -230,10 +256,10 @@ export function ThemeTracker() {
               </div>
             )}
 
-            {!themesLoading && themes.length === 0 && (
+            {!themesLoading && dynamicThemes.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <TrendingUp className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No themes found. Upload and parse reports to generate theme data.</p>
+                <p>Select from permanent 13D themes above or upload reports to generate dynamic themes.</p>
               </div>
             )}
           </div>
