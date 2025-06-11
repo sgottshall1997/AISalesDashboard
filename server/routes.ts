@@ -754,17 +754,18 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}`
       ).join('\n\n---\n\n') || 'No previous email history';
 
-      const emailPrompt = `Generate ONLY this exact format. Do NOT deviate from this structure:
+      const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
 
+TEMPLATE TO FOLLOW EXACTLY:
 Hi ${lead.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Topic from Article 1]**: [Specific data/insight from first article]. (Article 1)
+• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 1)
 
-• **[Topic from Article 2]**: [Specific data/insight from second article]. (Article 2)
+• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 2)
 
-• **[Topic from Article 3]**: [Specific data/insight from third article]. (Article 3)
+• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 3)
 
 These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
 
@@ -773,14 +774,15 @@ I am happy to send over older reports on topics of interest. Please let me know 
 Best,
 Spencer
 
-REPORTS TO EXTRACT FROM:
+DATA TO USE:
 ${reportContext || 'No reports selected'}
 
-REQUIREMENTS:
-- Use this EXACT template structure
-- Replace bracketed content with actual insights from 3 different articles
-- Include specific numbers/percentages/ratios from reports
-- Maximum 120 words total`;
+CRITICAL: 
+- Use bullet points (•) NOT paragraphs
+- Include specific data/percentages/ratios from reports
+- Each bullet must reference (Article 1), (Article 2), (Article 3)
+- Keep conversational tone, avoid formal business language
+- Maximum 180 words`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -800,16 +802,23 @@ REQUIREMENTS:
       emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/^.*Subject:.*$/gm, '');
       
-      // Strip formal opening paragraphs and replace with casual format
+      // Strip formal opening paragraphs
       emailSuggestion = emailSuggestion.replace(/^.*I hope this message finds you well\..*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/^.*Given your.*interest.*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/^.*I wanted to follow up.*$/gm, '');
+      
+      // Convert paragraph blocks to bullet points if AI generated paragraphs instead
+      // Look for patterns like "Our recent report highlights..." and convert to bullets
+      emailSuggestion = emailSuggestion.replace(/^(Our recent report highlights.*?)\./gm, '• **Market Shift**: $1. (Article 1)');
+      emailSuggestion = emailSuggestion.replace(/^(Moreover.*?)\./gm, '• **Strategic Opportunity**: $1. (Article 2)');
+      emailSuggestion = emailSuggestion.replace(/^(Additionally.*?)\./gm, '• **Key Development**: $1. (Article 3)');
       
       // Strip formal closing paragraphs
       emailSuggestion = emailSuggestion.replace(/I would be delighted.*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/Looking forward.*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/Would you be available.*$/gm, '');
       emailSuggestion = emailSuggestion.replace(/Please let me know.*convenient.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Could we schedule.*$/gm, '');
       
       // Strip formal signatures
       emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
