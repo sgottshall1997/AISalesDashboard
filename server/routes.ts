@@ -1,5 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import session from "express-session";
+import cookieParser from "cookie-parser";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
