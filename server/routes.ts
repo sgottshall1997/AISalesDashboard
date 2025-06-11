@@ -2910,184 +2910,7 @@ Format exactly like the example email provided.`;
     }
   });
 
-  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
-    try {
-      const { prospectName, interests, additionalContext } = req.body;
-      if (!prospectName || !Array.isArray(interests)) {
-        return res.status(400).json({ error: "Missing prospect name or interests" });
-      }
-      
-      const reports = await storage.getAllContentReports();
-      const matches = [];
-      
-      // Create expanded search terms from interests and context
-      const allSearchTerms = [...interests];
-      if (additionalContext) {
-        const contextWords = additionalContext.toLowerCase()
-          .split(/\s+/)
-          .filter((word: string) => word.length > 3)
-          .filter((word: string) => !['looking', 'reports', 'interested', 'wants', 'needs'].includes(word));
-        allSearchTerms.push(...contextWords);
-      }
-      
-      for (const report of reports) {
-        let confidence = 0;
-        const matchedThemes: string[] = [];
-        const foundTerms: string[] = [];
-        
-        // Check tags for matches
-        if (report.tags && Array.isArray(report.tags)) {
-          for (const interest of allSearchTerms) {
-            for (const tag of report.tags) {
-              if (tag.toLowerCase().includes(interest.toLowerCase()) || 
-                  interest.toLowerCase().includes(tag.toLowerCase())) {
-                confidence += 25;
-                if (!matchedThemes.includes(tag)) {
-                  matchedThemes.push(tag);
-                }
-                if (!foundTerms.includes(interest)) {
-                  foundTerms.push(interest);
-                }
-              }
-            }
-          }
-        }
-        
-        // Check title for matches
-        for (const interest of allSearchTerms) {
-          if (report.title.toLowerCase().includes(interest.toLowerCase())) {
-            confidence += 20;
-            if (!foundTerms.includes(interest)) {
-              foundTerms.push(interest);
-            }
-          }
-        }
-        
-        // Check full content for matches (more comprehensive search)
-        if (report.full_content) {
-          const contentLower = report.full_content.toLowerCase();
-          for (const interest of allSearchTerms) {
-            const interestLower = interest.toLowerCase();
-            
-            // Count occurrences for better scoring
-            const occurrences = (contentLower.match(new RegExp(interestLower, 'g')) || []).length;
-            if (occurrences > 0) {
-              confidence += Math.min(occurrences * 5, 30); // Cap at 30 points per term
-              if (!foundTerms.includes(interest)) {
-                foundTerms.push(interest);
-              }
-            }
-          }
-        }
-        
-        // Bonus for multiple term matches
-        if (foundTerms.length > 1) {
-          confidence += 15;
-        }
-        
-        if (confidence > 0) {
-          // Generate a contextual summary focused on the search terms
-          let summary = "No relevant content found";
-          if (report.full_content) {
-            const contentLower = report.full_content.toLowerCase();
-            const contextualExtracts: string[] = [];
-            
-            // Find the best context around search terms
-            for (const term of allSearchTerms) {
-              const termLower = term.toLowerCase();
-              const termPattern = new RegExp(`\\b${termLower}\\b`, 'gi');
-              const matches: RegExpExecArray[] = [];
-              let match;
-              while ((match = termPattern.exec(report.full_content)) !== null) {
-                matches.push(match);
-                if (matches.length >= 3) break; // Limit to prevent infinite loops
-              }
-              
-              for (const match of matches.slice(0, 2)) {
-                const matchIndex = match.index!;
-                
-                // Extract a meaningful paragraph around the term
-                const beforeContext = Math.max(0, matchIndex - 200);
-                const afterContext = Math.min(report.full_content.length, matchIndex + 200);
-                let context = report.full_content.substring(beforeContext, afterContext);
-                
-                // Find sentence boundaries to get complete sentences
-                const sentences = context.split(/[.!?]+/);
-                const targetSentenceIndex = sentences.findIndex(sentence => 
-                  sentence.toLowerCase().includes(termLower)
-                );
-                
-                if (targetSentenceIndex !== -1) {
-                  // Get the target sentence plus one before and one after for context
-                  const startSentence = Math.max(0, targetSentenceIndex - 1);
-                  const endSentence = Math.min(sentences.length - 1, targetSentenceIndex + 1);
-                  const relevantSentences = sentences.slice(startSentence, endSentence + 1);
-                  
-                  let extract = relevantSentences.join('. ').trim();
-                  
-                  // Clean up the extract
-                  extract = extract.replace(/^\W+/, ''); // Remove leading non-word chars
-                  extract = extract.replace(/\s+/g, ' '); // Normalize whitespace
-                  
-                  // Skip generic headers and very short extracts
-                  if (extract.length > 80 && 
-                      !extract.toLowerCase().includes('print once') &&
-                      !extract.toLowerCase().includes('do not forward') &&
-                      !extract.toLowerCase().includes('confidential for') &&
-                      !contextualExtracts.some(existing => 
-                        existing.toLowerCase().includes(extract.toLowerCase().substring(0, 60))
-                      )) {
-                    contextualExtracts.push(extract);
-                  }
-                }
-              }
-            }
-            
-            if (contextualExtracts.length > 0) {
-              summary = contextualExtracts.join(' ... ');
-              if (summary.length > 350) {
-                summary = summary.substring(0, 350) + '...';
-              }
-            } else {
-              // Enhanced fallback: find performance data or specific mentions
-              const lines = report.full_content.split('\n');
-              const relevantLines = lines.filter(line => {
-                const lineLower = line.toLowerCase();
-                return allSearchTerms.some(term => 
-                  lineLower.includes(term.toLowerCase()) && 
-                  !lineLower.includes('print once') &&
-                  !lineLower.includes('confidential') &&
-                  line.trim().length > 50
-                );
-              }).slice(0, 3);
-              
-              if (relevantLines.length > 0) {
-                summary = relevantLines.join(' ... ').trim();
-                if (summary.length > 300) {
-                  summary = summary.substring(0, 300) + '...';
-                }
-              }
-            }
-          }
-          
-          matches.push({
-            id: report.id,
-            title: report.title,
-            summary,
-            confidence: Math.min(confidence, 100),
-            matchedThemes: matchedThemes.length > 0 ? matchedThemes : foundTerms,
-            publishedDate: report.published_date
-          });
-        }
-      }
-      
-      matches.sort((a, b) => b.confidence - a.confidence);
-      res.json({ matches: matches.slice(0, 10) });
-    } catch (error) {
-      console.error("Error matching prospect themes:", error);
-      res.status(500).json({ error: "Failed to match prospect themes" });
-    }
-  });
+  // Removed duplicate endpoint - using the AI-powered version below
 
   app.post("/api/relevance-score", async (req: Request, res: Response) => {
     try {
@@ -3494,17 +3317,25 @@ This analysis is based on ${topReports.length} relevant research reports from ou
   // Prospect matching endpoint
   app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
     try {
+      console.log("Prospect matching request received:", req.body);
       const { reportContent } = req.body;
 
       if (!reportContent) {
+        console.log("Missing report content in request");
         return res.status(400).json({ error: "Report content is required" });
       }
 
       // Get all leads (prospects) from database
       const prospects = await db.select().from(leads);
+      console.log(`Found ${prospects.length} prospects in database`);
 
       if (prospects.length === 0) {
         return res.json({ matches: [] });
+      }
+
+      // Log first prospect to verify data structure
+      if (prospects.length > 0) {
+        console.log("Sample prospect data:", JSON.stringify(prospects[0], null, 2));
       }
 
       // Use AI to analyze report content and match with prospects
@@ -3540,7 +3371,7 @@ Stage: ${p.stage || 'prospect'}
 Likelihood of Closing: ${p.likelihood_of_closing || 'medium'}
 Engagement Level: ${p.engagement_level || 'none'}
 Notes: ${p.notes || 'No additional notes'}
-Interest Tags: ${p.interest_tags ? (Array.isArray(p.interest_tags) ? p.interest_tags.join(', ') : p.interest_tags.toString()) : 'No tags'}
+Interest Tags: ${p.interest_tags ? (Array.isArray(p.interest_tags) ? p.interest_tags.join(', ') : JSON.stringify(p.interest_tags)) : 'No tags'}
 How Heard: ${p.how_heard || 'Not specified'}
 `).join('\n---\n')}
 
@@ -3574,9 +3405,12 @@ Please analyze this report content and identify which prospects would be most in
         const parsedResponse = JSON.parse(aiResponse);
         
         // Validate and clean the response
-        const matches = parsedResponse.matches?.filter((match: any) => 
-          match.name && match.relevanceScore >= 50
-        ).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore) || [];
+        const matches = parsedResponse.matches?.filter((match: any) => {
+          console.log("Validating match:", match);
+          return match.name && match.relevanceScore >= 50;
+        }).sort((a: any, b: any) => b.relevanceScore - a.relevanceScore) || [];
+        
+        console.log(`Filtered matches: ${matches.length} out of ${parsedResponse.matches?.length || 0}`);
 
         res.json({ 
           matches,
