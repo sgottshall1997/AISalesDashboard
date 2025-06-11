@@ -34,15 +34,17 @@ export default function AIQnA() {
     setQuestion("");
 
     try {
-      const response = await apiRequest("/api/ask-reports", {
+      const response = await fetch("/api/ask-reports", {
         method: "POST",
-        body: { question: currentQuestion },
+        body: JSON.stringify({ question: currentQuestion }),
+        headers: { "Content-Type": "application/json" }
       });
+      const data = await response.json();
 
       const newMessage: QAMessage = {
         id: Date.now().toString(),
         question: currentQuestion,
-        answer: response.answer || "No answer provided",
+        answer: data.answer || "No answer provided",
         timestamp: new Date(),
       };
 

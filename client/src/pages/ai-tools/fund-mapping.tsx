@@ -23,8 +23,9 @@ export default function FundMapping() {
   const handleLoadStrategies = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/fund-strategies");
-      setStrategies(response || []);
+      const response = await fetch("/api/fund-strategies");
+      const data = await response.json();
+      setStrategies(data || []);
     } catch (error) {
       toast({
         title: "Error",
