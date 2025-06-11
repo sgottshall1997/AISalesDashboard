@@ -1813,7 +1813,21 @@ ${emailTemplate}`;
         temperature: 0.3
       });
 
-      const generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+      let generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+
+      // Add report sources and article numbers at the bottom
+      if (suggestion.supportingReports && suggestion.supportingReports.length > 0) {
+        const reportSources = suggestion.supportingReports.map((report: string, index: number) => {
+          // Extract report type and date from report title
+          const reportMatch = report.match(/(WILTW|WATMTU).*?(\d{4}-\d{2}-\d{2})/);
+          const reportType = reportMatch ? reportMatch[1] : 'Report';
+          const reportDate = reportMatch ? reportMatch[2] : '';
+          
+          return `${index + 1}. ${reportType}${reportDate ? ` (${reportDate})` : ''}: ${report}`;
+        }).join('\n');
+
+        generatedEmail += `\n\n---\n\nSource Reports:\n${reportSources}`;
+      }
 
       // Store AI-generated content for feedback tracking
       try {
