@@ -3053,11 +3053,46 @@ Generated on: ${new Date().toLocaleString()}
         }
         
         if (relevanceScore > 8) {
+          // Generate better excerpt by prioritizing content_summary or extracting meaningful content
+          let excerpt = "No excerpt available";
+          
+          if (report.content_summary && report.content_summary.trim()) {
+            excerpt = report.content_summary.substring(0, 300);
+          } else if (report.full_content) {
+            // Skip boilerplate headers and find meaningful content
+            const content = report.full_content;
+            const skipPatterns = [
+              /PRINT ONCE - DO NOT FORWARD - DO NOT COPY/,
+              /13D RESEARCH & STRATEGY/,
+              /WHAT I LEARNED THIS WEEK/,
+              /What is needed is a realization/
+            ];
+            
+            let startIndex = 0;
+            for (const pattern of skipPatterns) {
+              const match = content.match(pattern);
+              if (match && match.index) {
+                startIndex = Math.max(startIndex, match.index + match[0].length);
+              }
+            }
+            
+            // Find the first meaningful paragraph after headers
+            const contentAfterHeaders = content.substring(startIndex).trim();
+            const firstMeaningfulParagraph = contentAfterHeaders.split('\n')
+              .find(line => line.trim().length > 50 && !line.includes('®') && !line.includes('13D.COM'));
+            
+            if (firstMeaningfulParagraph) {
+              excerpt = firstMeaningfulParagraph.trim().substring(0, 300);
+            } else {
+              excerpt = contentAfterHeaders.substring(0, 300);
+            }
+          }
+          
           sourceReports.push({
             id: report.id,
             title: report.title,
             relevanceScore,
-            excerpt: report.content_summary?.substring(0, 200) || report.full_content?.substring(0, 200) || "No excerpt available",
+            excerpt: excerpt + (excerpt.length === 300 ? "..." : ""),
             fullContent: report.content_summary || report.full_content || ""
           });
         }
