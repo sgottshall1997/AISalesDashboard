@@ -525,7 +525,7 @@ The current market environment presents both challenges and opportunities for lo
   });
 
   // Call Preparation Tool endpoint
-  app.post("/api/ai/generate-call-prep", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/ai/generate-call-prep", async (req: Request, res: Response) => {
     try {
       const { 
         prospectName, 
