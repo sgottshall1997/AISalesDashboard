@@ -769,6 +769,8 @@ Hope you're doing well. I wanted to share a few quick insights from our latest r
 
 These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
 
+On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
+
 I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
 
 Best,
@@ -782,6 +784,7 @@ CRITICAL:
 - Make each bullet detailed with specific data/percentages/ratios from reports
 - Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
+- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
 - Keep conversational tone, avoid formal business language
 - Maximum 275 words`;
 
