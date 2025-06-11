@@ -39,11 +39,7 @@ export function ContentDistribution() {
     currentFile: string;
     completedFiles: string[];
   } | null>(null);
-  const [generatedEmails, setGeneratedEmails] = useState<{ [key: number]: string }>({});
-  const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
-  const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
-  const [contentIds, setContentIds] = useState<{ [key: number]: number }>({});
-  const [emailDialogOpen, setEmailDialogOpen] = useState<{ [key: number]: boolean }>({});
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -78,103 +74,16 @@ export function ContentDistribution() {
     queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
   });
 
-  const { data: suggestions = [], isLoading: suggestionsLoading } = useQuery({
-    queryKey: ["/api/ai/content-suggestions"],
-    queryFn: () => apiRequest("GET", "/api/ai/content-suggestions").then(res => res.json()),
-  });
+
 
   const { data: savedSummaries = [] } = useQuery({
     queryKey: ["/api/report-summaries"],
     queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
   });
 
-  const generateEmail = async (suggestion: any, index: number) => {
-    setLoadingStates(prev => ({ ...prev, [index]: true }));
-    
-    try {
-      const response = await apiRequest("POST", "/api/ai/generate-theme-email", {
-        suggestion: suggestion
-      });
-      
-      const result = await response.json();
-      setGeneratedEmails(prev => ({ ...prev, [index]: result.email }));
-      setEmailDialogOpen(prev => ({ ...prev, [index]: true }));
-      
-      // Store content ID for feedback tracking
-      if (result.contentId) {
-        setContentIds(prev => ({ ...prev, [index]: result.contentId }));
-      }
-      
-      toast({
-        title: "Email Generated",
-        description: "AI-powered email has been generated successfully.",
-      });
-    } catch (error) {
-      console.error("Error generating email:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate email. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [index]: false }));
-    }
-  };
 
-  const copyToClipboard = async (text: string, index: number) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedStates(prev => ({ ...prev, [index]: true }));
-      
-      toast({
-        title: "Copied!",
-        description: "Email content copied to clipboard.",
-      });
-      
-      setTimeout(() => {
-        setCopiedStates(prev => ({ ...prev, [index]: false }));
-      }, 2000);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-      toast({
-        title: "Error",
-        description: "Failed to copy to clipboard.",
-        variant: "destructive",
-      });
-    }
-  };
 
-  const downloadSummary = async (theme: any, email: string) => {
-    try {
-      const response = await apiRequest("POST", "/api/themes/download-summary", {
-        theme,
-        insights: theme.insights,
-        email
-      });
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `theme-summary-${Date.now()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Downloaded!",
-        description: "Theme summary has been downloaded.",
-      });
-    } catch (error) {
-      console.error("Failed to download summary:", error);
-      toast({
-        title: "Error",
-        description: "Failed to download summary.",
-        variant: "destructive",
-      });
-    }
-  };
+
 
   const getSuggestionStyle = (type: string) => {
     switch (type) {
@@ -1035,149 +944,7 @@ export function ContentDistribution() {
         </div>
       )}
 
-      {/* AI Content Suggestions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>AI Content Suggestions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {suggestionsLoading ? (
-              <div className="text-center py-8">
-                <Bot className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-gray-500">Loading AI suggestions...</p>
-              </div>
-            ) : suggestions.length > 0 ? (
-              suggestions.map((suggestion: any, index: number) => (
-                <Card key={index} className={`transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${getSuggestionStyle(suggestion.type)}`}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      {getSuggestionIcon(suggestion.type)}
-                      <CardTitle className="text-lg font-semibold">{suggestion.title}</CardTitle>
-                    </div>
-                    <CardDescription className="text-sm">Key Insights:</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {/* Traceable Insights - Following Enhancement Plan Spec */}
-                    {(suggestion.insights || suggestion.keyPoints) && (
-                      <ul className="list-disc list-inside pl-4 text-sm text-muted-foreground mb-4 space-y-1">
-                        {(suggestion.insights || suggestion.keyPoints || []).slice(0, 3).map((insight: string, idx: number) => (
-                          <li key={idx}>{insight}</li>
-                        ))}
-                      </ul>
-                    )}
-                    
-                    <p className="text-sm text-gray-700 mb-4">{suggestion.description}</p>
-                    
-                    {/* Supporting Reports */}
-                    {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
-                      <div className="mt-2 mb-4">
-                        <p className="text-xs font-medium text-gray-600 mb-1">Supporting Reports:</p>
-                        <div className="text-xs text-gray-500">
-                          {suggestion.supportingReports.slice(0, 2).join(', ')}
-                          {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter className="flex justify-end px-4 pb-4">
-                    <Button 
-                      onClick={() => generateEmail(suggestion, index)}
-                      disabled={loadingStates[index]}
-                      className={`flex items-center gap-2 ${getSuggestionButtonColor(suggestion.type)}`}
-                    >
-                      {loadingStates[index] ? (
-                        <>
-                          <Bot className="w-4 h-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Mail className="w-4 h-4" />
-                          Generate Email
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
-                  
-                  {/* Modal Window for Generated Email - Following Enhancement Plan Spec */}
-                  <Dialog 
-                    open={emailDialogOpen[index] || false} 
-                    onOpenChange={(open) => setEmailDialogOpen(prev => ({ ...prev, [index]: open }))}
-                  >
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                          <Mail className="w-5 h-5" />
-                          Generated Email - {suggestion.title}
-                        </DialogTitle>
-                        <DialogDescription>
-                          Professional email draft based on research insights
-                        </DialogDescription>
-                      </DialogHeader>
-                      
-                      <div className="space-y-4">
-                        {generatedEmails[index] && (
-                          <>
-                            <div className="bg-gray-50 rounded-lg p-4">
-                              <AiFeedback 
-                                contentId={contentIds[index]} 
-                                onFeedbackSubmitted={() => {
-                                  toast({
-                                    title: "Feedback Received",
-                                    description: "Thank you for helping improve our AI content generation.",
-                                  });
-                                }}
-                              >
-                                <Textarea
-                                  value={generatedEmails[index]}
-                                  readOnly
-                                  className="min-h-[300px] bg-white border-gray-200 text-sm leading-relaxed resize-none"
-                                />
-                              </AiFeedback>
-                            </div>
-                            
-                            {/* Export Options - Following Enhancement Plan Spec */}
-                            <div className="flex justify-end gap-2 pt-4 border-t">
-                              <Button
-                                variant="outline"
-                                onClick={() => copyToClipboard(generatedEmails[index], index)}
-                                className="flex items-center gap-2"
-                              >
-                                {copiedStates[index] ? (
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
-                                {copiedStates[index] ? "Copied!" : "Copy Email"}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                onClick={() => downloadSummary(suggestion, generatedEmails[index])}
-                                className="flex items-center gap-2"
-                              >
-                                <Download className="h-4 w-4" />
-                                Download Summary
-                              </Button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </Card>
-              ))
-            ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-center text-gray-500">
-                  <Bot className="h-5 w-5 mr-2" />
-                  <span className="text-sm">No AI suggestions available yet. Upload and parse reports to generate suggestions.</span>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+
 
 
     </div>
