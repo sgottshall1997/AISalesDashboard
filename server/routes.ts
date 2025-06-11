@@ -8,9 +8,11 @@ import csv from "csv-parser";
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
+  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history,
+  content_reports, report_summaries
 } from "@shared/schema";
 import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -550,8 +552,24 @@ The current market environment presents both challenges and opportunities for lo
         return res.status(400).json({ error: "Either interests or investment strategy is required" });
       }
 
-      // Get all content reports from database
-      const reports = await storage.getAllContentReports();
+      // Get reports with structured analysis data, ordered by newest first
+      const reportsWithAnalysis = await db
+        .select({
+          id: content_reports.id,
+          title: content_reports.title,
+          type: content_reports.type,
+          tags: content_reports.tags,
+          published_date: content_reports.published_date,
+          engagement_level: content_reports.engagement_level,
+          content_summary: content_reports.content_summary,
+          summaryId: report_summaries.id,
+          parsedData: report_summaries.parsed_data,
+          summaryText: report_summaries.summary
+        })
+        .from(content_reports)
+        .leftJoin(report_summaries, eq(content_reports.id, report_summaries.content_report_id))
+        .orderBy(desc(content_reports.published_date));
+
       const relevantReports: any[] = [];
       const thematicAlignment: any[] = [];
       
@@ -567,7 +585,7 @@ The current market environment presents both challenges and opportunities for lo
         searchTerms.push(...investmentStyle.split(',').map((s: string) => s.trim().toLowerCase()));
       }
 
-      // Strategy-based theme mapping
+      // Strategy-based theme mapping with commodity/metals terms
       const strategyThemes: { [key: string]: string[] } = {
         'value': ['undervalued', 'dividend', 'book value', 'earnings', 'value', 'cheap', 'discount'],
         'growth': ['growth', 'technology', 'innovation', 'expansion', 'tech', 'disruptive'],
@@ -576,26 +594,45 @@ The current market environment presents both challenges and opportunities for lo
         'balanced': ['diversified', 'allocation', 'balanced', 'mixed', 'portfolio'],
         'income': ['dividend', 'yield', 'income', 'distribution', 'payout'],
         'sector': ['sector', 'industry', 'focused', 'specialized'],
-        'global': ['global', 'international', 'emerging', 'markets', 'worldwide']
+        'global': ['global', 'international', 'emerging', 'markets', 'worldwide'],
+        'commodities': ['uranium', 'gold', 'silver', 'copper', 'platinum', 'precious metals', 'critical minerals', 'mining', 'metals'],
+        'energy': ['oil', 'gas', 'energy', 'nuclear', 'uranium', 'renewable']
       };
 
       if (strategy && strategyThemes[strategy]) {
         searchTerms.push(...strategyThemes[strategy]);
       }
 
-      // Score each report based on relevance
-      for (const report of reports) {
+      // Enhanced commodity matching for common search terms
+      const commodityMappings: { [key: string]: string[] } = {
+        'uranium': ['uranium', 'nuclear', 'critical minerals', 'commodities', 'energy'],
+        'gold': ['gold', 'precious metals', 'metals', 'commodities'],
+        'silver': ['silver', 'precious metals', 'metals', 'commodities'],
+        'copper': ['copper', 'metals', 'commodities', 'critical minerals'],
+        'platinum': ['platinum', 'precious metals', 'metals', 'commodities']
+      };
+
+      // Expand search terms to include related commodity terms
+      const expandedSearchTerms = [...searchTerms];
+      for (const term of searchTerms) {
+        if (commodityMappings[term]) {
+          expandedSearchTerms.push(...commodityMappings[term]);
+        }
+      }
+
+      // Score each report based on relevance using structured analysis
+      for (const report of reportsWithAnalysis) {
         let relevanceScore = 0;
         const keyThemes: string[] = [];
         const matchReasons: string[] = [];
 
-        // Check tags for matches
+        // Check tags for matches (highest priority)
         if (report.tags && Array.isArray(report.tags)) {
-          for (const searchTerm of searchTerms) {
+          for (const searchTerm of expandedSearchTerms) {
             for (const tag of report.tags) {
               const tagLower = tag.toLowerCase();
               if (tagLower.includes(searchTerm) || searchTerm.includes(tagLower)) {
-                relevanceScore += 25;
+                relevanceScore += 30;
                 if (!keyThemes.includes(tag)) {
                   keyThemes.push(tag);
                 }
@@ -605,21 +642,76 @@ The current market environment presents both challenges and opportunities for lo
           }
         }
 
-        // Check title for matches
+        // Check structured analysis data (parsed summaries) - high priority
+        if (report.parsedData) {
+          try {
+            const parsed = typeof report.parsedData === 'string' 
+              ? JSON.parse(report.parsedData) 
+              : report.parsedData;
+            
+            // Check investment themes in structured data
+            if (parsed.investmentThemes && Array.isArray(parsed.investmentThemes)) {
+              for (const theme of parsed.investmentThemes) {
+                const themeLower = theme.toLowerCase();
+                for (const searchTerm of expandedSearchTerms) {
+                  if (themeLower.includes(searchTerm) || searchTerm.includes(themeLower)) {
+                    relevanceScore += 25;
+                    if (!keyThemes.includes(theme)) {
+                      keyThemes.push(theme);
+                    }
+                    matchReasons.push(`Investment theme: ${theme}`);
+                  }
+                }
+              }
+            }
+
+            // Check key insights in structured data
+            if (parsed.keyInsights && Array.isArray(parsed.keyInsights)) {
+              for (const insight of parsed.keyInsights) {
+                const insightLower = insight.toLowerCase();
+                for (const searchTerm of expandedSearchTerms) {
+                  if (insightLower.includes(searchTerm)) {
+                    relevanceScore += 20;
+                    matchReasons.push(`Key insight match: ${searchTerm}`);
+                  }
+                }
+              }
+            }
+
+            // Check article summaries for specific mentions
+            if (parsed.articles && Array.isArray(parsed.articles)) {
+              for (const article of parsed.articles) {
+                if (article.summary || article.title) {
+                  const articleText = `${article.title || ''} ${article.summary || ''}`.toLowerCase();
+                  for (const searchTerm of expandedSearchTerms) {
+                    if (articleText.includes(searchTerm)) {
+                      relevanceScore += 15;
+                      matchReasons.push(`Article content: ${article.title || 'Article'}`);
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            // If parsing fails, continue without structured data
+          }
+        }
+
+        // Check report title for matches
         const titleLower = report.title.toLowerCase();
-        for (const searchTerm of searchTerms) {
+        for (const searchTerm of expandedSearchTerms) {
           if (titleLower.includes(searchTerm)) {
-            relevanceScore += 15;
+            relevanceScore += 18;
             matchReasons.push(`Title match: ${searchTerm}`);
           }
         }
 
-        // Check summary/description for matches
-        if (report.content_summary) {
-          const summaryLower = report.content_summary.toLowerCase();
-          for (const searchTerm of searchTerms) {
+        // Check summary text for matches
+        if (report.summaryText) {
+          const summaryLower = report.summaryText.toLowerCase();
+          for (const searchTerm of expandedSearchTerms) {
             if (summaryLower.includes(searchTerm)) {
-              relevanceScore += 10;
+              relevanceScore += 12;
               matchReasons.push(`Summary match: ${searchTerm}`);
             }
           }
@@ -629,7 +721,7 @@ The current market environment presents both challenges and opportunities for lo
         if (report.engagement_level === 'high') {
           relevanceScore += 5;
         }
-        if (report.type === 'research') {
+        if (report.type === 'research' || report.type?.includes('WATMTU')) {
           relevanceScore += 5;
         }
 
@@ -640,7 +732,7 @@ The current market environment presents both challenges and opportunities for lo
             title: report.title,
             relevanceScore: Math.min(100, relevanceScore),
             keyThemes,
-            publishedDate: (report.created_at || report.published_date || new Date()).toISOString().split('T')[0],
+            publishedDate: (report.published_date || new Date()).toISOString().split('T')[0],
             type: report.type || 'Research',
             matchReason: matchReasons.slice(0, 2).join('; ') || 'General relevance match'
           });
