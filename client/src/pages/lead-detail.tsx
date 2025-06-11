@@ -866,7 +866,7 @@ export default function LeadDetail() {
                                       className="rounded"
                                     />
                                     <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                      {formatReportTitle(summary.report.title)}
                                     </span>
                                   </label>
                                 ))}
@@ -894,7 +894,7 @@ export default function LeadDetail() {
                                       className="rounded"
                                     />
                                     <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                      {formatReportTitle(summary.report.title)}
                                     </span>
                                   </label>
                                 ))}
@@ -922,7 +922,7 @@ export default function LeadDetail() {
                                       className="rounded"
                                     />
                                     <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                      {formatReportTitle(summary.report.title)}
                                     </span>
                                   </label>
                                 ))}
