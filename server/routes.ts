@@ -112,8 +112,11 @@ function parseWILTWReport(content: string) {
     .replace(/\d+\s+OF\s+\d+/g, '')
     .replace(/WHAT I LEARNED THIS WEEK.*?\d{4}/g, '');
   
-  // Split content by double newlines to get paragraphs
-  const paragraphs = cleanContent.split(/\n\s*\n/).filter(p => p.trim().length > 80);
+  // Split content by various patterns to get meaningful sections
+  const paragraphs = cleanContent
+    .split(/(?:\n\s*\n|\. {2,}|(?<=[.!?])\s{3,}|(?<=\w)\s{5,}(?=[A-Z]))/)
+    .filter(p => p.trim().length > 80)
+    .map(p => p.trim());
   
   console.log('Found paragraphs:', paragraphs.length);
   
@@ -181,8 +184,20 @@ function parseWILTWReport(content: string) {
     index === self.findIndex(a => a.title === article.title)
   );
   
-  const uniqueInsights = [...new Set(insights)];
-  const uniqueThemes = [...new Set(themes)];
+  // Simple deduplication without Set iteration
+  const seenInsights = new Set();
+  const uniqueInsights = insights.filter(insight => {
+    if (seenInsights.has(insight)) return false;
+    seenInsights.add(insight);
+    return true;
+  });
+  
+  const seenThemes = new Set();
+  const uniqueThemes = themes.filter(theme => {
+    if (seenThemes.has(theme)) return false;
+    seenThemes.add(theme);
+    return true;
+  });
   
   console.log('WILTW parsing results:', {
     articlesFound: uniqueArticles.length,
@@ -499,17 +514,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced PDF upload endpoint with actual PDF text extraction
-  app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
+  app.post("/api/upload-pdf", upload.array('pdf', 10), async (req: Request, res: Response) => {
     try {
-      const file = req.file;
+      const files = req.files as Express.Multer.File[];
       const reportType = req.body.reportType || 'wiltw';
-      const parserType = req.body.parserType || (reportType === 'watmtu' ? 'watmtu_parser' : 'wiltw_parser');
+      const parserType = req.body.parserType || 'auto_detect';
       
-      if (!file) {
-        return res.status(400).json({ error: 'No PDF file uploaded' });
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: 'No PDF files uploaded' });
       }
 
-      console.log('File upload debug:', {
+      const results = [];
+      const errors = [];
+
+      // Process each file
+      for (const file of files) {
+        try {
+          console.log('File upload debug:', {
         fieldname: file.fieldname,
         originalname: file.originalname,
         mimetype: file.mimetype,
