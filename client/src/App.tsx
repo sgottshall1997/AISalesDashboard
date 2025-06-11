@@ -12,6 +12,7 @@ import ClientDetail from "@/pages/client-detail";
 import { AIAnalytics } from "@/pages/ai-analytics";
 import About from "@/pages/about";
 import NotFound from "@/pages/not-found";
+import UnifiedProspectFundMatcher from "@/pages/ai-tools/unified-prospect-fund-matcher";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/leads/:id" component={LeadDetail} />
       <Route path="/client/:id" component={ClientDetail} />
       <Route path="/ai-analytics" component={AIAnalytics} />
+      <Route path="/ai-tools/unified-prospect-fund-matcher" component={UnifiedProspectFundMatcher} />
       <Route path="/about" component={About} />
       <Route component={NotFound} />
     </Switch>
