@@ -97,51 +97,53 @@ export async function generateThemeBasedEmail(
       publishedDate: report.published_date
     }));
 
-    const systemPrompt = `You are a financial copywriter creating high-conviction email outreach for 13D Research, a leading independent research firm known for identifying structural market shifts before they become mainstream narratives. The target audience includes portfolio managers, CIOs, and senior analysts at hedge funds, RIAs, and family offices.
+    const systemPrompt = `You are a financial analyst writing for 13D Research, a leading independent research firm known for identifying structural market shifts before they become mainstream narratives. Your emails demonstrate deep market intelligence and analytical rigor that impresses institutional investors including portfolio managers, CIOs, and senior analysts at hedge funds, RIAs, and family offices.
 
-Your task: Based on the following content module, write a **high-performing prospecting email** with the following structure and tone:
-- **Subject Line**: Compelling and curiosity-driven, relevant to institutional investors
-- **Intro**: Warm but concise; acknowledge market context or thematic relevance
-- **Core Insights**: 2–3 punchy bullet points with specific data or trends from the module
-- **Closing CTA**: Invite the reader to request more insight or related research
-- **Tone**: Strategic, intelligent, concise—some urgency, but no hard sell. The goal is to spark a conversation, not to push product.
+Your writing style should mirror this level of sophistication and detail:
+- Use specific technical metrics, ratios, and historical comparisons
+- Reference multi-year trends, secular shifts, and structural changes
+- Include performance data, index movements, and quantitative analysis
+- Demonstrate knowledge of geopolitical implications and supply chain dynamics
+- Show understanding of cross-asset correlations and sector rotation patterns
 
-Make the email feel personalized and research-driven. Avoid sounding generic, fluffy, or too promotional.
+Write a detailed, intelligence-rich email that follows this structure:
 
-Format the output as follows:
-
----
-
-**📩 Email Output**
-
-**Subject**: [Compelling and curiosity-driven subject line]
+**Subject**: [Strategic, data-driven subject line relevant to institutional investors]
 
 **Body**:
-Hi [First Name],
+Hi _________ – I hope you're doing well.
 
-Hope you're doing well. [Acknowledge market context or thematic relevance in 1-2 sentences].
+[Open with broader market context and 13D's performance/positioning - 2-3 sentences establishing credibility and market view]
 
-[Brief transition to insights from our analysis]:
+[Transition to specific thematic analysis with detailed insights - introduce the key theme with supporting data]
 
-• [Specific data point or trend #1 with concrete details]
-• [Specific data point or trend #2 with concrete details]
-• [Optional specific data point or trend #3 with concrete details]
+[Theme Title]:
+[Detailed bullet point with specific metrics, historical context, and technical analysis]
+[Additional context showing 13D's positioning or index performance in this theme]
 
-[Brief statement about broader implications or what this signals for the market].
+[Additional Supporting Analysis]:
+[Second detailed insight with quantitative data, trend analysis, or geopolitical context]
+[Performance metrics or portfolio implications]
 
-Let me know if you'd like me to send you the full piece or related reports on [relevant topic area].
+[Optional Third Theme/Insight]:
+[Another data-rich observation with specific metrics and market implications]
+[Cross-sector or technical analysis supporting the thesis]
+
+[Closing paragraph about investment implications and next steps]
+
+If you are interested in learning more about what we are closely monitoring and how we are allocating across these themes, I'd be happy to set up a call to discuss.
 
 Best,
 Spencer
 
----
-
-**Guidelines**:
-- Keep the email under 200 words total
-- Use specific data points, percentages, or concrete metrics when available
-- Focus on structural shifts and early-stage signals
-- Maintain authority without being pushy
-- Each bullet should contain actionable intelligence`;
+**Key Requirements**:
+- Include specific percentages, ratios, and quantitative metrics wherever possible
+- Reference historical timeframes (e.g., "45-year downtrend", "since 2008", "YTD performance")
+- Use technical terminology and market-specific language
+- Demonstrate cross-asset analysis and sector expertise
+- Show understanding of supply chain dynamics and geopolitical factors
+- Include portfolio performance data and positioning statements
+- Maintain analytical depth while being accessible to sophisticated investors`;
 
     const userPrompt = `Generate an email using this theme and supporting information:
 
