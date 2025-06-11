@@ -136,7 +136,7 @@ export default function ProspectMatchmaker() {
           </div>
 
           {/* Results Area */}
-          {matches.length > 0 ? (
+          {matches && matches.length > 0 ? (
             <div className="mt-8 space-y-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Matching Reports for {prospectName}
