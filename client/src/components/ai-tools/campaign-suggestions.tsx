@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Lightbulb, TrendingUp, Users, BarChart3, RefreshCw, Mail, Copy, CheckCircle } from "lucide-react";
+import { Lightbulb, TrendingUp, Users, RefreshCw, Mail, Copy, CheckCircle } from "lucide-react";
 
 interface ContentSuggestion {
   type: "frequent_theme" | "emerging_trend" | "cross_sector" | "deep_dive";
@@ -91,7 +91,7 @@ export function CampaignSuggestions() {
       case 'emerging_trend':
         return <Lightbulb className="w-4 h-4" />;
       case 'cross_sector':
-        return <BarChart3 className="w-4 h-4" />;
+        return <Users className="w-4 h-4" />;
       case 'deep_dive':
         return <Users className="w-4 h-4" />;
       default:
