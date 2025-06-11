@@ -338,12 +338,38 @@ export function CallPreparation() {
             <div className="flex gap-2 pt-4">
               <Button
                 onClick={() => {
-                  const content = `CALL PREPARATION NOTES\n\n` +
-                    `PROSPECT SNAPSHOT\n${callPrepResult.prospectSnapshot}\n\n` +
-                    `TOP INTERESTS\n${callPrepResult.topInterests}\n\n` +
-                    `PORTFOLIO INSIGHTS\n${callPrepResult.portfolioInsights}\n\n` +
-                    `TALKING POINTS\n${callPrepResult.talkingPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n` +
-                    `SMART QUESTIONS\n${callPrepResult.smartQuestions.map((q, i) => `Q${i + 1}. ${q}`).join('\n')}`;
+                  let content = `CALL PREPARATION NOTES\n\n`;
+                  
+                  content += `PROSPECT SNAPSHOT\n${callPrepResult.prospectSnapshot}\n\n`;
+                  
+                  if (callPrepResult.personalBackground) {
+                    content += `PERSONAL BACKGROUND\n${callPrepResult.personalBackground}\n\n`;
+                  }
+                  
+                  if (callPrepResult.companyOverview) {
+                    content += `COMPANY OVERVIEW\n${callPrepResult.companyOverview}\n\n`;
+                  }
+                  
+                  content += `TOP INTERESTS\n${callPrepResult.topInterests}\n\n`;
+                  content += `PORTFOLIO INSIGHTS\n${callPrepResult.portfolioInsights}\n\n`;
+                  
+                  // Handle structured talking points
+                  content += `TALKING POINTS\n`;
+                  callPrepResult.talkingPoints.forEach((point, i) => {
+                    if (typeof point === 'string') {
+                      content += `${i + 1}. ${point}\n`;
+                    } else {
+                      content += `${i + 1}. ${point.mainPoint}\n`;
+                      if (point.subBullets && point.subBullets.length > 0) {
+                        point.subBullets.forEach(bullet => {
+                          content += `   • ${bullet}\n`;
+                        });
+                      }
+                    }
+                  });
+                  content += '\n';
+                  
+                  content += `SMART QUESTIONS\n${callPrepResult.smartQuestions.map((q, i) => `Q${i + 1}. ${q}`).join('\n')}`;
                   
                   navigator.clipboard.writeText(content);
                   toast({
