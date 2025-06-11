@@ -585,8 +585,8 @@ The current market environment presents both challenges and opportunities for lo
       
       const reports = await storage.getAllContentReports();
       const relevantReports = [];
-      const thematicAlignment = [];
-      const recommendations = [];
+      const thematicAlignment: any[] = [];
+      const recommendations: any[] = [];
       
       const strategyThemes = {
         'value': ['undervalued', 'dividend', 'book value', 'earnings'],
@@ -599,7 +599,7 @@ The current market environment presents both challenges and opportunities for lo
       
       for (const report of reports) {
         let relevanceScore = 0;
-        const keyThemes = [];
+        const keyThemes: string[] = [];
         
         if (report.tags && Array.isArray(report.tags)) {
           for (const theme of themes) {
