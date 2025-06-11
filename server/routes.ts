@@ -2873,7 +2873,7 @@ Generated on: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Query parameter required" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const sourceReports = [];
       let confidence = 0;
       
@@ -2932,7 +2932,7 @@ Generated on: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Topic and audience are required" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const relevantReports = [];
       
       const topicWords = topic.toLowerCase().split(' ');
