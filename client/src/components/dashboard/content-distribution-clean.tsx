@@ -21,7 +21,6 @@ import {
   FileText
 } from "lucide-react";
 
-
 export function ContentDistribution() {
   const [selectedReport, setSelectedReport] = useState<string>("");
   const [reportSummary, setReportSummary] = useState<string>("");
@@ -33,6 +32,20 @@ export function ContentDistribution() {
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Function to clean up markdown formatting from parsed summaries
+  const formatCleanSummary = (summary: string): string => {
+    return summary
+      // Remove ### headers
+      .replace(/###\s*/g, '')
+      // Remove ** bold formatting
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      // Remove * italic formatting  
+      .replace(/\*(.*?)\*/g, '$1')
+      // Clean up extra whitespace
+      .replace(/\n\s*\n/g, '\n\n')
+      .trim();
+  };
 
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
@@ -445,7 +458,7 @@ export function ContentDistribution() {
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <h4 className="text-sm font-medium text-gray-900 mb-2">Parsed Summary:</h4>
                 <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                  {reportSummary}
+                  {formatCleanSummary(reportSummary)}
                 </div>
               </div>
             )}
