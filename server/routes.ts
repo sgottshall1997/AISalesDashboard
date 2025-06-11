@@ -1786,6 +1786,7 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       });
 
       const detailedSummary = detailedResponse.choices[0].message.content;
+      console.log('Initial detailed summary generated, length:', detailedSummary?.length || 0);
 
       let structuredSummary = '';
       let comprehensiveSummary = '';
@@ -1800,13 +1801,13 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       
       if (promptType === "wiltw_parser") {
         console.log('Starting WILTW three-part summary generation...');
-        // Generate the structured article-by-article analysis using the enhanced parser
-        const parsedData = parseWILTWReport(originalContent);
-        console.log('Parsed WILTW data:', { articlesCount: parsedData.articles.length });
         
-        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report contains ${parsedData.articles.length} numbered articles that have been pre-extracted.
+        // Skip the complex parsing for now and generate the structured summary directly
+        console.log('Generating structured summary...');
+        
+        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. Analyze the report and provide structured, article-by-article analysis.
 
-For EACH of the ${parsedData.articles.length} articles provided, create a comprehensive analysis following this EXACT format:
+For each identifiable article section in the report, create a comprehensive analysis following this format:
 
 **ARTICLE [NUMBER]: [TITLE]**
 
@@ -1816,7 +1817,6 @@ For EACH of the ${parsedData.articles.length} articles provided, create a compre
 • [First key insight with specific data/quotes]
 • [Second key insight with supporting evidence]  
 • [Third key insight with implications]
-• [Fourth insight if substantial content available]
 
 **Investment Implications:** [Forward-looking themes and opportunities for investors]
 
@@ -1824,23 +1824,13 @@ For EACH of the ${parsedData.articles.length} articles provided, create a compre
 
 **Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
 
----
+Extract and analyze all numbered articles in the report with consistent formatting and depth.`;
 
-CRITICAL REQUIREMENTS:
-- Process ALL ${parsedData.articles.length} articles - do not skip any
-- Maintain consistent formatting across all articles
-- Extract specific data points, percentages, and concrete details
-- Each article must have the exact same structure and depth of analysis
-- Use the article numbers and titles exactly as provided`;
+        const structuredUserPrompt = `Analyze this WILTW investment research report titled "${title || report.title}" and provide structured analysis for each article section:
 
-        const structuredUserPrompt = `Analyze these ${parsedData.articles.length} pre-extracted articles from the WILTW report "${title || report.title}". Process each article thoroughly and maintain consistent formatting:
+${actualContent}
 
-${parsedData.articles.map(article => `
-**ARTICLE ${article.number}: ${article.title}**
-Content: ${article.fullContent}
-`).join('\n---\n')}
-
-MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articles using the exact format specified. Do not skip any articles and maintain consistent depth across all analyses.`;
+Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
 
         console.log('Making structured summary API call...');
         const structuredResponse = await openai.chat.completions.create({
