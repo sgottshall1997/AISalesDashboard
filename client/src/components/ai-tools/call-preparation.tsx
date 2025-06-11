@@ -296,7 +296,7 @@ export function CallPreparation() {
                           {index + 1}
                         </Badge>
                         <span className="text-sm font-medium">
-                          {typeof point === 'string' ? point : String(point.mainPoint || '')}
+                          {typeof point === 'string' ? point : (point?.mainPoint || '')}
                         </span>
                       </div>
                       {typeof point === 'object' && point.subBullets && Array.isArray(point.subBullets) && point.subBullets.length > 0 && (
