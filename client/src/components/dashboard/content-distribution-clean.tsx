@@ -12,17 +12,8 @@ import { AiFeedback } from "@/components/ai-feedback";
 import { 
   Upload,
   Trash2,
-  Copy,
-  CheckCircle,
-  Download,
-  Target,
-  Layers,
   Bot,
-  Lightbulb,
-  TrendingUp,
-  BarChart3,
-  FileText,
-  Mail
+  FileText
 } from "lucide-react";
 
 export function ContentDistribution() {
@@ -85,50 +76,7 @@ export function ContentDistribution() {
 
 
 
-  const getSuggestionStyle = (type: string) => {
-    switch (type) {
-      case "frequent_theme":
-        return "border-blue-200 bg-blue-50";
-      case "emerging_trend":
-        return "border-green-200 bg-green-50";
-      case "cross_sector":
-        return "border-purple-200 bg-purple-50";
-      case "deep_dive":
-        return "border-orange-200 bg-orange-50";
-      default:
-        return "border-gray-200 bg-gray-50";
-    }
-  };
 
-  const getSuggestionIcon = (type: string) => {
-    switch (type) {
-      case "frequent_theme":
-        return <BarChart3 className="h-5 w-5 text-blue-600" />;
-      case "emerging_trend":
-        return <TrendingUp className="h-5 w-5 text-green-600" />;
-      case "cross_sector":
-        return <Target className="h-5 w-5 text-purple-600" />;
-      case "deep_dive":
-        return <Layers className="h-5 w-5 text-orange-600" />;
-      default:
-        return <Lightbulb className="h-5 w-5 text-gray-600" />;
-    }
-  };
-
-  const getSuggestionButtonColor = (type: string) => {
-    switch (type) {
-      case "frequent_theme":
-        return "bg-blue-600 hover:bg-blue-700 text-white";
-      case "emerging_trend":
-        return "bg-green-600 hover:bg-green-700 text-white";
-      case "cross_sector":
-        return "bg-purple-600 hover:bg-purple-700 text-white";
-      case "deep_dive":
-        return "bg-orange-600 hover:bg-orange-700 text-white";
-      default:
-        return "bg-gray-600 hover:bg-gray-700 text-white";
-    }
-  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
