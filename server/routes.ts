@@ -636,38 +636,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Automatically parse the uploaded PDF using the appropriate parser
       let parsedSummary = '';
+      let parseSuccess = false;
+      
       try {
+        console.log(`Attempting to parse with ${parserType} for file: ${file.originalname}`);
+        
         if (parserType === 'watmtu_parser') {
+          console.log('Using WATMTU parser...');
           const parsedData = parseWATMTUReport(extractedText);
           parsedSummary = JSON.stringify(parsedData, null, 2);
+          console.log('WATMTU parsing successful, length:', parsedSummary.length);
         } else {
+          console.log('Using WILTW parser...');
           // Use WILTW parser
-          const reportDate = dateStr.replace(/-/g, '-'); // Keep the date format
+          const reportDate = dateStr; // Use the extracted date
+          console.log('Formatting WILTW content with date:', reportDate);
           const formattedContent = formatWILTWArticles(extractedText, reportDate);
+          console.log('Formatted content length:', formattedContent.length);
+          
           const parsedData = parseWILTWReport(formattedContent);
           parsedSummary = JSON.stringify(parsedData, null, 2);
+          console.log('WILTW parsing successful, length:', parsedSummary.length);
         }
         
-        // Store the parsed summary
-        const summaryData = {
-          title: `Parsed Summary - ${reportTitle}`,
-          type: reportType.toUpperCase() + ' Summary',
-          published_date: new Date(),
-          open_rate: '0',
-          click_rate: '0', 
-          engagement_level: 'medium' as const,
-          tags: [...tags, 'parsed-summary'],
-          content_summary: parsedSummary,
-          key_insights: [],
-          target_audience: 'Investment Professionals',
-          full_content: parsedSummary
-        };
-        
-        await storage.createContentReport(summaryData);
+        if (parsedSummary && parsedSummary.length > 100) {
+          // Store the parsed summary
+          const summaryData = {
+            title: `Parsed Summary - ${reportTitle}`,
+            type: reportType.toUpperCase() + ' Summary',
+            published_date: new Date(),
+            open_rate: '0',
+            click_rate: '0', 
+            engagement_level: 'medium' as const,
+            tags: [...tags, 'parsed-summary'],
+            content_summary: parsedSummary,
+            key_insights: [],
+            target_audience: 'Investment Professionals',
+            full_content: parsedSummary
+          };
+          
+          const summaryReport = await storage.createContentReport(summaryData);
+          console.log('Parsed summary stored successfully with ID:', summaryReport.id);
+          parseSuccess = true;
+        } else {
+          console.error('Parsing produced empty or invalid result');
+        }
         
       } catch (parseError) {
         console.error('Auto-parsing failed:', parseError);
-        // Continue without parsed summary if parsing fails
+        console.error('Parser type:', parserType);
+        console.error('File name:', file.originalname);
+        console.error('Extracted text length:', extractedText.length);
+        console.error('Error details:', parseError instanceof Error ? parseError.message : String(parseError));
       }
       
       // Clean up uploaded file
@@ -676,16 +696,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ 
-        message: `${reportType.toUpperCase()} report uploaded and parsed successfully`,
+        message: parseSuccess 
+          ? `${reportType.toUpperCase()} report uploaded and parsed successfully`
+          : `${reportType.toUpperCase()} report uploaded (parsing failed)`,
         report: {
           id: report.id,
           title: report.title,
           type: report.type,
           contentLength: extractedText.length,
-          parsed: parsedSummary.length > 0
+          parsed: parseSuccess
         },
         reportType,
-        parserUsed: parserType
+        parserUsed: parserType,
+        parseSuccess
       });
 
     } catch (error) {

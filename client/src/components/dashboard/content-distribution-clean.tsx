@@ -328,9 +328,14 @@ export function ContentDistribution() {
       setSelectedFiles([]);
       queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
       queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
+      
+      const successfulParsing = results.filter(r => r.result.parseSuccess).length;
+      const failedParsing = results.length - successfulParsing;
+      
       toast({
-        title: "PDFs Uploaded Successfully",
-        description: `${results.length} reports have been uploaded and automatically parsed.`,
+        title: "PDFs Uploaded",
+        description: `${results.length} files uploaded. ${successfulParsing} parsed successfully${failedParsing > 0 ? `, ${failedParsing} parsing failed` : ''}.`,
+        variant: failedParsing > 0 ? "destructive" : "default"
       });
     },
     onError: (error) => {
