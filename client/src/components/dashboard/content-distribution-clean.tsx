@@ -16,7 +16,9 @@ import {
   Bot,
   FileText,
   Users,
-  Target
+  Target,
+  Mail,
+  Copy
 } from "lucide-react";
 
 export function ContentDistribution() {
@@ -1094,6 +1096,50 @@ export function ContentDistribution() {
               </div>
             )}
           </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generated Email Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Mail className="w-5 h-5 mr-2" />
+              Generated Email for {emailProspectName}
+            </DialogTitle>
+            <DialogDescription>
+              Personalized prospecting email following the 13D format
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg border">
+              <div className="whitespace-pre-wrap text-sm font-mono">
+                {generatedEmail}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedEmail);
+                  toast({
+                    title: "Copied to Clipboard",
+                    description: "Email content has been copied to your clipboard",
+                  });
+                }}
+                variant="outline"
+                className="flex-1"
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Email
+              </Button>
+              <Button
+                onClick={() => setShowEmailDialog(false)}
+                className="flex-1"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
