@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Lightbulb, TrendingUp, Users, BarChart3, RefreshCw } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { Lightbulb, TrendingUp, Users, BarChart3, RefreshCw, Mail, Copy, CheckCircle } from "lucide-react";
 
 interface ContentSuggestion {
   type: "frequent_theme" | "emerging_trend" | "cross_sector" | "deep_dive";
@@ -18,6 +21,10 @@ interface ContentSuggestion {
 
 export function CampaignSuggestions() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [generatedEmail, setGeneratedEmail] = useState<string>("");
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const { data: suggestions, isLoading, refetch } = useQuery<ContentSuggestion[]>({
     queryKey: ['/api/ai/content-suggestions', refreshTrigger],
@@ -27,6 +34,54 @@ export function CampaignSuggestions() {
   const handleRefresh = () => {
     setRefreshTrigger(prev => prev + 1);
     refetch();
+  };
+
+  const generateEmailMutation = useMutation({
+    mutationFn: async (suggestion: ContentSuggestion) => {
+      const response = await apiRequest("POST", "/api/ai/generate-campaign-email", {
+        suggestion: suggestion,
+        emailStyle: "13d_research_style" // Matches the provided example
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedEmail(data.email);
+      setEmailDialogOpen(true);
+      setGeneratingFor(null);
+      toast({
+        title: "Email Generated",
+        description: "Professional investment email generated successfully.",
+      });
+    },
+    onError: (error) => {
+      setGeneratingFor(null);
+      toast({
+        title: "Error",
+        description: "Failed to generate email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerateEmail = (suggestion: ContentSuggestion) => {
+    setGeneratingFor(suggestion.title);
+    generateEmailMutation.mutate(suggestion);
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied",
+        description: "Email content copied to clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard.",
+        variant: "destructive",
+      });
+    }
   };
 
   const getTypeIcon = (type: string) => {

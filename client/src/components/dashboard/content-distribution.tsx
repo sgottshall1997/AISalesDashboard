@@ -37,7 +37,6 @@ export function ContentDistribution() {
   const [generatedEmail, setGeneratedEmail] = useState<string>("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
-  const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,43 +50,14 @@ export function ContentDistribution() {
     queryFn: () => dashboardApi.getClients(),
   });
 
-  const { data: suggestions = [], isLoading: suggestionsLoading } = useQuery({
-    queryKey: ["/api/ai/content-suggestions"],
-    queryFn: () => apiRequest("GET", "/api/ai/content-suggestions").then(res => res.json()),
-  });
+
 
   const { data: savedSummaries = [] } = useQuery({
     queryKey: ["/api/report-summaries"],
     queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
   });
 
-  const generateEmail = async (suggestion: any, index: number) => {
-    setLoadingStates(prev => ({ ...prev, [index]: true }));
-    
-    try {
-      const response = await apiRequest("POST", "/api/ai/generate-theme-email", {
-        suggestion: suggestion
-      });
-      
-      const result = await response.json();
-      setGeneratedEmail(result.email);
-      setIsDialogOpen(true);
-      
-      toast({
-        title: "Email Generated",
-        description: "AI-powered email has been generated successfully.",
-      });
-    } catch (error) {
-      console.error("Error generating email:", error);
-      toast({
-        title: "Error",
-        description: "Failed to generate email. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingStates(prev => ({ ...prev, [index]: false }));
-    }
-  };
+
 
   const copyToClipboard = async (text: string, index: number) => {
     try {
@@ -634,52 +604,7 @@ export function ContentDistribution() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Content Suggestions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {suggestionsLoading ? (
-                <div className="text-center py-8">
-                  <Bot className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-gray-500">Loading AI suggestions...</p>
-                </div>
-              ) : suggestions.length > 0 ? (
-                suggestions.map((suggestion: any, index: number) => (
-                  <div key={index} className={`border rounded-lg p-4 ${getSuggestionStyle(suggestion.type)}`}>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        {getSuggestionIcon(suggestion.type)}
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium text-gray-800">{suggestion.title}</p>
-                        <p className="text-sm text-gray-700 mt-1">{suggestion.description}</p>
-                        <div className="mt-2">
-                          <Button 
-                            size="sm" 
-                            onClick={() => generateEmail(suggestion, index)}
-                            disabled={loadingStates[index]}
-                            className={`text-xs ${getSuggestionButtonColor(suggestion.type)}`}
-                          >
-                            {loadingStates[index] ? "Generating..." : "Generate AI Output"}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center justify-center text-gray-500">
-                    <Bot className="h-5 w-5 mr-2" />
-                    <span className="text-sm">No AI suggestions available yet</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
 
       </div>
 
