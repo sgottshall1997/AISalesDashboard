@@ -774,11 +774,12 @@ STYLE REQUIREMENTS:
 2. Follow with "Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly [their specific interests]."
 3. Use 2-3 bullet points (•) with specific insights from the reports
 4. Each bullet should have a bold headline followed by detailed explanation
-5. End with "I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help."
-6. Sign "Best, Spencer"
-7. Keep conversational but authoritative tone
-8. Include specific data points, ratios, or market signals when available
-9. Maximum 200 words
+5. After bullet points, add: "These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus."
+6. End with "I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help."
+7. Sign "Best, Spencer"
+8. Keep conversational but authoritative tone
+9. Include specific data points, ratios, or market signals when available
+10. Maximum 200 words
 
 Generate the email using this exact format and style.`;
 
