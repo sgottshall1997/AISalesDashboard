@@ -781,10 +781,60 @@ Focus on actionable insights and specific investment implications.`;
 
         summary = response.choices[0].message.content || '';
       } else {
-        // WILTW parser - focus on article analysis
-        const systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
+        // WILTW analysis - Generate three distinct summaries
+        console.log('Starting WILTW three-part summary generation...');
+        
+        // 1. Generate Structured Article Analysis
+        console.log('Generating structured summary...');
+        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title}. Analyze the report and provide structured, article-by-article analysis.
 
-        const userPrompt = `Please analyze this ${reportTypeLabel} report and provide a comprehensive structured analysis:
+For each identifiable article section in the report, create a comprehensive analysis following this format:
+
+**ARTICLE [NUMBER]: [TITLE]**
+
+**Core Thesis:** [2-3 sentence summary of the main argument]
+
+**Key Insights:**
+• [First key insight with specific data/quotes]
+• [Second key insight with supporting evidence]  
+• [Third key insight with implications]
+
+**Investment Implications:** [Forward-looking themes and opportunities for investors]
+
+**Risk Factors:** [Specific risks and considerations mentioned]
+
+**Timeline:** [Short/medium/long-term outlook as discussed in the article]
+
+**Recommended Names:** [Any specific stocks, ETFs, indices, or investment vehicles mentioned]
+
+**Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
+
+Extract and analyze all numbered articles in the report with consistent formatting and depth.`;
+
+        const structuredUserPrompt = `Analyze this WILTW investment research report titled "${title}" and provide structured analysis for each article section:
+
+${content}
+
+Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
+
+        const structuredResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: structuredSystemPrompt },
+            { role: "user", content: structuredUserPrompt }
+          ],
+          max_tokens: 4000,
+          temperature: 0.3
+        });
+
+        const structuredSummary = structuredResponse.choices[0].message.content || '';
+        console.log('Structured summary generated, length:', structuredSummary.length);
+
+        // 2. Generate Detailed Article Analysis
+        console.log('Generating detailed summary...');
+        const detailedSystemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
+
+        const detailedUserPrompt = `Please analyze this ${reportTypeLabel} report and provide a comprehensive structured analysis:
 
 **Report Content:** ${content}
 
@@ -817,17 +867,75 @@ Create a detailed analysis in this format:
 
 Focus on extracting actionable intelligence for investment decision-making.`;
 
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        const detailedResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
           messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
+            { role: "system", content: detailedSystemPrompt },
+            { role: "user", content: detailedUserPrompt }
           ],
-          max_tokens: 3000,
+          max_tokens: 4000,
           temperature: 0.3
         });
 
-        summary = response.choices[0].message.content || '';
+        const detailedSummary = detailedResponse.choices[0].message.content || '';
+        console.log('Detailed summary generated, length:', detailedSummary.length);
+
+        // 3. Generate Comprehensive Summary
+        console.log('Generating comprehensive summary...');
+        const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
+
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
+
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
+
+        const comprehensiveUserPrompt = `Please analyze this WILTW investment research report titled "${title}" and provide comprehensive insights for investment professionals:
+
+${content}
+
+Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
+
+        const comprehensiveResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: comprehensiveSystemPrompt },
+            { role: "user", content: comprehensiveUserPrompt }
+          ],
+          max_tokens: 4000,
+          temperature: 0.3
+        });
+
+        const comprehensiveSummary = comprehensiveResponse.choices[0].message.content || '';
+        console.log('Comprehensive summary generated, length:', comprehensiveSummary.length);
+
+        // Combine all three summaries for WILTW reports
+        summary = `## Structured Article-by-Article Analysis
+
+${structuredSummary}
+
+---
+
+## Detailed Article Analysis
+
+${detailedSummary}
+
+---
+
+## Comprehensive Summary
+
+${comprehensiveSummary}`;
       }
 
       // Save the summary to the database
