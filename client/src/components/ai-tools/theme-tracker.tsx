@@ -26,10 +26,45 @@ export function ThemeTracker() {
   const [alertThreshold, setAlertThreshold] = useState<number>(300);
   const { toast } = useToast();
 
-  const { data: themes = [], isLoading: themesLoading } = useQuery({
+  // Permanent 13D investment themes extracted from report analysis
+  const permanent13DThemes = [
+    "Critical Minerals & Rare Earth Elements",
+    "China-US Tech Arms Race", 
+    "Commodities Supercycle",
+    "Gold & Precious Metals",
+    "Mining & Industrial Metals",
+    "Energy Transition & Clean Tech",
+    "Food Security & Agriculture",
+    "Defense & National Security",
+    "AI Infrastructure & Semiconductors",
+    "Supply Chain Reshoring",
+    "Currency & Dollar Alternatives",
+    "Water Scarcity & Resources",
+    "Geopolitical Risk & Trade Wars",
+    "Inflation & Bond Market Trends",
+    "Chinese Equity Markets",
+    "Digital Infrastructure & Telecom",
+    "Uranium & Nuclear Energy",
+    "European Economic Policy",
+    "Loneliness Economy & Pet Care",
+    "Agricultural Commodities"
+  ];
+
+  const { data: dynamicThemes = [], isLoading: themesLoading } = useQuery({
     queryKey: ["/api/themes/list"],
     queryFn: () => apiRequest("GET", "/api/themes/list").then(res => res.json()),
   });
+
+  // Combine permanent themes with dynamic themes from reports
+  const allThemes = [
+    ...permanent13DThemes.map(theme => ({ theme, count: 0, reports: [] })),
+    ...dynamicThemes.filter((dynamicTheme: any) => 
+      !permanent13DThemes.some(permanentTheme => 
+        permanentTheme.toLowerCase().includes(dynamicTheme.theme.toLowerCase()) ||
+        dynamicTheme.theme.toLowerCase().includes(permanentTheme.toLowerCase())
+      )
+    )
+  ];
 
   const { data: timeSeriesData = [], isLoading: timeSeriesLoading } = useQuery({
     queryKey: ["/api/themes/timeseries", selectedTheme],

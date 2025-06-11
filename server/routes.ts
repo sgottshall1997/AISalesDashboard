@@ -2697,13 +2697,13 @@ Generated on: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Tickers must be an array" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const scoredReports = [];
       
       for (const report of reports) {
         let relevanceScore = 0;
-        const matchedTickers = [];
-        const sectorMatches = [];
+        const matchedTickers: any[] = [];
+        const sectorMatches: any[] = [];
         
         for (const ticker of tickers) {
           const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'gi');
