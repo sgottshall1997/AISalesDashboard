@@ -1246,6 +1246,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const invoice = await storage.getInvoiceWithClient(id);
+      
+      if (invoice) {
+        res.json(invoice);
+      } else {
+        res.status(404).json({ message: "Invoice not found" });
+      }
+    } catch (error) {
+      console.error("Error fetching invoice:", error);
+      res.status(500).json({ message: "Failed to fetch invoice" });
+    }
+  });
+
+  app.get("/api/invoices/:id/emails", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const emailHistory = await storage.getEmailHistory(invoiceId);
+      res.json(emailHistory);
+    } catch (error) {
+      console.error("Error fetching email history:", error);
+      res.status(500).json({ message: "Failed to fetch email history" });
+    }
+  });
+
+  app.get("/api/invoices/:id/ai-suggestion", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const suggestion = await storage.getInvoiceAISuggestion(invoiceId);
+      
+      if (suggestion) {
+        res.json(suggestion);
+      } else {
+        res.status(404).json({ message: "No AI suggestion available" });
+      }
+    } catch (error) {
+      console.error("Error generating AI suggestion:", error);
+      res.status(500).json({ message: "Failed to generate AI suggestion" });
+    }
+  });
+
+  app.post("/api/invoices/:id/emails", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const invoiceId = parseInt(req.params.id);
+      const emailData = {
+        ...req.body,
+        invoice_id: invoiceId,
+        sent_date: new Date()
+      };
+      
+      const email = await storage.createEmailHistory(emailData);
+      res.json(email);
+    } catch (error) {
+      console.error("Error adding email history:", error);
+      res.status(500).json({ message: "Failed to add email history" });
+    }
+  });
+
+  app.patch("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const success = await storage.updateInvoice(id, updates);
+      
+      if (success) {
+        const updatedInvoice = await storage.getInvoiceWithClient(id);
+        res.json(updatedInvoice);
+      } else {
+        res.status(404).json({ message: "Invoice not found" });
+      }
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      res.status(500).json({ message: "Failed to update invoice" });
+    }
+  });
+
   app.delete("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
