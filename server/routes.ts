@@ -595,20 +595,26 @@ The current market environment presents both challenges and opportunities for lo
         searchTerms.push(...strategyThemes[strategy]);
       }
 
-      // Enhanced commodity matching for common search terms
-      const commodityMappings: { [key: string]: string[] } = {
-        'uranium': ['uranium', 'nuclear', 'critical minerals', 'commodities', 'energy'],
-        'gold': ['gold', 'precious metals', 'metals', 'commodities'],
+      // Enhanced matching for both commodity and geopolitical terms
+      const termMappings: { [key: string]: string[] } = {
+        'uranium': ['uranium', 'nuclear', 'critical minerals', 'commodities', 'energy', 'geopolitics', 'supply chain'],
+        'china': ['china', 'chinese', 'asia', 'geopolitics', 'trade', 'policy', 'markets'],
+        'gold': ['gold', 'precious metals', 'metals', 'commodities', 'inflation', 'fed'],
         'silver': ['silver', 'precious metals', 'metals', 'commodities'],
         'copper': ['copper', 'metals', 'commodities', 'critical minerals'],
-        'platinum': ['platinum', 'precious metals', 'metals', 'commodities']
+        'platinum': ['platinum', 'precious metals', 'metals', 'commodities'],
+        'markets': ['markets', 'geopolitics', 'policy', 'fed', 'monetary', 'economic'],
+        'geopolitics': ['geopolitics', 'china', 'trade', 'policy', 'supply chain', 'critical minerals'],
+        'fed': ['fed', 'federal reserve', 'monetary', 'policy', 'rates', 'markets'],
+        'policy': ['policy', 'geopolitics', 'government', 'regulation', 'fed'],
+        'trade': ['trade', 'china', 'geopolitics', 'supply chain', 'policy']
       };
 
-      // Expand search terms to include related commodity terms
+      // Expand search terms to include related terms
       const expandedSearchTerms = [...searchTerms];
       for (const term of searchTerms) {
-        if (commodityMappings[term]) {
-          expandedSearchTerms.push(...commodityMappings[term]);
+        if (termMappings[term]) {
+          expandedSearchTerms.push(...termMappings[term]);
         }
       }
 
@@ -687,9 +693,19 @@ The current market environment presents both challenges and opportunities for lo
         }
       }
 
-      // Sort by relevance score and take top 10
+      // Sort by relevance score and separate by report type
       relevantReports.sort((a, b) => b.relevanceScore - a.relevanceScore);
-      const topReports = relevantReports.slice(0, 10);
+      
+      // Separate WILTW and WATMTU reports
+      const wiltwReports = relevantReports.filter(report => 
+        report.type?.includes('WILTW') || report.title?.includes('WILTW')
+      ).slice(0, 5);
+      
+      const watmtuReports = relevantReports.filter(report => 
+        report.type?.includes('WATMTU') || report.title?.includes('WATMTU')
+      ).slice(0, 5);
+      
+      const topReports = [...wiltwReports, ...watmtuReports];
 
       // Generate thematic alignment analysis
       const themeFrequency = new Map<string, number>();
@@ -748,6 +764,8 @@ The current market environment presents both challenges and opportunities for lo
         strategy,
         riskLevel: riskProfile,
         relevantReports: topReports,
+        wiltwReports,
+        watmtuReports,
         thematicAlignment: thematicAlignment.slice(0, 8),
         recommendations,
         summary

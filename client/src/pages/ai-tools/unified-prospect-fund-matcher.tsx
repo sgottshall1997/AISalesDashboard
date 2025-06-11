@@ -32,6 +32,8 @@ interface MatchResults {
   strategy?: string;
   riskLevel?: string;
   relevantReports: MatchedReport[];
+  wiltwReports: MatchedReport[];
+  watmtuReports: MatchedReport[];
   thematicAlignment: ThematicAlignment[];
   recommendations: Array<{
     type: 'opportunity' | 'risk' | 'neutral';
@@ -340,18 +342,55 @@ export default function UnifiedProspectFundMatcher() {
             </CardContent>
           </Card>
 
-          {/* Relevant Reports */}
-          {results.relevantReports && results.relevantReports.length > 0 && (
+          {/* WILTW Reports */}
+          {results.wiltwReports && results.wiltwReports.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                  Relevant Reports ({results.relevantReports.length})
+                  <FileText className="w-5 h-5 mr-2 text-green-600" />
+                  WILTW Reports ({results.wiltwReports.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {results.relevantReports.map((report, index) => (
+                  {results.wiltwReports.map((report, index) => (
+                    <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-semibold text-gray-900">{report.title}</h4>
+                        <Badge variant="outline" className="ml-2">
+                          {report.relevanceScore}% match
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{report.matchReason}</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {report.keyThemes.map((theme, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {theme}
+                          </Badge>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {report.type} • Published: {report.publishedDate}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* WATMTU Reports */}
+          {results.watmtuReports && results.watmtuReports.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-orange-600" />
+                  WATMTU Reports ({results.watmtuReports.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {results.watmtuReports.map((report, index) => (
                     <div key={index} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-semibold text-gray-900">{report.title}</h4>
