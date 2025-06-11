@@ -592,10 +592,13 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         response_format: { type: "json_object" }
       });
 
-      const callPrepContent = response.choices[0].message.content;
+      let callPrepContent = response.choices[0].message.content || '{}';
+      
+      // Remove all * and # symbols from output
+      callPrepContent = callPrepContent.replace(/[\*#]+/g, '');
       
       try {
-        const callPrepResult = JSON.parse(callPrepContent || '{}');
+        const callPrepResult = JSON.parse(callPrepContent);
         res.json(callPrepResult);
       } catch (parseError) {
         console.error("JSON parse error:", parseError);
@@ -1027,10 +1030,13 @@ Focus on value proposition and concrete insights rather than generic market comm
         response_format: { type: "json_object" }
       });
 
-      const emailContent = response.choices[0].message.content;
+      let emailContent = response.choices[0].message.content || '{}';
+      
+      // Remove all * and # symbols from output
+      emailContent = emailContent.replace(/[\*#]+/g, '');
       
       try {
-        const emailResult = JSON.parse(emailContent || '{}');
+        const emailResult = JSON.parse(emailContent);
         res.json(emailResult);
       } catch (parseError) {
         console.error("JSON parse error:", parseError);
@@ -1113,6 +1119,9 @@ Focus on actionable insights and specific investment implications.`;
         });
 
         summary = response.choices[0].message.content || '';
+        
+        // Remove all * and # symbols from output
+        summary = summary.replace(/[\*#]+/g, '');
       } else {
         // WILTW analysis - Generate three distinct summaries
         console.log('Starting WILTW three-part summary generation...');
@@ -1388,6 +1397,9 @@ Focus on actionable insights and specific investment implications.`;
             });
 
             summary = response.choices[0].message.content || '';
+            
+            // Remove all * and # symbols from output
+            summary = summary.replace(/[\*#]+/g, '');
           } else {
             // WILTW analysis
             const systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
