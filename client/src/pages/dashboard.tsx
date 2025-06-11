@@ -3,12 +3,15 @@ import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
 import InvoicingAssistant from "@/components/invoicing-assistant";
 import { ContentDistribution } from "@/components/dashboard/content-distribution-clean";
-import { AIContentTools } from "@/components/ai-content-tools";
 import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
-import { WorkingAISuggestions } from "@/components/working-ai-suggestions";
 import About from "@/pages/about";
+import { CallPreparation } from "@/components/ai-tools/call-preparation";
+import CampaignSuggestions from "@/pages/ai-tools/campaign-suggestions";
+import ProspectMatchmaker from "@/pages/ai-tools/prospect-matchmaker";
+import AIQnA from "@/pages/ai-tools/ai-qna";
+import FundMapping from "@/pages/ai-tools/fund-mapping";
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,12 +50,16 @@ export default function Dashboard() {
             <ContentDistribution />
           </div>
         );
-      case "ai-tools":
-        return (
-          <div className="space-y-6 p-6">
-            <AIContentTools />
-          </div>
-        );
+      case "call-preparation":
+        return <CallPreparation />;
+      case "campaign-suggestions":
+        return <CampaignSuggestions />;
+      case "prospect-matchmaker":
+        return <ProspectMatchmaker />;
+      case "ai-qna":
+        return <AIQnA />;
+      case "fund-mapping":
+        return <FundMapping />;
       case "pipeline":
         return <LeadPipeline />;
       case "followup":

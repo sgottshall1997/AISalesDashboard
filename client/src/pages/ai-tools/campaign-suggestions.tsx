@@ -25,10 +25,9 @@ export default function CampaignSuggestions() {
   const handleGenerateSuggestions = async () => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/ai/content-suggestions", {
-        method: "GET",
-      });
-      setSuggestions(response);
+      const response = await fetch("/api/ai/content-suggestions");
+      const data = await response.json();
+      setSuggestions(data);
     } catch (error) {
       toast({
         title: "Error",
