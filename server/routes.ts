@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateAIEmail } from "./openai";
 import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
@@ -709,6 +708,147 @@ Focus on value proposition and concrete insights rather than generic market comm
       console.error("Theme email generation error:", error);
       res.status(500).json({ 
         message: "Failed to generate theme-based email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // AI report summarization with WILTW Article Parser
+  app.post("/api/ai/summarize-report", async (req: Request, res: Response) => {
+    try {
+      const { reportId, title, content, promptType } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered report summarization." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      // Determine if this is a WILTW or WATMTU report
+      const isWATMTU = title.includes("WATMTU") || promptType === "watmtu_parser";
+      const reportTypeLabel = isWATMTU ? "WATMTU" : "WILTW";
+
+      let summary = '';
+
+      if (isWATMTU) {
+        // WATMTU parser - focus on market analysis and technical indicators
+        const systemPrompt = `You are an expert financial analyst specializing in WATMTU (What Are The Markets Telling Us) reports. Your task is to create comprehensive market analysis summaries that extract key insights, technical indicators, and investment themes.`;
+
+        const userPrompt = `Analyze this ${reportTypeLabel} report and create a structured comprehensive analysis:
+
+**Report Title:** ${title}
+**Content:** ${content}
+
+Please provide a detailed analysis in this format:
+
+**${reportTypeLabel} Report Analysis: ${title}**
+
+- **Core Investment Thesis:** [Main investment themes and market outlook]
+
+- **Key Market Developments:**
+  - *Technical breakouts and pattern analysis:* [Chart patterns, breakouts, technical levels]
+  - *Sector performance and relative strength:* [Sector rotation, outperformers/underperformers]
+  - *Macro economic indicators:* [Economic data, policy impacts, global trends]
+
+- **Investment Opportunities:**
+  - *High conviction themes:* [Top investment themes with rationale]
+  - *Tactical allocations:* [Short to medium term positioning]
+  - *Contrarian plays:* [Counter-trend opportunities]
+
+- **Risk Considerations:**
+  - *Market risks:* [Volatility, correlation, liquidity concerns]
+  - *Geopolitical factors:* [Policy risks, international tensions]
+  - *Technical warnings:* [Chart patterns suggesting caution]
+
+- **Portfolio Positioning:**
+  - *Recommended actions:* [Specific buy/sell/hold recommendations]
+  - *Asset allocation guidance:* [Sector weights, geographic exposure]
+  - *Hedging strategies:* [Risk management approaches]
+
+Focus on actionable insights and specific investment implications.`;
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          max_tokens: 2000,
+          temperature: 0.3
+        });
+
+        summary = response.choices[0].message.content || '';
+      } else {
+        // WILTW parser - focus on article analysis
+        const systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
+
+        const userPrompt = `Please analyze this ${reportTypeLabel} report and provide a comprehensive structured analysis:
+
+**Report Content:** ${content}
+
+Create a detailed analysis in this format:
+
+**${reportTypeLabel} Report Analysis: ${title}**
+
+**Article-by-Article Breakdown:**
+[For each article mentioned, provide a section with:]
+- **Article [Number]: [Title/Topic]**
+  - *Core Thesis:* [Main investment argument]
+  - *Key Data Points:* [Important statistics, metrics, or findings]
+  - *Investment Implications:* [How this affects portfolio decisions]
+  - *Risk Factors:* [Potential downsides or concerns]
+  - *Timeline:* [Short/medium/long-term outlook]
+
+**Cross-Article Themes:**
+- *Recurring Investment Themes:* [Common threads across articles]
+- *Sector Implications:* [Which sectors are highlighted]
+- *Geographic Focus:* [Regional opportunities or risks]
+- *Macro Trends:* [Broader economic or market patterns]
+
+**Portfolio Action Items:**
+- *High Priority:* [Immediate actions recommended]
+- *Research Pipeline:* [Areas requiring deeper analysis]
+- *Risk Monitoring:* [Key metrics or events to watch]
+
+**Key Takeaways:**
+[3-5 bullet points summarizing the most important insights]
+
+Focus on extracting actionable intelligence for investment decision-making.`;
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          max_tokens: 3000,
+          temperature: 0.3
+        });
+
+        summary = response.choices[0].message.content || '';
+      }
+
+      // Save the summary to the database
+      const summaryData = {
+        content_report_id: parseInt(reportId),
+        parsed_summary: summary,
+        summary_type: promptType || (isWATMTU ? 'watmtu_parser' : 'wiltw_parser')
+      };
+
+      const savedSummary = await storage.createReportSummary(summaryData);
+
+      res.json({ 
+        summary,
+        summaryId: savedSummary.id,
+        reportType: reportTypeLabel
+      });
+
+    } catch (error) {
+      console.error("AI summarization error:", error);
+      res.status(500).json({ 
+        message: "Failed to summarize report",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
