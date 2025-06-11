@@ -20,10 +20,47 @@ interface ThemeData {
   relevanceScore: number;
 }
 
+interface GeneratedEmail {
+  subject: string;
+  greeting: string;
+  opening: string;
+  bodyParagraphs: string[];
+  callToAction: string;
+  closing: string;
+  keyPoints: string[];
+  attachmentSuggestions: string[];
+}
+
 export default function ThemeTracker() {
   const [themes, setThemes] = useState<ThemeData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<string>("");
+  const [clientName, setClientName] = useState("");
+  const [customization, setCustomization] = useState("");
+  const [generatedEmail, setGeneratedEmail] = useState<GeneratedEmail | null>(null);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const emailGenerationMutation = useMutation({
+    mutationFn: async (data: { theme: string; clientName?: string; customization?: string }) => {
+      const response = await apiRequest("POST", "/api/ai/generate-theme-email", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setGeneratedEmail(data);
+      toast({
+        title: "Email Generated",
+        description: "Professional email created based on theme insights",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleLoadThemes = async () => {
     setIsLoading(true);
@@ -78,6 +115,49 @@ export default function ThemeTracker() {
     if (score >= 80) return "bg-green-100 text-green-800";
     if (score >= 60) return "bg-yellow-100 text-yellow-800";
     return "bg-red-100 text-red-800";
+  };
+
+  const handleGenerateEmail = (theme: string) => {
+    setSelectedTheme(theme);
+    setEmailDialogOpen(true);
+  };
+
+  const generateThemeEmail = () => {
+    if (!selectedTheme) return;
+    
+    emailGenerationMutation.mutate({
+      theme: selectedTheme,
+      clientName: clientName.trim() || undefined,
+      customization: customization.trim() || undefined
+    });
+  };
+
+  const copyEmailContent = () => {
+    if (!generatedEmail) return;
+    
+    const fullEmail = `Subject: ${generatedEmail.subject}
+
+${generatedEmail.greeting}
+
+${generatedEmail.opening}
+
+${generatedEmail.bodyParagraphs.join('\n\n')}
+
+${generatedEmail.callToAction}
+
+${generatedEmail.closing}
+
+Key Points:
+${generatedEmail.keyPoints.map(point => `• ${point}`).join('\n')}
+
+Suggested Attachments:
+${generatedEmail.attachmentSuggestions.map(attachment => `• ${attachment}`).join('\n')}`;
+
+    navigator.clipboard.writeText(fullEmail);
+    toast({
+      title: "Email Copied",
+      description: "Complete email content copied to clipboard",
+    });
   };
 
   return (
@@ -160,11 +240,155 @@ export default function ThemeTracker() {
                     ))}
                   </div>
                 </div>
+
+                <div className="pt-4">
+                  <Button
+                    onClick={() => handleGenerateEmail(theme.theme)}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Generate Theme Email
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Email Generation Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generate Theme-Based Email</DialogTitle>
+            <DialogDescription>
+              Create a professional email based on the theme: {selectedTheme}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Client Name (optional)
+                </label>
+                <Input
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Enter client or prospect name"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Customization (optional)
+                </label>
+                <Input
+                  value={customization}
+                  onChange={(e) => setCustomization(e.target.value)}
+                  placeholder="e.g., Focus on ESG, Technical analysis"
+                />
+              </div>
+            </div>
+
+            <Button 
+              onClick={generateThemeEmail}
+              disabled={emailGenerationMutation.isPending}
+              className="w-full"
+            >
+              {emailGenerationMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating Email...
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4 mr-2" />
+                  Generate Email
+                </>
+              )}
+            </Button>
+
+            {generatedEmail && (
+              <div className="space-y-4 mt-6 border-t pt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Generated Email</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={copyEmailContent}
+                    className="flex items-center gap-2"
+                  >
+                    <Copy className="w-4 h-4" />
+                    Copy Email
+                  </Button>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Email Preview</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Subject:</p>
+                      <p className="text-sm bg-gray-50 p-2 rounded">{generatedEmail.subject}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Greeting:</p>
+                      <p className="text-sm bg-gray-50 p-2 rounded">{generatedEmail.greeting}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Opening:</p>
+                      <p className="text-sm bg-gray-50 p-2 rounded">{generatedEmail.opening}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Body:</p>
+                      <div className="space-y-2">
+                        {generatedEmail.bodyParagraphs.map((paragraph, idx) => (
+                          <p key={idx} className="text-sm bg-gray-50 p-2 rounded">{paragraph}</p>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Call to Action:</p>
+                      <p className="text-sm bg-gray-50 p-2 rounded">{generatedEmail.callToAction}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Closing:</p>
+                      <p className="text-sm bg-gray-50 p-2 rounded">{generatedEmail.closing}</p>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Key Points:</p>
+                      <ul className="list-disc list-inside space-y-1 bg-gray-50 p-2 rounded">
+                        {generatedEmail.keyPoints.map((point, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Suggested Attachments:</p>
+                      <ul className="list-disc list-inside space-y-1 bg-gray-50 p-2 rounded">
+                        {generatedEmail.attachmentSuggestions.map((attachment, idx) => (
+                          <li key={idx} className="text-sm text-gray-700">{attachment}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {themes.length === 0 && !isLoading && (
         <Card>
