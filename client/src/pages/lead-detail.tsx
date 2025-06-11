@@ -23,7 +23,8 @@ import {
   Trash2,
   StickyNote,
   FileText,
-  Lightbulb
+  Lightbulb,
+  Copy
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -959,21 +960,44 @@ export default function LeadDetail() {
                     <div className="text-sm text-green-800 whitespace-pre-wrap">
                       {aiEmailSuggestion}
                     </div>
-                    <Button 
-                      size="sm" 
-                      className="mt-2"
-                      onClick={() => {
-                        setNewEmail({
-                          subject: "Follow-up: Investment Research Opportunities",
-                          content: aiEmailSuggestion,
-                          email_type: "outgoing"
-                        });
-                        setShowAddEmail(true);
-                        setAiEmailSuggestion(null);
-                      }}
-                    >
-                      Use This Email
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button 
+                        size="sm" 
+                        onClick={() => {
+                          setNewEmail({
+                            subject: "Follow-up: Investment Research Opportunities",
+                            content: aiEmailSuggestion,
+                            email_type: "outgoing"
+                          });
+                          setShowAddEmail(true);
+                          setAiEmailSuggestion(null);
+                        }}
+                      >
+                        Use This Email
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(aiEmailSuggestion);
+                            toast({
+                              title: "Email Copied",
+                              description: "The generated email has been copied to your clipboard.",
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Copy Failed",
+                              description: "Failed to copy email to clipboard. Please try again.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Copy className="w-4 h-4 mr-1" />
+                        Copy
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>
