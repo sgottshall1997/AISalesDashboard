@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CampaignSuggestions } from "./ai-tools/campaign-suggestions";
-import { ThemeTracker } from "./ai-tools/theme-tracker";
-import { ProspectMatchmaker } from "./ai-tools/prospect-matchmaker";
-import { PortfolioRelevanceScorer } from "./ai-tools/portfolio-relevance-scorer";
-import { AIQnA } from "./ai-tools/ai-qna";
-import { OnePagerGenerator } from "./ai-tools/one-pager-generator";
-import { FundMappingTool } from "./ai-tools/fund-mapping-tool";
+import { CallPreparation } from "./ai-tools/call-preparation";
 import { 
   Lightbulb,
   TrendingUp, 
@@ -16,11 +10,12 @@ import {
   MessageCircle, 
   FileText, 
   Building2,
-  Brain 
+  Brain,
+  Phone
 } from "lucide-react";
 
 export function AIContentTools() {
-  const [activeTab, setActiveTab] = useState("campaign-suggestions");
+  const [activeTab, setActiveTab] = useState("call-preparation");
 
   return (
     <div className="space-y-6">
@@ -35,63 +30,127 @@ export function AIContentTools() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="call-preparation" className="flex items-center gap-2">
+            <Phone className="w-4 h-4" />
+            Call Prep
+          </TabsTrigger>
           <TabsTrigger value="campaign-suggestions" className="flex items-center gap-2">
             <Lightbulb className="w-4 h-4" />
-            Campaign Suggestions
+            Campaign
           </TabsTrigger>
           <TabsTrigger value="theme-tracker" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
-            Theme Tracker
+            Themes
           </TabsTrigger>
           <TabsTrigger value="prospect-match" className="flex items-center gap-2">
             <Target className="w-4 h-4" />
-            Prospect Match
+            Prospects
           </TabsTrigger>
           <TabsTrigger value="portfolio-scorer" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
-            Portfolio Scorer
+            Scorer
           </TabsTrigger>
           <TabsTrigger value="ai-qna" className="flex items-center gap-2">
             <MessageCircle className="w-4 h-4" />
-            AI Q&A
+            Q&A
           </TabsTrigger>
           <TabsTrigger value="one-pager" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            1-Pager Gen
+            1-Pager
           </TabsTrigger>
           <TabsTrigger value="fund-mapper" className="flex items-center gap-2">
             <Building2 className="w-4 h-4" />
-            Fund Mapper
+            Mapper
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="call-preparation">
+          <CallPreparation />
+        </TabsContent>
+
         <TabsContent value="campaign-suggestions">
-          <CampaignSuggestions />
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Suggestions</CardTitle>
+              <CardDescription>Generate themed email campaigns based on research reports</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="theme-tracker">
-          <ThemeTracker />
+          <Card>
+            <CardHeader>
+              <CardTitle>Theme Tracker</CardTitle>
+              <CardDescription>Track recurring themes across research reports</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="prospect-match">
-          <ProspectMatchmaker />
+          <Card>
+            <CardHeader>
+              <CardTitle>Prospect Matchmaker</CardTitle>
+              <CardDescription>Match prospects to relevant research content</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="portfolio-scorer">
-          <PortfolioRelevanceScorer />
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Relevance Scorer</CardTitle>
+              <CardDescription>Score content relevance to portfolio holdings</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="ai-qna">
-          <AIQnA />
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Q&A</CardTitle>
+              <CardDescription>Ask questions about your research content</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="one-pager">
-          <OnePagerGenerator />
+          <Card>
+            <CardHeader>
+              <CardTitle>One-Pager Generator</CardTitle>
+              <CardDescription>Generate executive summaries and one-pagers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="fund-mapper">
-          <FundMappingTool />
+          <Card>
+            <CardHeader>
+              <CardTitle>Fund Mapping Tool</CardTitle>
+              <CardDescription>Map research themes to fund strategies</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Coming soon...</p>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
