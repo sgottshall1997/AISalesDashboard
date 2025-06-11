@@ -2709,25 +2709,82 @@ Generated on: ${new Date().toLocaleString()}
         }
         
         if (confidence > 0) {
-          // Generate a summary from full_content if available
-          let summary = "No content available";
+          // Generate a contextual summary focused on the search terms
+          let summary = "No relevant content found";
           if (report.full_content) {
-            // Extract first few sentences that contain relevant terms
-            const sentences = report.full_content.split(/[.!?]+/).slice(0, 10);
-            const relevantSentences = sentences.filter(sentence => 
-              allSearchTerms.some(term => 
-                sentence.toLowerCase().includes(term.toLowerCase())
-              )
-            );
+            const contentLower = report.full_content.toLowerCase();
+            const contextualExtracts: string[] = [];
             
-            if (relevantSentences.length > 0) {
-              summary = relevantSentences.slice(0, 2).join('. ').trim();
-              if (summary.length > 300) {
-                summary = summary.substring(0, 300) + '...';
+            // Find the best context around search terms
+            for (const term of allSearchTerms) {
+              const termLower = term.toLowerCase();
+              const termPattern = new RegExp(`\\b${termLower}\\b`, 'gi');
+              const matches = [...report.full_content.matchAll(termPattern)];
+              
+              for (const match of matches.slice(0, 2)) {
+                const matchIndex = match.index!;
+                
+                // Extract a meaningful paragraph around the term
+                const beforeContext = Math.max(0, matchIndex - 200);
+                const afterContext = Math.min(report.full_content.length, matchIndex + 200);
+                let context = report.full_content.substring(beforeContext, afterContext);
+                
+                // Find sentence boundaries to get complete sentences
+                const sentences = context.split(/[.!?]+/);
+                const targetSentenceIndex = sentences.findIndex(sentence => 
+                  sentence.toLowerCase().includes(termLower)
+                );
+                
+                if (targetSentenceIndex !== -1) {
+                  // Get the target sentence plus one before and one after for context
+                  const startSentence = Math.max(0, targetSentenceIndex - 1);
+                  const endSentence = Math.min(sentences.length - 1, targetSentenceIndex + 1);
+                  const relevantSentences = sentences.slice(startSentence, endSentence + 1);
+                  
+                  let extract = relevantSentences.join('. ').trim();
+                  
+                  // Clean up the extract
+                  extract = extract.replace(/^\W+/, ''); // Remove leading non-word chars
+                  extract = extract.replace(/\s+/g, ' '); // Normalize whitespace
+                  
+                  // Skip generic headers and very short extracts
+                  if (extract.length > 80 && 
+                      !extract.toLowerCase().includes('print once') &&
+                      !extract.toLowerCase().includes('do not forward') &&
+                      !extract.toLowerCase().includes('confidential for') &&
+                      !contextualExtracts.some(existing => 
+                        existing.toLowerCase().includes(extract.toLowerCase().substring(0, 60))
+                      )) {
+                    contextualExtracts.push(extract);
+                  }
+                }
+              }
+            }
+            
+            if (contextualExtracts.length > 0) {
+              summary = contextualExtracts.join(' ... ');
+              if (summary.length > 350) {
+                summary = summary.substring(0, 350) + '...';
               }
             } else {
-              // Fallback to first part of content
-              summary = report.full_content.substring(0, 200).trim() + '...';
+              // Enhanced fallback: find performance data or specific mentions
+              const lines = report.full_content.split('\n');
+              const relevantLines = lines.filter(line => {
+                const lineLower = line.toLowerCase();
+                return allSearchTerms.some(term => 
+                  lineLower.includes(term.toLowerCase()) && 
+                  !lineLower.includes('print once') &&
+                  !lineLower.includes('confidential') &&
+                  line.trim().length > 50
+                );
+              }).slice(0, 3);
+              
+              if (relevantLines.length > 0) {
+                summary = relevantLines.join(' ... ').trim();
+                if (summary.length > 300) {
+                  summary = summary.substring(0, 300) + '...';
+                }
+              }
             }
           }
           
