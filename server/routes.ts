@@ -1776,8 +1776,9 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
         promptPreview: userPrompt.substring(0, 300)
       });
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      // Generate the detailed summary first
+      const detailedResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
@@ -1792,7 +1793,64 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
         temperature: 0.3
       });
 
-      const summary = response.choices[0].message.content;
+      const detailedSummary = detailedResponse.choices[0].message.content;
+
+      // Generate the comprehensive summary
+      const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
+
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
+
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
+
+      const comprehensiveUserPrompt = `Please analyze this investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
+
+${actualContent}
+
+Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
+
+      const comprehensiveResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: comprehensiveSystemPrompt
+          },
+          {
+            role: "user",
+            content: comprehensiveUserPrompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.3
+      });
+
+      const comprehensiveSummary = comprehensiveResponse.choices[0].message.content;
+
+      // Combine both summaries for the response
+      const combinedSummary = `## Detailed Article Analysis
+
+${detailedSummary}
+
+---
+
+## Comprehensive Investment Summary
+
+${comprehensiveSummary}`;
+
+      const summary = combinedSummary;
       
       // Store the generated summary (overwrite if exists)
       if (promptType === "wiltw_parser" || promptType === "watmtu_parser") {
@@ -1809,26 +1867,28 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
           if (!existingSummary) {
             const newSummary = await storage.createReportSummary({
               content_report_id: parseInt(reportId),
-              parsed_summary: summary,
+              parsed_summary: detailedSummary || '',
+              comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
             console.log('Created new summary:', { 
               id: newSummary.id, 
               content_report_id: newSummary.content_report_id,
-              summaryLength: newSummary.parsed_summary?.length,
-              summaryPreview: newSummary.parsed_summary?.substring(0, 100)
+              detailedSummaryLength: newSummary.parsed_summary?.length,
+              comprehensiveSummaryLength: newSummary.comprehensive_summary?.length
             });
           } else {
             // Update existing summary with new content
             const updatedSummary = await storage.updateReportSummary(existingSummary.id, {
-              parsed_summary: summary,
+              parsed_summary: detailedSummary || '',
+              comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
             console.log('Updated existing summary:', { 
               id: updatedSummary?.id, 
               content_report_id: updatedSummary?.content_report_id,
-              summaryLength: updatedSummary?.parsed_summary?.length,
-              summaryPreview: updatedSummary?.parsed_summary?.substring(0, 100)
+              detailedSummaryLength: updatedSummary?.parsed_summary?.length,
+              comprehensiveSummaryLength: updatedSummary?.comprehensive_summary?.length
             });
           }
         } catch (error) {
