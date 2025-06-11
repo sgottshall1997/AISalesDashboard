@@ -19,7 +19,7 @@ import {
   BarChart3,
   FileText
 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 
 export function ContentDistribution() {
   const [selectedReport, setSelectedReport] = useState<string>("");
@@ -27,8 +27,7 @@ export function ContentDistribution() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [reportType, setReportType] = useState<string>("wiltw");
-  const [generatedEmail, setGeneratedEmail] = useState<string>("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [generatedEmails, setGeneratedEmails] = useState<{ [key: number]: string }>({});
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
@@ -58,8 +57,7 @@ export function ContentDistribution() {
       });
       
       const result = await response.json();
-      setGeneratedEmail(result.email);
-      setIsDialogOpen(true);
+      setGeneratedEmails(prev => ({ ...prev, [index]: result.email }));
       
       toast({
         title: "Email Generated",
@@ -417,6 +415,33 @@ export function ContentDistribution() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Generated Email Display */}
+                  {generatedEmails[index] && (
+                    <div className="mt-4 border-t pt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-sm font-medium text-gray-900">Generated Email:</h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToClipboard(generatedEmails[index], index)}
+                          className="flex items-center space-x-1 text-xs"
+                        >
+                          {copiedStates[index] ? (
+                            <CheckCircle className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                          <span>{copiedStates[index] ? "Copied!" : "Copy"}</span>
+                        </Button>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                          {generatedEmails[index]}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -431,36 +456,7 @@ export function ContentDistribution() {
         </CardContent>
       </Card>
 
-      {/* Email Generation Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Generated AI Email</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
-                {generatedEmail}
-              </pre>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => copyToClipboard(generatedEmail, 0)}
-                className="flex items-center space-x-2"
-              >
-                {copiedStates[0] ? (
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-                <span>{copiedStates[0] ? "Copied!" : "Copy to Clipboard"}</span>
-              </Button>
-              <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
