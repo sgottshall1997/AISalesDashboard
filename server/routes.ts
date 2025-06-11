@@ -1648,7 +1648,14 @@ Spencer`;
         chunks.push(actualContent.substring(actualContent.length - chunkSize));
         
         actualContent = chunks.join('\n\n--- SECTION BREAK ---\n\n');
+        console.log('Content chunked, new length:', actualContent.length);
       }
+      
+      console.log('Final content check before prompts:', {
+        hasActualContent: !!actualContent,
+        contentLength: actualContent?.length || 0,
+        contentPreview: actualContent?.substring(0, 100) || 'No content'
+      });
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       let systemPrompt = "";
@@ -1753,9 +1760,9 @@ For each theme/insight, include:
 
 Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
         
-        userPrompt = `Please analyze this investment research report titled "${title}" and provide comprehensive insights for investment professionals:
+        userPrompt = `Please analyze this investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
 
-${content}
+${actualContent}
 
 Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
       }
@@ -1763,7 +1770,9 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       console.log('OpenAI request debug:', {
         systemPromptLength: systemPrompt.length,
         userPromptLength: userPrompt.length,
-        contentIncluded: userPrompt.includes('WATMTU Market Analysis'),
+        actualContentLength: actualContent?.length || 0,
+        titleUsed: title || report.title || 'undefined',
+        contentIncluded: !!actualContent && userPrompt.includes(actualContent.substring(0, 50)),
         promptPreview: userPrompt.substring(0, 300)
       });
 
