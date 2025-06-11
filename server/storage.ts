@@ -807,6 +807,98 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     const result = await db.delete(tasks).where(eq(tasks.id, id));
     return (result.rowCount ?? 0) > 0;
   }
+
+  // AI Feedback Loop Implementation
+  async createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent> {
+    const [result] = await db
+      .insert(ai_generated_content)
+      .values(content)
+      .returning();
+    return result;
+  }
+
+  async createAiContentFeedback(feedback: InsertAiContentFeedback): Promise<AiContentFeedback> {
+    const [result] = await db
+      .insert(ai_content_feedback)
+      .values(feedback)
+      .returning();
+    return result;
+  }
+
+  async getAiGeneratedContentWithFeedback(contentId: number): Promise<(AiGeneratedContent & { feedback: AiContentFeedback[] }) | undefined> {
+    const content = await db
+      .select()
+      .from(ai_generated_content)
+      .where(eq(ai_generated_content.id, contentId));
+
+    if (content.length === 0) return undefined;
+
+    const feedback = await db
+      .select()
+      .from(ai_content_feedback)
+      .where(eq(ai_content_feedback.content_id, contentId));
+
+    return {
+      ...content[0],
+      feedback
+    };
+  }
+
+  async getAiFeedbackAnalytics(): Promise<{
+    totalContent: number;
+    totalFeedback: number;
+    thumbsUpCount: number;
+    thumbsDownCount: number;
+    avgRating: number;
+    feedbackByType: { [key: string]: number };
+  }> {
+    const totalContentResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ai_generated_content);
+
+    const totalFeedbackResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ai_content_feedback);
+
+    const thumbsUpResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ai_content_feedback)
+      .where(eq(ai_content_feedback.rating, 'thumbs_up'));
+
+    const thumbsDownResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(ai_content_feedback)
+      .where(eq(ai_content_feedback.rating, 'thumbs_down'));
+
+    const feedbackByTypeResult = await db
+      .select({
+        feedback_type: ai_content_feedback.feedback_type,
+        count: sql<number>`count(*)`
+      })
+      .from(ai_content_feedback)
+      .groupBy(ai_content_feedback.feedback_type);
+
+    const totalContent = totalContentResult[0]?.count || 0;
+    const totalFeedback = totalFeedbackResult[0]?.count || 0;
+    const thumbsUpCount = thumbsUpResult[0]?.count || 0;
+    const thumbsDownCount = thumbsDownResult[0]?.count || 0;
+
+    const avgRating = totalFeedback > 0 ? (thumbsUpCount / totalFeedback) * 100 : 0;
+
+    const feedbackByType: { [key: string]: number } = {};
+    feedbackByTypeResult.forEach(item => {
+      feedbackByType[item.feedback_type] = item.count;
+    });
+
+    return {
+      totalContent,
+      totalFeedback,
+      thumbsUpCount,
+      thumbsDownCount,
+      avgRating,
+      feedbackByType
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();

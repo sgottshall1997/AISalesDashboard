@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { AiFeedback } from "@/components/ai-feedback";
 import { 
   Upload,
   Trash2,
@@ -30,6 +31,7 @@ export function ContentDistribution() {
   const [generatedEmails, setGeneratedEmails] = useState<{ [key: number]: string }>({});
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
+  const [contentIds, setContentIds] = useState<{ [key: number]: number }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -84,6 +86,11 @@ export function ContentDistribution() {
       
       const result = await response.json();
       setGeneratedEmails(prev => ({ ...prev, [index]: result.email }));
+      
+      // Store content ID for feedback tracking
+      if (result.contentId) {
+        setContentIds(prev => ({ ...prev, [index]: result.contentId }));
+      }
       
       toast({
         title: "Email Generated",
@@ -557,9 +564,19 @@ export function ContentDistribution() {
                         </div>
                       </div>
                       <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <div className="text-sm text-gray-800 leading-relaxed">
-                          {generatedEmails[index]}
-                        </div>
+                        <AiFeedback 
+                          contentId={contentIds[index]} 
+                          onFeedbackSubmitted={() => {
+                            toast({
+                              title: "Feedback Received",
+                              description: "Thank you for helping improve our AI content generation.",
+                            });
+                          }}
+                        >
+                          <div className="text-sm text-gray-800 leading-relaxed">
+                            {generatedEmails[index]}
+                          </div>
+                        </AiFeedback>
                       </div>
                     </div>
                   )}
