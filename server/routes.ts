@@ -1595,7 +1595,8 @@ Spencer`;
 
       // Retrieve actual PDF content from database
       const reports = await storage.getAllContentReports();
-      const report = reports.find(r => r.id.toString() === reportId);
+      const numericReportId = typeof reportId === 'string' ? parseInt(reportId) : reportId;
+      const report = reports.find(r => r.id === numericReportId);
       
       console.log('Summarization debug:', {
         requestedReportId: reportId,
