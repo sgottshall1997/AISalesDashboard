@@ -2576,7 +2576,7 @@ Generated on: ${new Date().toLocaleString()}
       
       reports.forEach((report: any) => {
         if (report.tags && Array.isArray(report.tags)) {
-          report.tags.forEach(tag => {
+          report.tags.forEach((tag: string) => {
             if (!themeMap.has(tag)) {
               themeMap.set(tag, { count: 0, reports: [] });
             }
@@ -2607,10 +2607,10 @@ Generated on: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Theme parameter required" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const timeSeriesData = new Map<string, { count: number, reports: string[] }>();
       
-      reports.forEach(report => {
+      reports.forEach((report: any) => {
         if (report.tags && Array.isArray(report.tags) && report.tags.includes(theme)) {
           const dateKey = new Date(report.published_date).toISOString().split('T')[0];
           if (!timeSeriesData.has(dateKey)) {
@@ -2640,12 +2640,12 @@ Generated on: ${new Date().toLocaleString()}
         return res.status(400).json({ error: "Missing prospect name or interests" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const matches = [];
       
       for (const report of reports) {
         let confidence = 0;
-        const matchedThemes = [];
+        const matchedThemes: any[] = [];
         
         if (report.tags && Array.isArray(report.tags)) {
           for (const interest of interests) {
