@@ -1861,8 +1861,29 @@ Generated on: ${new Date().toLocaleString()}
         reports,
         insights
       );
-      
-      res.json({ email });
+
+      // Store AI-generated content for feedback tracking
+      try {
+        const contentData = {
+          content_type: "email",
+          original_prompt: `Theme: ${theme}, Angle: ${emailAngle}`,
+          generated_content: email,
+          theme_id: theme || null,
+          context_data: {
+            theme,
+            emailAngle,
+            keyPoints,
+            supportingReports
+          }
+        };
+
+        const aiContent = await storage.createAiGeneratedContent(contentData);
+        res.json({ email, contentId: aiContent.id });
+      } catch (feedbackError) {
+        console.error("Error storing content for feedback:", feedbackError);
+        // Still return the email even if feedback storage fails
+        res.json({ email });
+      }
     } catch (error) {
       console.error("Error generating theme-based email:", error);
       res.status(500).json({ error: "Failed to generate email" });
