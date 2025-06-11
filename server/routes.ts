@@ -230,6 +230,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get report summaries
+  app.get("/api/report-summaries", async (req: Request, res: Response) => {
+    try {
+      const summaries = await storage.getAllReportSummaries();
+      res.json(summaries);
+    } catch (error) {
+      console.error("Get report summaries error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch report summaries",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // AI report summarization endpoint
+  app.post("/api/ai/summarize-report", async (req: Request, res: Response) => {
+    try {
+      const { reportId, title, content, promptType } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered report analysis." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      // Retrieve actual PDF content from database
+      const reports = await storage.getAllContentReports();
+      const numericReportId = typeof reportId === 'string' ? parseInt(reportId) : reportId;
+      const report = reports.find(r => r.id === numericReportId);
+      
+      if (!report) {
+        return res.status(404).json({ 
+          error: "Report not found. Please re-upload the PDF file." 
+        });
+      }
+
+      let actualContent = report.full_content;
+      
+      if (!actualContent || actualContent.trim().length < 100) {
+        return res.status(400).json({ 
+          error: "No PDF content available for this report. Please re-upload the PDF file." 
+        });
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert financial analyst. Summarize this research report concisely, focusing on key investment themes, market insights, and actionable takeaways."
+          },
+          {
+            role: "user",
+            content: `Please analyze and summarize this research report:\n\nTitle: ${title}\n\nContent:\n${actualContent}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3
+      });
+
+      const summary = response.choices[0].message.content || '';
+
+      // Store the summary in database
+      try {
+        await storage.createReportSummary({
+          content_report_id: numericReportId,
+          parsed_summary: summary,
+          summary_type: promptType || 'general'
+        });
+      } catch (error) {
+        console.error("Error storing report summary:", error);
+      }
+      
+      res.json({ summary });
+    } catch (error) {
+      console.error("Summarize report error:", error);
+      res.status(500).json({ 
+        message: "Failed to summarize report",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI-powered prospecting intelligence endpoint
   app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
     try {
