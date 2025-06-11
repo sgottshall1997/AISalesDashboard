@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -499,39 +499,56 @@ export function ContentDistribution() {
               </div>
             ) : suggestions.length > 0 ? (
               suggestions.map((suggestion: any, index: number) => (
-                <div key={index} className={`border rounded-lg p-4 transition-all duration-200 hover:shadow-md hover:scale-[1.02] ${getSuggestionStyle(suggestion.type)}`}>
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
+                <Card key={index} className={`transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${getSuggestionStyle(suggestion.type)}`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-2">
                       {getSuggestionIcon(suggestion.type)}
+                      <CardTitle className="text-lg font-semibold">{suggestion.title}</CardTitle>
                     </div>
-                    <div className="ml-3 flex-1">
-                      <p className="text-sm font-medium text-gray-800">{suggestion.title}</p>
-                      <p className="text-sm text-gray-700 mt-1">{suggestion.description}</p>
-                      
-                      {/* Traceable Insights */}
-                      {suggestion.insights && suggestion.insights.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-600 mb-1">Key Insights:</p>
-                          <ul className="list-disc list-inside pl-2 text-xs text-gray-600 space-y-0.5">
-                            {suggestion.insights.map((insight: string, idx: number) => (
-                              <li key={idx}>{insight}</li>
-                            ))}
-                          </ul>
+                    <CardDescription className="text-sm">Key Insights:</CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    {/* Traceable Insights - Following Enhancement Plan Spec */}
+                    {(suggestion.insights || suggestion.keyPoints) && (
+                      <ul className="list-disc list-inside pl-4 text-sm text-muted-foreground mb-4 space-y-1">
+                        {(suggestion.insights || suggestion.keyPoints || []).slice(0, 3).map((insight: string, idx: number) => (
+                          <li key={idx}>{insight}</li>
+                        ))}
+                      </ul>
+                    )}
+                    
+                    <p className="text-sm text-gray-700 mb-4">{suggestion.description}</p>
+                    
+                    {/* Supporting Reports */}
+                    {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
+                      <div className="mt-2 mb-4">
+                        <p className="text-xs font-medium text-gray-600 mb-1">Supporting Reports:</p>
+                        <div className="text-xs text-gray-500">
+                          {suggestion.supportingReports.slice(0, 2).join(', ')}
+                          {suggestion.supportingReports.length > 2 && ` +${suggestion.supportingReports.length - 2} more`}
                         </div>
-                      )}
-                      
-                      <div className="mt-3">
-                        <Button 
-                          size="sm" 
-                          onClick={() => generateEmail(suggestion, index)}
-                          disabled={loadingStates[index]}
-                          className={`text-xs ${getSuggestionButtonColor(suggestion.type)}`}
-                        >
-                          {loadingStates[index] ? "Generating..." : "Generate Email"}
-                        </Button>
                       </div>
-                    </div>
-                  </div>
+                    )}
+                  </CardContent>
+                  <CardFooter className="flex justify-end px-4 pb-4">
+                    <Button 
+                      onClick={() => generateEmail(suggestion, index)}
+                      disabled={loadingStates[index]}
+                      className={`flex items-center gap-2 ${getSuggestionButtonColor(suggestion.type)}`}
+                    >
+                      {loadingStates[index] ? (
+                        <>
+                          <Bot className="w-4 h-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" />
+                          Generate Email
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
                   
                   {/* Generated Email Display */}
                   {generatedEmails[index] && (
@@ -580,7 +597,7 @@ export function ContentDistribution() {
                       </div>
                     </div>
                   )}
-                </div>
+                </Card>
               ))
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
