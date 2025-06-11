@@ -793,19 +793,24 @@ STRICT RULES:
         model: "gpt-4o",
         messages: [
           {
-            role: "system",
-            content: "You are Spencer from 13D Research. Follow the EXACT format provided. Use casual, conversational tone with bullet points. Do NOT write formal business letters or include subjects/signatures beyond what's specified in the template."
-          },
-          {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 500,
-        temperature: 0.2
+        max_tokens: 400,
+        temperature: 0.1
       });
 
-      const emailSuggestion = response.choices[0].message.content || "Unable to generate email";
+      let emailSuggestion = response.choices[0].message.content || "Unable to generate email";
+      
+      // Strip any subject lines that might have been generated
+      emailSuggestion = emailSuggestion.replace(/^Subject:.*\n\n?/i, '');
+      emailSuggestion = emailSuggestion.replace(/^.*Subject:.*\n\n?/i, '');
+      
+      // Strip any extra formal signatures beyond "Best, Spencer"
+      emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
+      emailSuggestion = emailSuggestion.replace(/Looking forward[\s\S]*Best,/i, 'Best,');
+      emailSuggestion = emailSuggestion.replace(/13D Research$/, '');
       
       res.json({ emailSuggestion });
     } catch (error) {
