@@ -505,6 +505,97 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
     }
   });
 
+  // Fund Mapping Tool endpoint
+  app.post("/api/map-fund-themes", async (req: Request, res: Response) => {
+    try {
+      const { fundName, strategy, riskProfile } = req.body;
+      if (!fundName || !strategy || !riskProfile) {
+        return res.status(400).json({ error: "All fund parameters required" });
+      }
+      
+      const reports = await storage.getAllContentReports();
+      const relevantReports = [];
+      const thematicAlignment = [];
+      const recommendations = [];
+      
+      const strategyThemes = {
+        'value': ['undervalued', 'dividend', 'book value', 'earnings'],
+        'growth': ['growth', 'technology', 'innovation', 'expansion'],
+        'momentum': ['trending', 'momentum', 'breakout', 'technical'],
+        'contrarian': ['contrarian', 'oversold', 'reversal', 'turnaround']
+      };
+      
+      const themes = strategyThemes[strategy as keyof typeof strategyThemes] || [];
+      
+      for (const report of reports) {
+        let relevanceScore = 0;
+        const keyThemes = [];
+        
+        if (report.tags && Array.isArray(report.tags)) {
+          for (const theme of themes) {
+            for (const tag of report.tags) {
+              if (tag.toLowerCase().includes(theme) || theme.includes(tag.toLowerCase())) {
+                relevanceScore += 20;
+                if (!keyThemes.includes(tag)) {
+                  keyThemes.push(tag);
+                }
+              }
+            }
+          }
+        }
+        
+        if (relevanceScore > 0) {
+          relevantReports.push({
+            id: report.id,
+            title: report.title,
+            relevanceScore,
+            keyThemes,
+            publishedDate: report.uploadedAt.toISOString().split('T')[0]
+          });
+        }
+      }
+      
+      // Generate thematic alignment
+      const themeFrequency = new Map();
+      relevantReports.forEach(report => {
+        report.keyThemes.forEach(theme => {
+          themeFrequency.set(theme, (themeFrequency.get(theme) || 0) + 1);
+        });
+      });
+      
+      themeFrequency.forEach((count, theme) => {
+        thematicAlignment.push({
+          theme,
+          strength: Math.min(100, count * 25),
+          supportingReports: count
+        });
+      });
+      
+      // Generate recommendations
+      if (riskProfile === 'aggressive') {
+        recommendations.push({
+          type: 'opportunity' as const,
+          description: 'Consider higher allocation to emerging themes with strong momentum',
+          priority: 'high' as const
+        });
+      }
+      
+      const analysis = {
+        fundName,
+        strategy,
+        riskLevel: riskProfile,
+        relevantReports: relevantReports.slice(0, 10),
+        thematicAlignment: thematicAlignment.slice(0, 8),
+        recommendations
+      };
+      
+      res.json({ analysis });
+    } catch (error) {
+      console.error("Fund mapping error:", error);
+      res.status(500).json({ error: "Failed to map fund themes" });
+    }
+  });
+
   // AI-powered prospecting intelligence endpoint
   app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
     try {
