@@ -56,6 +56,7 @@ export const content_reports = pgTable("content_reports", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   type: text("type").notNull().default("WILTW"), // WILTW, special_report, etc
+  source_type: text("source_type").notNull().default("uploaded_pdf"), // uploaded_pdf, parsed_summary, manual_entry
   published_date: timestamp("published_date").notNull(),
   open_rate: decimal("open_rate", { precision: 5, scale: 2 }).default("0"),
   click_rate: decimal("click_rate", { precision: 5, scale: 2 }).default("0"),
