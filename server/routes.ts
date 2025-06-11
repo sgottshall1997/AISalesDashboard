@@ -754,26 +754,25 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}`
       ).join('\n\n---\n\n') || 'No previous email history';
 
-      const emailPrompt = `You are Spencer from 13D Research. Generate an email using this EXACT format and structure:
+      const emailPrompt = `Generate ONLY the email body below, nothing else. Do not include subject lines or signatures beyond "Best, Spencer".
 
-LEAD INFORMATION:
-- Name: ${lead.name}
-- Company: ${lead.company}
-- Interests: ${lead.interest_tags?.join(', ') || 'General investment research'}
+LEAD: ${lead.name} at ${lead.company}
+INTERESTS: ${lead.interest_tags?.join(', ') || 'General investment research'}
 
-SELECTED REPORT SUMMARIES:
+REPORTS TO USE:
 ${reportContext || 'No reports selected'}
 
-EXACT FORMAT TO FOLLOW:
-Hi [Name],
+OUTPUT EXACTLY THIS FORMAT (replace bracketed content):
 
-Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly [list their interests].
+Hi ${lead.name},
 
-• [Bold headline]: [Detailed explanation with specific data/ratios]. (Article X)
+Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
 
-• [Bold headline]: [Detailed explanation with specific data/ratios]. (Article X)
+• **[Bold Headline from Article 1]**: [Specific insight with data/ratios from first article]. (Article 1)
 
-• [Bold headline]: [Detailed explanation with specific data/ratios]. (Article X)
+• **[Bold Headline from Article 2]**: [Specific insight with data/ratios from second article]. (Article 2)  
+
+• **[Bold Headline from Article 3]**: [Specific insight with data/ratios from third article]. (Article 3)
 
 These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
 
@@ -782,28 +781,28 @@ I am happy to send over older reports on topics of interest. Please let me know 
 Best,
 Spencer
 
-CRITICAL REQUIREMENTS:
-- Use exactly 3 bullet points (•) from different articles
-- Each bullet: Bold headline + detailed explanation + (Article 1/2/3/etc)
-- Include specific data points, ratios, breakouts, trends from the report summaries
-- Keep casual, conversational tone like the example
-- No formal business letter language
-- Maximum 180 words total`;
+STRICT RULES:
+- Extract insights from 3 different articles in the reports
+- Use ** for bold headlines  
+- Include specific numbers, ratios, percentages from reports
+- Each bullet must end with (Article X)
+- Maximum 150 words
+- NO formal language, NO subject line, NO extra signatures`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research, an expert institutional sales professional. Write personalized, insightful emails that demonstrate deep market knowledge and research expertise."
+            content: "You are Spencer from 13D Research. Follow the EXACT format provided. Use casual, conversational tone with bullet points. Do NOT write formal business letters or include subjects/signatures beyond what's specified in the template."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 800,
-        temperature: 0.3
+        max_tokens: 500,
+        temperature: 0.2
       });
 
       const emailSuggestion = response.choices[0].message.content || "Unable to generate email";
