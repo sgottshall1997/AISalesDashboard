@@ -714,10 +714,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (currentFileType === 'watmtu') {
               parsedContent = parseWATMTUReport(extractedText);
-              reportTitle = `WATMTU Report - ${new Date().toISOString().split('T')[0]}`;
+              reportTitle = `WATMTU_${reportTitle.split('_').slice(-1)[0] || new Date().toISOString().split('T')[0]}`;
             } else {
               parsedContent = parseWILTWReport(extractedText);
-              reportTitle = `WILTW Report - ${new Date().toISOString().split('T')[0]}`;
+              reportTitle = `WILTW_${reportTitle.split('_').slice(-1)[0] || new Date().toISOString().split('T')[0]}`;
+            }
+
+            // Check for existing report with same title to prevent duplicates
+            const existingReports = await storage.getAllContentReports();
+            const existingReport = existingReports.find(report => report.title === reportTitle);
+            
+            if (existingReport) {
+              results.push({
+                filename: file.originalname,
+                type: currentFileType,
+                success: true,
+                reportId: existingReport.id,
+                message: 'Report already exists - using existing version'
+              });
+              continue;
             }
 
             // Store in database
@@ -899,6 +914,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         reportTitle = `WILTW_${dateStr}`;
         tags = ['wiltw', 'weekly-insights', 'research'];
+      }
+
+      // Check for existing report with same title to prevent duplicates
+      const existingReports = await storage.getAllContentReports();
+      const existingReport = existingReports.find(report => report.title === reportTitle);
+      
+      if (existingReport) {
+        return res.json({
+          success: true,
+          message: 'Report already exists - using existing version',
+          report: {
+            id: existingReport.id,
+            title: existingReport.title,
+            type: reportType,
+            contentLength: existingReport.full_content?.length || 0,
+            parsed: false
+          },
+          reportType,
+          parserUsed: parserType,
+          parseSuccess: false
+        });
       }
 
       // Create report entry in database with only raw PDF content
