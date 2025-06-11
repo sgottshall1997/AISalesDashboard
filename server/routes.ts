@@ -2,6 +2,13 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import cookieParser from "cookie-parser";
+
+// Extend session type
+declare module "express-session" {
+  interface SessionData {
+    authenticated?: boolean;
+  }
+}
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
@@ -440,9 +447,64 @@ async function processSinglePdf(file: Express.Multer.File, reportType: string) {
   };
 }
 
+// Simple password for demo purposes - in production, use environment variables
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "salesdashboard2024";
+
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: any) => {
+  if (req.session?.authenticated) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
+  // Setup session middleware
+  app.use(cookieParser());
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Authentication routes
+  app.post("/api/auth/login", (req: Request, res: Response) => {
+    const { password } = req.body;
+    
+    if (password === DASHBOARD_PASSWORD) {
+      req.session.authenticated = true;
+      res.json({ success: true, message: "Authenticated successfully" });
+    } else {
+      res.status(401).json({ success: false, message: "Invalid password" });
+    }
+  });
+
+  app.get("/api/auth/status", (req: Request, res: Response) => {
+    if (req.session?.authenticated) {
+      res.json({ authenticated: true });
+    } else {
+      res.status(401).json({ authenticated: false });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        res.status(500).json({ success: false, message: "Could not log out" });
+      } else {
+        res.json({ success: true, message: "Logged out successfully" });
+      }
+    });
+  });
+
+  // Protected routes - Dashboard stats
+  app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -453,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard overview with stats and priority actions
-  app.get("/api/dashboard/overview", async (req, res) => {
+  app.get("/api/dashboard/overview", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       
@@ -490,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clients endpoints
-  app.get("/api/clients", async (req: Request, res: Response) => {
+  app.get("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
       const allClients = await storage.getAllClients();
       res.json(allClients);

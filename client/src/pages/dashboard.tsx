@@ -8,11 +8,31 @@ import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
 import { WorkingAISuggestions } from "@/components/working-ai-suggestions";
-import { Bell } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState("overview");
+  const { logout, isLoggingOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log out",
+        variant: "destructive",
+      });
+    }
+  };
 
   const renderActiveSection = () => {
     switch (activeSection) {
