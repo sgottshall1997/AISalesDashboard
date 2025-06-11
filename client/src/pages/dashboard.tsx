@@ -2,7 +2,7 @@ import { useState } from "react";
 import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
 import InvoicingAssistant from "@/components/invoicing-assistant";
-import { ContentDistribution } from "@/components/dashboard/content-distribution";
+import { ContentDistribution } from "@/components/dashboard/content-distribution-clean";
 import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
