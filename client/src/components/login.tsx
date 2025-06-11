@@ -24,11 +24,13 @@ export function Login() {
     }
 
     try {
-      await login(password);
+      const result = await login(password);
       toast({
-        title: "Success",
+        title: "Success", 
         description: "Welcome to the AI Sales Dashboard",
       });
+      // Force a page reload to ensure authentication state is properly updated
+      window.location.reload();
     } catch (error) {
       toast({
         title: "Access Denied",
