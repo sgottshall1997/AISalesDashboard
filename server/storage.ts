@@ -285,7 +285,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllContentReports(): Promise<ContentReport[]> {
-    return await db.select().from(content_reports);
+    return await db
+      .select()
+      .from(content_reports)
+      .orderBy(desc(content_reports.published_date), desc(content_reports.created_at));
   }
 
   async getRecentReports(limit = 5): Promise<ContentReport[]> {

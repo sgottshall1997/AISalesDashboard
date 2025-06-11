@@ -702,36 +702,49 @@ export function ContentDistribution() {
         </CardContent>
       </Card>
 
-      {/* Report Summarization */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <FileText className="w-5 h-5 mr-2" />
-            Report Parser
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <label htmlFor="report-select" className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Report to Parse
-                </label>
-                <Select value={selectedReport} onValueChange={setSelectedReport}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Choose a report..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {reports
-                      .filter((report: any) => report.source_type === 'uploaded_pdf')
-                      .map((report: any) => (
-                        <SelectItem key={report.id} value={report.id.toString()}>
-                          {report.title}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+      {/* Report Parser - Organized by Type */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Thematic Reports (WILTW) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-blue-700">
+              <FileText className="w-5 h-5 mr-2" />
+              Thematic Reports (WILTW)
+            </CardTitle>
+            <CardDescription>
+              Weekly thematic analysis reports for content insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Select value={selectedReport} onValueChange={setSelectedReport}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose a WILTW report..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reports
+                        .filter((report: any) => 
+                          report.source_type === 'uploaded_pdf' && 
+                          (report.title.includes('WILTW') || !report.title.includes('WATMTU'))
+                        )
+                        .sort((a: any, b: any) => {
+                          // Sort by newest first
+                          const dateA = new Date(a.published_date || a.created_at || 0);
+                          const dateB = new Date(b.published_date || b.created_at || 0);
+                          return dateB.getTime() - dateA.getTime();
+                        })
+                        .map((report: any) => (
+                          <SelectItem key={report.id} value={report.id.toString()}>
+                            {report.title}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
+              
               <div className="flex gap-2">
                 <Button 
                   onClick={() => {
@@ -741,7 +754,8 @@ export function ContentDistribution() {
                     }
                   }}
                   disabled={!selectedReport || isGeneratingSummary}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  size="sm"
                 >
                   <Bot className="w-4 h-4" />
                   {isGeneratingSummary ? "Parsing..." : "Parse Report"}
@@ -778,25 +792,135 @@ export function ContentDistribution() {
                     }
                   }}
                   disabled={!selectedReport}
+                  size="sm"
                   className="flex items-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
-                  Load Saved Summary
+                  Load Saved
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {reportSummary && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Parsed Summary:</h4>
-                <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                  {formatCleanSummary(reportSummary)}
+        {/* Technical Reports (WATMTU) */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-green-700">
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Technical Reports (WATMTU)
+            </CardTitle>
+            <CardDescription>
+              Technical market analysis and performance tracking
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <Select value={selectedReport} onValueChange={setSelectedReport}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Choose a WATMTU report..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {reports
+                        .filter((report: any) => 
+                          report.source_type === 'uploaded_pdf' && 
+                          report.title.includes('WATMTU')
+                        )
+                        .sort((a: any, b: any) => {
+                          // Sort by newest first
+                          const dateA = new Date(a.published_date || a.created_at || 0);
+                          const dateB = new Date(b.published_date || b.created_at || 0);
+                          return dateB.getTime() - dateA.getTime();
+                        })
+                        .map((report: any) => (
+                          <SelectItem key={report.id} value={report.id.toString()}>
+                            {report.title}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    if (selectedReport) {
+                      setIsGeneratingSummary(true);
+                      summarizeReportMutation.mutate(selectedReport);
+                    }
+                  }}
+                  disabled={!selectedReport || isGeneratingSummary}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  size="sm"
+                >
+                  <Bot className="w-4 h-4" />
+                  {isGeneratingSummary ? "Parsing..." : "Parse Report"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    if (selectedReport) {
+                      try {
+                        const response = await fetch(`/api/report-summaries`);
+                        const summaries = await response.json();
+                        const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+                        
+                        if (reportSummary) {
+                          setReportSummary(reportSummary.parsed_summary);
+                          toast({
+                            title: "Summary Loaded",
+                            description: "Previously saved summary loaded successfully.",
+                          });
+                        } else {
+                          toast({
+                            title: "No Saved Summary",
+                            description: "No previously saved summary found. Try parsing the report first.",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to load saved summary.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                  disabled={!selectedReport}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Load Saved
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Parsed Summary Display */}
+      {reportSummary && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <FileText className="w-5 h-5 mr-2" />
+              Parsed Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-gray-50 rounded-lg p-4">
+              <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
+                {formatCleanSummary(reportSummary)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Content Suggestions */}
       <Card>
