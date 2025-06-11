@@ -148,6 +148,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get report summaries
+  app.get("/api/report-summaries", async (req: Request, res: Response) => {
+    try {
+      const summaries = await storage.getAllReportSummaries();
+      res.json(summaries);
+    } catch (error) {
+      console.error("Get report summaries error:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch report summaries",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Reading history endpoints
   app.get("/api/reading-history", async (req: Request, res: Response) => {
     try {
@@ -214,6 +228,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get invoice aging error:", error);
       res.status(500).json({ message: "Failed to fetch invoice aging" });
+    }
+  });
+
+  app.get("/api/invoices/severely-overdue", async (req: Request, res: Response) => {
+    try {
+      const allInvoices = await storage.getAllInvoices();
+      const currentDate = new Date();
+      
+      // Filter invoices that are over 45 days past due
+      const severelyOverdue = allInvoices.filter(invoice => {
+        if (invoice.payment_status === 'paid') return false;
+        
+        const dueDate = new Date(invoice.due_date);
+        const daysPastDue = Math.floor((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        return daysPastDue > 45;
+      }).map(invoice => {
+        const dueDate = new Date(invoice.due_date);
+        const daysPastDue = Math.floor((currentDate.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        return {
+          ...invoice,
+          daysPastDue
+        };
+      }).sort((a, b) => b.daysPastDue - a.daysPastDue); // Sort by most overdue first
+      
+      res.json(severelyOverdue);
+    } catch (error) {
+      console.error("Get severely overdue invoices error:", error);
+      res.status(500).json({ message: "Failed to fetch severely overdue invoices" });
     }
   });
 
