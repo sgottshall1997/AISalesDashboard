@@ -654,13 +654,13 @@ The current market environment presents both challenges and opportunities for lo
           }
         }
 
-        // Check summary text for matches
-        if (report.summaryText) {
-          const summaryLower = report.summaryText.toLowerCase();
+        // Check full content for matches if available
+        if (report.full_content) {
+          const contentLower = report.full_content.toLowerCase();
           for (const searchTerm of expandedSearchTerms) {
-            if (summaryLower.includes(searchTerm)) {
+            if (contentLower.includes(searchTerm)) {
               relevanceScore += 12;
-              matchReasons.push(`Summary match: ${searchTerm}`);
+              matchReasons.push(`Content match: ${searchTerm}`);
             }
           }
         }
