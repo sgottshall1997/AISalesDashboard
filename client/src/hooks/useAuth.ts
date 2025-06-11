@@ -1,13 +1,46 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export function useAuth() {
   const queryClient = useQueryClient();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ["/api/auth/status"],
-    retry: false,
-  });
+  useEffect(() => {
+    let mounted = true;
+    
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth/status", {
+          credentials: "include"
+        });
+        
+        if (mounted) {
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+          } else {
+            setUser(null);
+          }
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err);
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    checkAuth();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const loginMutation = useMutation({
     mutationFn: async (password: string) => {
