@@ -1910,7 +1910,7 @@ ${comprehensiveSummary}`;
           if (!existingSummary) {
             const newSummary = await storage.createReportSummary({
               content_report_id: parseInt(reportId),
-              parsed_summary: detailedSummary || '',
+              parsed_summary: summary || '', // Save the complete combined summary
               structured_summary: structuredSummary || '',
               comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
@@ -1918,14 +1918,14 @@ ${comprehensiveSummary}`;
             console.log('Created new summary:', { 
               id: newSummary.id, 
               content_report_id: newSummary.content_report_id,
-              detailedSummaryLength: newSummary.parsed_summary?.length,
+              completeSummaryLength: newSummary.parsed_summary?.length,
               structuredSummaryLength: newSummary.structured_summary?.length,
               comprehensiveSummaryLength: newSummary.comprehensive_summary?.length
             });
           } else {
             // Update existing summary with new content
             const updatedSummary = await storage.updateReportSummary(existingSummary.id, {
-              parsed_summary: detailedSummary || '',
+              parsed_summary: summary || '', // Save the complete combined summary
               structured_summary: structuredSummary || '',
               comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
@@ -1933,7 +1933,7 @@ ${comprehensiveSummary}`;
             console.log('Updated existing summary:', { 
               id: updatedSummary?.id, 
               content_report_id: updatedSummary?.content_report_id,
-              detailedSummaryLength: updatedSummary?.parsed_summary?.length,
+              completeSummaryLength: updatedSummary?.parsed_summary?.length,
               structuredSummaryLength: updatedSummary?.structured_summary?.length,
               comprehensiveSummaryLength: updatedSummary?.comprehensive_summary?.length
             });
