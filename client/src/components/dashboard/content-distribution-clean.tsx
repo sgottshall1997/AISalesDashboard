@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { AiFeedback } from "@/components/ai-feedback";
@@ -19,7 +21,8 @@ import {
   Lightbulb,
   TrendingUp,
   BarChart3,
-  FileText
+  FileText,
+  Mail
 } from "lucide-react";
 
 export function ContentDistribution() {
@@ -32,6 +35,7 @@ export function ContentDistribution() {
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
   const [contentIds, setContentIds] = useState<{ [key: number]: number }>({});
+  const [emailDialogOpen, setEmailDialogOpen] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -86,6 +90,7 @@ export function ContentDistribution() {
       
       const result = await response.json();
       setGeneratedEmails(prev => ({ ...prev, [index]: result.email }));
+      setEmailDialogOpen(prev => ({ ...prev, [index]: true }));
       
       // Store content ID for feedback tracking
       if (result.contentId) {
@@ -550,53 +555,71 @@ export function ContentDistribution() {
                     </Button>
                   </CardFooter>
                   
-                  {/* Generated Email Display */}
-                  {generatedEmails[index] && (
-                    <div className="mt-4 border-t border-gray-200 pt-4">
-                      <div className="flex justify-between items-center mb-3">
-                        <h4 className="text-sm font-semibold text-gray-900">Generated Email</h4>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => copyToClipboard(generatedEmails[index], index)}
-                            className="flex items-center space-x-1 text-xs hover:bg-gray-50"
-                          >
-                            {copiedStates[index] ? (
-                              <CheckCircle className="h-3 w-3 text-green-600" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            <span>{copiedStates[index] ? "Copied!" : "Copy Email"}</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => downloadSummary(suggestion, generatedEmails[index])}
-                            className="flex items-center space-x-1 text-xs hover:bg-gray-50"
-                          >
-                            <Download className="h-3 w-3" />
-                            <span>Download Summary</span>
-                          </Button>
-                        </div>
+                  {/* Modal Window for Generated Email - Following Enhancement Plan Spec */}
+                  <Dialog 
+                    open={emailDialogOpen[index] || false} 
+                    onOpenChange={(open) => setEmailDialogOpen(prev => ({ ...prev, [index]: open }))}
+                  >
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                          <Mail className="w-5 h-5" />
+                          Generated Email - {suggestion.title}
+                        </DialogTitle>
+                        <DialogDescription>
+                          Professional email draft based on research insights
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="space-y-4">
+                        {generatedEmails[index] && (
+                          <>
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <AiFeedback 
+                                contentId={contentIds[index]} 
+                                onFeedbackSubmitted={() => {
+                                  toast({
+                                    title: "Feedback Received",
+                                    description: "Thank you for helping improve our AI content generation.",
+                                  });
+                                }}
+                              >
+                                <Textarea
+                                  value={generatedEmails[index]}
+                                  readOnly
+                                  className="min-h-[300px] bg-white border-gray-200 text-sm leading-relaxed resize-none"
+                                />
+                              </AiFeedback>
+                            </div>
+                            
+                            {/* Export Options - Following Enhancement Plan Spec */}
+                            <div className="flex justify-end gap-2 pt-4 border-t">
+                              <Button
+                                variant="outline"
+                                onClick={() => copyToClipboard(generatedEmails[index], index)}
+                                className="flex items-center gap-2"
+                              >
+                                {copiedStates[index] ? (
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                                {copiedStates[index] ? "Copied!" : "Copy Email"}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                onClick={() => downloadSummary(suggestion, generatedEmails[index])}
+                                className="flex items-center gap-2"
+                              >
+                                <Download className="h-4 w-4" />
+                                Download Summary
+                              </Button>
+                            </div>
+                          </>
+                        )}
                       </div>
-                      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                        <AiFeedback 
-                          contentId={contentIds[index]} 
-                          onFeedbackSubmitted={() => {
-                            toast({
-                              title: "Feedback Received",
-                              description: "Thank you for helping improve our AI content generation.",
-                            });
-                          }}
-                        >
-                          <div className="text-sm text-gray-800 leading-relaxed">
-                            {generatedEmails[index]}
-                          </div>
-                        </AiFeedback>
-                      </div>
-                    </div>
-                  )}
+                    </DialogContent>
+                  </Dialog>
                 </Card>
               ))
             ) : (

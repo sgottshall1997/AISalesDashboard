@@ -100,45 +100,30 @@ export async function generateThemeBasedEmail(
       publishedDate: report.published_date
     }));
 
-    const systemPrompt = `You are a senior research sales professional at 13D Research writing to institutional clients. Write professional, substantive emails that demonstrate deep market insight and provide compelling investment themes. Your emails should be comprehensive, informative, and showcase 13D's research expertise.`;
-
+    // Using Enhancement Plan's exact prompt template specification
     const insightsText = insights && insights.length > 0 ? insights : keyPoints || [];
     
-    const userPrompt = `Write a professional email to an institutional client about our research insights. Follow this exact structure and tone:
-
-REQUIRED FORMAT:
-1. Personal greeting with placeholder for name: "Hi ____________ – I hope you're doing well."
-2. Opening paragraph establishing market context and 13D's track record
-3. Multiple detailed sections covering specific investment themes with:
-   - Clear theme headers (e.g., "Gold's Historic Breakout:", "Grid Infrastructure: The $X Trillion Opportunity:")
-   - Specific data points and metrics
-   - Investment implications and opportunities
-   - Company/sector focus areas
-4. Closing invitation to discuss further
-5. Professional sign-off with "Best, Spencer"
+    const userPrompt = `You are a senior sales rep writing an email to an institutional client.
+The email should reference recent research findings and sound professional and helpful.
 
 Theme: ${theme}
-Key Investment Insights:
-${insightsText.map(insight => `- ${insight}`).join('\n')}
+Key Insights:
+${insightsText.slice(0, 2).map(insight => `- ${insight}`).join('\n')}
 
-Email should be 400-600 words, include specific metrics where possible, maintain confidence about 13D's positioning, and emphasize actionable investment opportunities. Reference our research track record and outperformance.
+Please write a concise email (under 180 words) to a client about this theme.
+Use a confident, professional tone and mention the above insights in plain language.
+Start with a greeting, and end with an offer to discuss further or assist.
+Do not exceed the word limit.
 
-Write in the professional, authoritative tone of a senior research analyst communicating with sophisticated institutional investors.
+Provide a brief subject line for the email as well.
 
-Supporting context:
 Email Angle: ${emailAngle}
 Description: ${description}
-Supporting Reports: ${(supportingReports || []).join(', ')}
-
-Start with "Subject:" followed by the subject line, then the email body.`;
+Supporting Reports: ${(supportingReports || []).join(', ')}`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
         {
           role: "user",
           content: userPrompt
