@@ -337,31 +337,7 @@ export function ContentDistribution() {
 
 
 
-  const getSuggestionStyle = (type: string) => {
-    switch (type) {
-      case "high_engagement":
-        return "bg-blue-50 border-blue-200";
-      case "renewal_opportunity":
-        return "bg-green-50 border-green-200";
-      case "low_engagement":
-        return "bg-yellow-50 border-yellow-200";
-      default:
-        return "bg-gray-50 border-gray-200";
-    }
-  };
 
-  const getSuggestionButtonStyle = (type: string) => {
-    switch (type) {
-      case "high_engagement":
-        return "bg-blue-600 hover:bg-blue-700 text-white border-0";
-      case "renewal_opportunity":
-        return "bg-green-600 hover:bg-green-700 text-white border-0";
-      case "low_engagement":
-        return "bg-yellow-600 hover:bg-yellow-700 text-white border-0";
-      default:
-        return "bg-blue-600 hover:bg-blue-700 text-white border-0";
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -658,6 +634,52 @@ export function ContentDistribution() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader>
+            <CardTitle>AI Content Suggestions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {suggestionsLoading ? (
+                <div className="text-center py-8">
+                  <Bot className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-gray-500">Loading AI suggestions...</p>
+                </div>
+              ) : suggestions.length > 0 ? (
+                suggestions.map((suggestion: any, index: number) => (
+                  <div key={index} className={`border rounded-lg p-4 ${getSuggestionStyle(suggestion.type)}`}>
+                    <div className="flex items-start">
+                      <div className="flex-shrink-0">
+                        {getSuggestionIcon(suggestion.type)}
+                      </div>
+                      <div className="ml-3 flex-1">
+                        <p className="text-sm font-medium text-gray-800">{suggestion.title}</p>
+                        <p className="text-sm text-gray-700 mt-1">{suggestion.description}</p>
+                        <div className="mt-2">
+                          <Button 
+                            size="sm" 
+                            onClick={() => generateEmail(suggestion, index)}
+                            disabled={loadingStates[index]}
+                            className={`text-xs ${getSuggestionButtonColor(suggestion.type)}`}
+                          >
+                            {loadingStates[index] ? "Generating..." : "Generate AI Output"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-center text-gray-500">
+                    <Bot className="h-5 w-5 mr-2" />
+                    <span className="text-sm">No AI suggestions available yet</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
       </div>
 
@@ -739,6 +761,37 @@ export function ContentDistribution() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Email Generation Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generated AI Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                {generatedEmail}
+              </pre>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => copyToClipboard(generatedEmail, 0)}
+                className="flex items-center space-x-2"
+              >
+                {copiedStates[0] ? (
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+                <span>{copiedStates[0] ? "Copied!" : "Copy to Clipboard"}</span>
+              </Button>
+              <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
