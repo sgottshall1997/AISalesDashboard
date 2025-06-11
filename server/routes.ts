@@ -1122,13 +1122,6 @@ Focus on actionable insights and specific investment implications.`;
         
         // Remove all * and # symbols from output
         summary = summary.replace(/[\*#]+/g, '');
-        
-        // Remove redundant titles and headings (comprehensive patterns)
-        summary = summary.replace(/^#{1,6}\s*(Structured Article-by-Article Analysis|Article-by-Article Analysis|Detailed Article Analysis|Comprehensive Investment Summary|Executive Summary|WATMTU Analysis|WILTW Analysis|Comprehensive Analysis|Investment Summary|Market Analysis|Analysis Summary).*$/gm, '');
-        summary = summary.replace(/^#{1,6}\s*[A-Z][a-zA-Z\s]*(Analysis|Summary|Report|Overview).*$/gm, ''); // Generic heading removal
-        summary = summary.replace(/^\s*$/gm, ''); // Remove empty lines
-        summary = summary.replace(/\n{3,}/g, '\n\n'); // Replace multiple newlines with double
-        summary = summary.trim();
       } else {
         // WILTW analysis - Generate three distinct summaries
         console.log('Starting WILTW three-part summary generation...');
@@ -1407,13 +1400,6 @@ Focus on actionable insights and specific investment implications.`;
             
             // Remove all * and # symbols from output
             summary = summary.replace(/[\*#]+/g, '');
-            
-            // Remove redundant titles and headings (comprehensive patterns)
-            summary = summary.replace(/^#{1,6}\s*(Structured Article-by-Article Analysis|Article-by-Article Analysis|Detailed Article Analysis|Comprehensive Investment Summary|Executive Summary|WATMTU Analysis|WILTW Analysis|Comprehensive Analysis|Investment Summary|Market Analysis|Analysis Summary).*$/gm, '');
-            summary = summary.replace(/^#{1,6}\s*[A-Z][a-zA-Z\s]*(Analysis|Summary|Report|Overview).*$/gm, ''); // Generic heading removal
-            summary = summary.replace(/^\s*$/gm, ''); // Remove empty lines
-            summary = summary.replace(/\n{3,}/g, '\n\n'); // Replace multiple newlines with double
-            summary = summary.trim();
           } else {
             // WILTW analysis
             const systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
@@ -1465,13 +1451,6 @@ Focus on extracting actionable intelligence for investment decision-making.`;
             
             // Remove all * and # symbols from output
             summary = summary.replace(/[\*#]+/g, '');
-            
-            // Remove redundant titles and headings (comprehensive patterns)
-            summary = summary.replace(/^#{1,6}\s*(Structured Article-by-Article Analysis|Article-by-Article Analysis|Detailed Article Analysis|Comprehensive Investment Summary|Executive Summary|WATMTU Analysis|WILTW Analysis|Comprehensive Analysis|Investment Summary|Market Analysis|Analysis Summary).*$/gm, '');
-            summary = summary.replace(/^#{1,6}\s*[A-Z][a-zA-Z\s]*(Analysis|Summary|Report|Overview).*$/gm, ''); // Generic heading removal
-            summary = summary.replace(/^\s*$/gm, ''); // Remove empty lines
-            summary = summary.replace(/\n{3,}/g, '\n\n'); // Replace multiple newlines with double
-            summary = summary.trim();
           }
 
           // Save the summary to the database

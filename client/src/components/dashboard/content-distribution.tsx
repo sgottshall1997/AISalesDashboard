@@ -542,49 +542,11 @@ export function ContentDistribution() {
             </div>
 
             {reportSummary && (
-              <div className="mt-6 space-y-6">
-                {(() => {
-                  // Parse WILTW three-part summaries
-                  const parts = reportSummary.split('---').map(part => part.trim());
-                  
-                  if (parts.length >= 3) {
-                    // WILTW report with three sections
-                    return (
-                      <>
-                        <div className="p-4 bg-gray-50 rounded-lg border">
-                          <h4 className="font-medium text-gray-900 mb-3">Structured Article Analysis</h4>
-                          <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
-                            {parts[0]}
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 bg-blue-50 rounded-lg border">
-                          <h4 className="font-medium text-gray-900 mb-3">Detailed Article Analysis</h4>
-                          <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
-                            {parts[1]}
-                          </div>
-                        </div>
-                        
-                        <div className="p-4 bg-green-50 rounded-lg border">
-                          <h4 className="font-medium text-gray-900 mb-3">Comprehensive Investment Summary</h4>
-                          <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
-                            {parts[2]}
-                          </div>
-                        </div>
-                      </>
-                    );
-                  } else {
-                    // Single summary (WATMTU or single-part WILTW)
-                    return (
-                      <div className="p-4 bg-gray-50 rounded-lg border">
-                        <h4 className="font-medium text-gray-900 mb-3">Report Analysis</h4>
-                        <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
-                          {reportSummary}
-                        </div>
-                      </div>
-                    );
-                  }
-                })()}
+              <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                <h4 className="font-medium text-gray-900 mb-3">Structured Article Analysis</h4>
+                <div className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
+                  {reportSummary}
+                </div>
               </div>
             )}
           </div>
