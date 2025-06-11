@@ -77,9 +77,19 @@ export default function Dashboard() {
                 AI-Powered Sales Dashboard
               </h2>
             </div>
-            <div className="ml-4 flex items-center md:ml-6">
+            <div className="ml-4 flex items-center md:ml-6 space-x-2">
               <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-500">
                 <Bell className="h-5 w-5" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-gray-600 hover:text-gray-800"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {isLoggingOut ? "Logging out..." : "Logout"}
               </Button>
             </div>
           </div>
