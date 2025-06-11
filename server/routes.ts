@@ -649,7 +649,28 @@ Generate a JSON response with exactly this structure:
   "prospectSnapshot": "Name, title, firm, investment style summary",
   "topInterests": "Summarize the person's known interests (sectors, macro themes, geos)",
   "portfolioInsights": "Mention notable holdings and how they connect to current themes from past 13D reports",
-  "talkingPoints": ["point 1", "point 2", "point 3", "point 4", "point 5"],
+  "talkingPoints": [
+    {
+      "mainPoint": "Point 1 title",
+      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+    },
+    {
+      "mainPoint": "Point 2 title", 
+      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+    },
+    {
+      "mainPoint": "Point 3 title",
+      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+    },
+    {
+      "mainPoint": "Point 4 title",
+      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+    },
+    {
+      "mainPoint": "Point 5 title",
+      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+    }
+  ],
   "smartQuestions": [
     "What are your current views on [relevant macro theme from recent 13D reports] and how does it align with your portfolio positioning?",
     "Which sectors or geographies are you most focused on for new opportunities in the next 6-12 months?",
@@ -668,6 +689,13 @@ Use the following data to generate your output:
 - Style: ${investmentStyle}
 - Notes: ${notes}
 - Past Interactions: ${pastInteractions}
+
+For talkingPoints, create 5 strategic talking points with detailed sub-bullets that include:
+- Specific data points, statistics, or market insights that demonstrate deep knowledge
+- References to recent market developments or macro trends
+- Connection to their known interests/holdings
+- Forward-looking perspectives that show thought leadership
+Make each sub-bullet actionable and impressive - things that would make you sound like an expert.
 
 For smartQuestions, use these exact 5 standardized questions, but customize the first one with a relevant macro theme:
 1. Replace "[relevant macro theme from recent 13D reports]" with an appropriate theme based on the prospect's interests or current market focus (commodities, de-dollarization, AI infrastructure, reshoring, China, precious metals, energy transition)

@@ -10,11 +10,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
+interface TalkingPoint {
+  mainPoint: string;
+  subBullets: string[];
+}
+
 interface CallPrepResult {
   prospectSnapshot: string;
   topInterests: string;
   portfolioInsights: string;
-  talkingPoints: string[];
+  talkingPoints: TalkingPoint[];
   smartQuestions: string[];
 }
 
@@ -294,13 +299,27 @@ ${callPrepResult.smartQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}`
                 <CardTitle className="text-sm">Key Talking Points</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {callPrepResult.talkingPoints.map((point, index) => (
-                    <div key={index} className="flex items-start">
-                      <Badge variant="outline" className="mr-2 mt-0.5 text-xs">
-                        {index + 1}
-                      </Badge>
-                      <p className="text-sm text-gray-700 flex-1">{point}</p>
+                    <div key={index} className="border-l-4 border-blue-200 pl-4">
+                      <div className="flex items-start mb-2">
+                        <Badge variant="outline" className="mr-2 mt-0.5 text-xs">
+                          {index + 1}
+                        </Badge>
+                        <h4 className="text-sm font-semibold text-gray-900 flex-1">
+                          {typeof point === 'string' ? point : point.mainPoint}
+                        </h4>
+                      </div>
+                      {typeof point === 'object' && point.subBullets && (
+                        <div className="ml-6 space-y-1">
+                          {point.subBullets.map((subBullet, subIndex) => (
+                            <div key={subIndex} className="flex items-start">
+                              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full mr-2 mt-2 flex-shrink-0"></span>
+                              <p className="text-xs text-gray-600 leading-relaxed">{subBullet}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
