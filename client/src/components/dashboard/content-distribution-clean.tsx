@@ -331,22 +331,26 @@ export function ContentDistribution() {
         }
         
         const uploadResult = await uploadResponse.json();
-        const uploadedReports = uploadResult.results || [uploadResult];
         
-        // Parse each uploaded report
+        // Handle single or multiple uploaded reports
+        const uploadedReports = uploadResult.results || [uploadResult.report || uploadResult];
+        
+        // Parse each uploaded report using AI summarization
         for (const report of uploadedReports) {
           if (report && report.id) {
+            console.log(`Starting AI parsing for report ID: ${report.id}, Title: ${report.title}`);
+            
             const isWATMTU = report.title.includes("WATMTU") || reportType === "watmtu";
             const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
             const parseResponse = await apiRequest("POST", "/api/ai/summarize-report", {
               reportId: report.id.toString(),
               title: report.title,
-              content: report.full_content || report.content_summary,
               promptType: promptType
             });
             
-            await parseResponse.json();
+            const parseResult = await parseResponse.json();
+            console.log(`AI parsing completed for ${report.title}, summary length: ${parseResult.summary?.length || 0}`);
           }
         }
         
