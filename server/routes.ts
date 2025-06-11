@@ -479,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     if (password === DASHBOARD_PASSWORD) {
       req.session.authenticated = true;
-      res.json({ success: true, message: "Authenticated successfully" });
+      res.json({ authenticated: true, success: true, message: "Authenticated successfully" });
     } else {
       res.status(401).json({ success: false, message: "Invalid password" });
     }
