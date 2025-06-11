@@ -761,11 +761,11 @@ Hi ${lead.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 1)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 1)
 
-• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 2)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 2)
 
-• **[Bold headline]**: [Specific insight with numbers/ratios]. (Article 3)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 3)
 
 These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
 
@@ -779,10 +779,11 @@ ${reportContext || 'No reports selected'}
 
 CRITICAL: 
 - Use bullet points (•) NOT paragraphs
-- Include specific data/percentages/ratios from reports
+- Make each bullet detailed with specific data/percentages/ratios from reports
+- Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
 - Keep conversational tone, avoid formal business language
-- Maximum 180 words`;
+- Maximum 275 words`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -797,6 +798,9 @@ CRITICAL:
       });
 
       let emailSuggestion = response.choices[0].message.content || "Unable to generate email";
+      
+      // Remove all *** symbols from output
+      emailSuggestion = emailSuggestion.replace(/\*\*\*/g, '');
       
       // Aggressively strip any subject lines
       emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
