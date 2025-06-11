@@ -821,37 +821,123 @@ export default function LeadDetail() {
                   Generate a personalized follow-up email based on recent reports and the lead's interests.
                 </p>
                 
-                {reportSummaries && reportSummaries.length > 0 && (
-                  <div className="space-y-2">
+                {reportSummaries && Array.isArray(reportSummaries) && reportSummaries.length > 0 && (
+                  <div className="space-y-4">
                     <Label className="text-sm font-medium">
                       Select Reports to Reference (Optional)
                     </Label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
-                      {reportSummaries.map((summary: any) => (
-                        <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={selectedReportIds.includes(summary.content_report_id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                              } else {
-                                setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                              }
-                            }}
-                            className="rounded"
-                          />
-                          <span className="text-sm">
-                            {summary.report.title} ({summary.summary_type})
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    {selectedReportIds.length > 0 && (
-                      <p className="text-xs text-gray-600">
-                        {selectedReportIds.length} report{selectedReportIds.length > 1 ? 's' : ''} selected
-                      </p>
-                    )}
+                    
+                    {/* Helper function to format report titles */}
+                    {(() => {
+                      const formatReportTitle = (title: string) => {
+                        if (title.includes('WILTW_')) {
+                          return title.replace('WILTW_', 'WILTW ').replace(/(\d{4})-(\d{2})-(\d{2})/, '$2-$3-$1');
+                        } else if (title.includes('WATMTU_')) {
+                          return title.replace('WATMTU_', 'WATMTU ').replace(/(\d{4})-(\d{2})-(\d{2})/, '$2-$3-$1');
+                        }
+                        return title;
+                      };
+
+                      const wiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
+                      const watmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
+                      const otherReports = reportSummaries.filter((summary: any) => 
+                        !summary.report?.title?.includes('WILTW') && !summary.report?.title?.includes('WATMTU')
+                      );
+
+                      return (
+                        <>
+                          {/* WILTW Reports Section */}
+                          {wiltwReports.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-gray-700">WILTW Reports</h4>
+                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-blue-50">
+                                {wiltwReports.map((summary: any) => (
+                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedReportIds.includes(summary.content_report_id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                                        } else {
+                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                                        }
+                                      }}
+                                      className="rounded"
+                                    />
+                                    <span className="text-sm">
+                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* WATMTU Reports Section */}
+                          {watmtuReports.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-gray-700">WATMTU Reports</h4>
+                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-green-50">
+                                {watmtuReports.map((summary: any) => (
+                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedReportIds.includes(summary.content_report_id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                                        } else {
+                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                                        }
+                                      }}
+                                      className="rounded"
+                                    />
+                                    <span className="text-sm">
+                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Other Reports Section */}
+                          {otherReports.length > 0 && (
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-gray-700">Other Reports</h4>
+                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-gray-50">
+                                {otherReports.map((summary: any) => (
+                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedReportIds.includes(summary.content_report_id)}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                                        } else {
+                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                                        }
+                                      }}
+                                      className="rounded"
+                                    />
+                                    <span className="text-sm">
+                                      {formatReportTitle(summary.report.title)} ({summary.summary_type})
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {selectedReportIds.length > 0 && (
+                            <p className="text-xs text-gray-600">
+                              {selectedReportIds.length} report{selectedReportIds.length > 1 ? 's' : ''} selected
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
                 
