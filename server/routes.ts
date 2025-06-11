@@ -100,82 +100,101 @@ function parseWATMTUReport(content: string) {
 
 // WILTW Report Parser - Enhanced for actual content extraction
 function parseWILTWReport(content: string) {
-  const lines = content.split('\n');
-  const articles = [];
-  let isInTableOfContents = false;
-  let tocArticles = [];
+  console.log('Starting WILTW parsing, content length:', content.length);
   
-  // First pass: Extract article titles from Table of Contents
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+  const articles = [];
+  const insights = [];
+  const themes = [];
+  
+  // Remove header/footer content and split into meaningful sections
+  let cleanContent = content
+    .replace(/PRINT ONCE[\s\S]*?13D\.COM/g, '')
+    .replace(/\d+\s+OF\s+\d+/g, '')
+    .replace(/WHAT I LEARNED THIS WEEK.*?\d{4}/g, '');
+  
+  // Split content by double newlines to get paragraphs
+  const paragraphs = cleanContent.split(/\n\s*\n/).filter(p => p.trim().length > 80);
+  
+  console.log('Found paragraphs:', paragraphs.length);
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i].replace(/\s+/g, ' ').trim();
     
-    if (line.includes('Table of Contents')) {
-      isInTableOfContents = true;
+    // Skip quotes at the beginning (they tend to be inspirational quotes)
+    if (i < 10 && (paragraph.includes('"') || paragraph.match(/[A-Z][a-z]+ [A-Z][a-z]+$/))) {
       continue;
     }
     
-    if (isInTableOfContents) {
-      // Look for numbered sections (01, 02, 03, etc.)
-      const articleMatch = line.match(/^(\d{1,2})\s+(.+?)(?:\s+P\.\s*\d+)?$/);
-      if (articleMatch && articleMatch[2].length > 15) {
-        const articleNum = parseInt(articleMatch[1]);
-        const articleTitle = articleMatch[2].trim().replace(/\s+/g, ' ');
-        tocArticles.push({ num: articleNum, title: articleTitle });
-      }
-      
-      // End of TOC when we hit main content
-      if (line.match(/^\d+\s+STRATEGY & ASSET ALLOCATION/) || tocArticles.length >= 10) {
-        isInTableOfContents = false;
-        break;
-      }
-    }
-  }
-  
-  // Second pass: Extract content for each article
-  for (const tocArticle of tocArticles.slice(0, 10)) {
-    let articleContent = '';
-    let foundStart = false;
+    // Look for section headers (typically all caps or numbered)
+    const lines = paragraph.split('\n');
+    const potentialTitle = lines[0].trim();
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+    // Check if this looks like a section header
+    if (potentialTitle.length > 15 && potentialTitle.length < 100) {
+      const isAllCaps = potentialTitle.toUpperCase() === potentialTitle && potentialTitle.includes(' ');
+      const isNumbered = /^\d+[\.\s]/.test(potentialTitle);
+      const isTitleCase = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]*)+/.test(potentialTitle);
       
-      // Look for the start of this article's content
-      if (line.match(new RegExp(`^${tocArticle.num}\\s+`)) && line.includes(tocArticle.title.substring(0, 20))) {
-        foundStart = true;
-        continue;
-      }
-      
-      // Collect content after finding the start
-      if (foundStart && line.length > 30 && 
-          !line.includes('WHAT I LEARNED THIS WEEK') &&
-          !line.includes('Confidential for') &&
-          !line.includes('13D RESEARCH') &&
-          !line.match(/^\d+\s+OF\s+\d+/) &&
-          !line.includes('PRINT ONCE')) {
+      if (isAllCaps || isNumbered || isTitleCase) {
+        const contentLines = lines.slice(1).join(' ').trim();
         
-        articleContent += line + ' ';
-        
-        // Stop at next numbered section or after sufficient content
-        if (articleContent.length > 500 || 
-            (articleContent.length > 200 && line.match(/^\d+\s+[A-Z]/) && !line.includes(tocArticle.title))) {
-          break;
+        if (contentLines.length > 100) {
+          articles.push({
+            title: potentialTitle.replace(/^\d+[\.\s]*/, '').replace(/[:\.]$/, ''),
+            content: contentLines.substring(0, 600)
+          });
+          
+          themes.push(potentialTitle.replace(/^\d+[\.\s]*/, '').replace(/[:\.]$/, ''));
         }
       }
     }
     
-    if (articleContent.length > 100) {
-      articles.push({
-        title: tocArticle.title,
-        content: articleContent.trim().substring(0, 800)
-      });
+    // Extract insights from substantial content paragraphs
+    if (paragraph.length > 200 && paragraph.length < 1000 && 
+        !paragraph.includes('Copyright') && 
+        !paragraph.includes('Confidential') &&
+        articles.length < 15) {
+      
+      // Split into sentences and extract key insights
+      const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 40);
+      
+      for (const sentence of sentences.slice(0, 3)) {
+        const cleanSentence = sentence.trim();
+        if (cleanSentence.length > 60 && cleanSentence.length < 300) {
+          insights.push(cleanSentence + '.');
+          
+          // Extract potential themes from longer sentences
+          const words = cleanSentence.split(' ');
+          if (words.length > 5 && words.length < 15) {
+            const potentialTheme = words.slice(0, 8).join(' ').replace(/[,.]$/, '');
+            if (potentialTheme.length > 20) {
+              themes.push(potentialTheme);
+            }
+          }
+        }
+      }
     }
   }
   
+  // Remove duplicates and clean up
+  const uniqueArticles = articles.filter((article, index, self) => 
+    index === self.findIndex(a => a.title === article.title)
+  );
+  
+  const uniqueInsights = [...new Set(insights)];
+  const uniqueThemes = [...new Set(themes)];
+  
+  console.log('WILTW parsing results:', {
+    articlesFound: uniqueArticles.length,
+    insightsFound: uniqueInsights.length,
+    themesFound: uniqueThemes.length
+  });
+  
   return {
-    articles,
-    summary: `WILTW report analyzing ${articles.length} key investment themes from actual PDF content`,
-    keyInsights: articles.map(a => `- **${a.title}**: ${a.content.substring(0, 150)}...`),
-    investmentThemes: articles.slice(0, 5).map(a => a.title),
+    articles: uniqueArticles.slice(0, 8),
+    summary: `WILTW report analyzing ${uniqueArticles.length} key investment themes and market insights`,
+    keyInsights: uniqueInsights.slice(0, 8),
+    investmentThemes: uniqueThemes.slice(0, 6),
     targetAudience: 'Investment professionals and portfolio managers'
   };
 }
