@@ -66,10 +66,7 @@ export function ContentDistribution() {
     }
   };
 
-  const { data: reports = [], isLoading: reportsLoading } = useQuery({
-    queryKey: ["/api/content-reports"],
-    queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
-  });
+
 
 
 
