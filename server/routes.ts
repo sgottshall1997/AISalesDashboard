@@ -1876,18 +1876,18 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
 
       const comprehensiveSummary = comprehensiveResponse.choices[0].message.content;
 
-      // Combine all three summaries for the response
+      // Combine all three summaries for the response with proper spacing
       const combinedSummary = `## Structured Article-by-Article Analysis
 
 ${structuredSummary}
 
----
+\n\n---\n\n
 
 ## Detailed Article Analysis
 
 ${detailedSummary}
 
----
+\n\n---\n\n
 
 ## Comprehensive Investment Summary
 
