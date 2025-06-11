@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,13 @@ import {
   FileText,
   ChevronDown,
   Upload,
-  Trash2
+  Trash2,
+  Copy,
+  CheckCircle,
+  Target,
+  Layers
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export function ContentDistribution() {
   const [selectedReport, setSelectedReport] = useState<string>("");
@@ -29,6 +34,10 @@ export function ContentDistribution() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [reportType, setReportType] = useState<string>("wiltw");
+  const [generatedEmail, setGeneratedEmail] = useState<string>("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
+  const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -42,12 +51,111 @@ export function ContentDistribution() {
     queryFn: () => dashboardApi.getClients(),
   });
 
-  // Removed broken suggestions query - using WorkingAISuggestions component instead
+  const { data: suggestions = [], isLoading: suggestionsLoading } = useQuery({
+    queryKey: ["/api/ai/content-suggestions"],
+    queryFn: () => apiRequest("GET", "/api/ai/content-suggestions").then(res => res.json()),
+  });
 
   const { data: savedSummaries = [] } = useQuery({
     queryKey: ["/api/report-summaries"],
     queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
   });
+
+  const generateEmail = async (suggestion: any, index: number) => {
+    setLoadingStates(prev => ({ ...prev, [index]: true }));
+    
+    try {
+      const response = await apiRequest("POST", "/api/ai/generate-theme-email", {
+        suggestion: suggestion
+      });
+      
+      const result = await response.json();
+      setGeneratedEmail(result.email);
+      setIsDialogOpen(true);
+      
+      toast({
+        title: "Email Generated",
+        description: "AI-powered email has been generated successfully.",
+      });
+    } catch (error) {
+      console.error("Error generating email:", error);
+      toast({
+        title: "Error",
+        description: "Failed to generate email. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [index]: false }));
+    }
+  };
+
+  const copyToClipboard = async (text: string, index: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedStates(prev => ({ ...prev, [index]: true }));
+      
+      toast({
+        title: "Copied!",
+        description: "Email content copied to clipboard.",
+      });
+      
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [index]: false }));
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getSuggestionStyle = (type: string) => {
+    switch (type) {
+      case "frequent_theme":
+        return "border-blue-200 bg-blue-50";
+      case "emerging_trend":
+        return "border-green-200 bg-green-50";
+      case "cross_sector":
+        return "border-purple-200 bg-purple-50";
+      case "deep_dive":
+        return "border-orange-200 bg-orange-50";
+      default:
+        return "border-gray-200 bg-gray-50";
+    }
+  };
+
+  const getSuggestionIcon = (type: string) => {
+    switch (type) {
+      case "frequent_theme":
+        return <BarChart3 className="h-5 w-5 text-blue-600" />;
+      case "emerging_trend":
+        return <TrendingUp className="h-5 w-5 text-green-600" />;
+      case "cross_sector":
+        return <Target className="h-5 w-5 text-purple-600" />;
+      case "deep_dive":
+        return <Layers className="h-5 w-5 text-orange-600" />;
+      default:
+        return <Lightbulb className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  const getSuggestionButtonColor = (type: string) => {
+    switch (type) {
+      case "frequent_theme":
+        return "bg-blue-600 hover:bg-blue-700 text-white";
+      case "emerging_trend":
+        return "bg-green-600 hover:bg-green-700 text-white";
+      case "cross_sector":
+        return "bg-purple-600 hover:bg-purple-700 text-white";
+      case "deep_dive":
+        return "bg-orange-600 hover:bg-orange-700 text-white";
+      default:
+        return "bg-gray-600 hover:bg-gray-700 text-white";
+    }
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -227,18 +335,7 @@ export function ContentDistribution() {
     }
   };
 
-  const getSuggestionIcon = (type: string) => {
-    switch (type) {
-      case "high_engagement":
-        return <Bot className="h-5 w-5 text-primary" />;
-      case "renewal_opportunity":
-        return <Lightbulb className="h-5 w-5 text-green-600" />;
-      case "low_engagement":
-        return <BarChart3 className="h-5 w-5 text-yellow-600" />;
-      default:
-        return <Bot className="h-5 w-5 text-gray-600" />;
-    }
-  };
+
 
   const getSuggestionStyle = (type: string) => {
     switch (type) {
@@ -561,46 +658,7 @@ export function ContentDistribution() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Content Suggestions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {false ? (
-                [].map((suggestion: any, index: number) => (
-                  <div key={index} className={`border rounded-lg p-4 ${getSuggestionStyle(suggestion.type)}`}>
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0">
-                        {getSuggestionIcon(suggestion.type)}
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <p className="text-sm font-medium text-gray-800">{suggestion.title}</p>
-                        <p className="text-sm text-gray-700 mt-1">{suggestion.description}</p>
-                        <div className="mt-2">
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            className={`text-xs ${getSuggestionButtonStyle(suggestion.type)} !important`}
-                          >
-                            {suggestion.action}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center justify-center text-blue-600">
-                    <Bot className="h-5 w-5 mr-2" />
-                    <span className="text-sm">AI suggestions now available in the dedicated section below</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+
       </div>
 
       {/* Client Engagement Details */}
