@@ -329,20 +329,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suggestions = [
         {
           type: "frequent_theme",
-          title: "China Technology Investment Outlook",
-          description: "Analysis of technology sector opportunities in Chinese markets",
-          emailAngle: "Given your interest in emerging markets and technology, our latest analysis on China's tech sector reveals compelling investment opportunities despite regulatory headwinds.",
-          supportingReports: ["China Tech Q4 2024", "APAC Market Update"],
+          title: "Commodities & Inflation: Navigating the New Supercycle",
+          description: "Explore the strategic allocation towards commodities and precious metals as inflation hedges in the current market environment.",
+          emailAngle: "The reports suggest a strong shift towards commodities, highlighting the potential of gold, silver, and other inflation-sensitive assets as key investment opportunities.",
+          supportingReports: ["WATMTU_2024-05-26", "WATMTU_2025-06-08", "WILTW_2025-05-22"],
           keyPoints: [
-            "Regulatory environment stabilizing for major tech platforms",
-            "AI and semiconductor opportunities emerging",
-            "Consumer spending patterns shifting to digital services"
+            "Gold is set to outperform the S&P 500 and international stock markets.",
+            "Silver is starting to outperform gold, with silver miners showing strong relative performance.",
+            "The U.S. Dollar's long-term downtrend is bullish for commodities and inflation."
           ],
           insights: [
-            "Government policy support for AI development creating investment opportunities",
-            "Consumer tech recovery showing early signs of momentum"
+            "The ratio of gold to the U.S. Consumer Price Index (CPI) broke-out last September from a 45-year downtrend-line (WATMTU_2025-06-08).",
+            "Silver miners have broken-out against almost every broad stock-market index in the world (WATMTU_2025-06-08)."
           ],
           priority: "high"
+        },
+        {
+          type: "emerging_trend",
+          title: "Market Paradigm Shifts: From Growth to Value",
+          description: "Identify the transition from growth to value sectors and the implications for asset allocation strategies.",
+          emailAngle: "The reports emphasize a paradigm shift towards value sectors, driven by rising bond yields and inflationary pressures, suggesting a strategic reallocation of portfolios.",
+          supportingReports: ["WATMTU_2024-05-26", "WATMTU_2025-06-08"],
+          keyPoints: [
+            "A classic paradigm shift into new market leaders featuring commodities and inflation-sensitive sectors.",
+            "Bond yields are expected to rise significantly as the 40-year bull market in bonds transitions to a secular bear market.",
+            "The shift towards hard assets is likely to gain further momentum."
+          ],
+          insights: [
+            "Since September 2020, a shift into commodities and inflation-sensitive sectors has been argued (WATMTU_2024-05-26).",
+            "Bond yields will rise significantly as the 40-year bull market in bonds transitions to a secular bear market (WATMTU_2024-05-26)."
+          ],
+          priority: "high"
+        },
+        {
+          type: "cross_sector",
+          title: "Geopolitical Investments: China's Market Opportunities",
+          description: "Assess the potential of Chinese markets as they enter a secular bull market, providing contrarian investment opportunities.",
+          emailAngle: "The reports highlight China's emerging bull market as a contrarian opportunity, suggesting potential gains for investors willing to navigate geopolitical risks.",
+          supportingReports: ["WATMTU_2025-06-08", "WILTW_2025-05-22"],
+          keyPoints: [
+            "Chinese stocks are in the early stages of a secular bull market.",
+            "The question of China being uninvestable presents a contrarian opportunity.",
+            "China's stock-market could be among the best-performing markets."
+          ],
+          insights: [
+            "For the past two years, the question among Western investors has been: 'Is China uninvestable?' (WATMTU_2025-06-08).",
+            "We believe Chinese stocks are in the early stages of a secular bull market (WATMTU_2025-06-08)."
+          ],
+          priority: "medium"
+        },
+        {
+          type: "deep_dive",
+          title: "Deep Investment Analysis: Strategic Portfolio Allocation",
+          description: "Delve into complex financial strategies and asset allocation insights to optimize portfolio performance in volatile markets.",
+          emailAngle: "The reports provide in-depth analysis on strategic asset allocation, emphasizing the importance of hard assets and inflation hedges in current portfolios.",
+          supportingReports: ["WATMTU_2025-06-08", "WILTW_2025-05-22"],
+          keyPoints: [
+            "Strategic allocation towards commodities and precious metals as inflation hedges.",
+            "The shift towards hard assets is likely to gain further momentum.",
+            "Sensitive inflation indicators in the markets are starting to come alive."
+          ],
+          insights: [
+            "Gold is set to outperform the S&P 500 and international stock markets (WATMTU_2025-06-08).",
+            "The shift towards hard assets is likely to gain further momentum (WATMTU_2025-06-08)."
+          ],
+          priority: "medium"
         }
       ];
       res.json(suggestions);

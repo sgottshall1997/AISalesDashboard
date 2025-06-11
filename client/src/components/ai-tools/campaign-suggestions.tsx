@@ -87,15 +87,15 @@ export function CampaignSuggestions() {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'frequent_theme':
-        return <TrendingUp className="w-4 h-4" />;
+        return <TrendingUp className="w-5 h-5" />;
       case 'emerging_trend':
-        return <Lightbulb className="w-4 h-4" />;
+        return <Lightbulb className="w-5 h-5" />;
       case 'cross_sector':
-        return <Users className="w-4 h-4" />;
+        return <Users className="w-5 h-5" />;
       case 'deep_dive':
-        return <Users className="w-4 h-4" />;
+        return <Users className="w-5 h-5" />;
       default:
-        return <Lightbulb className="w-4 h-4" />;
+        return <Lightbulb className="w-5 h-5" />;
     }
   };
 
@@ -153,101 +153,111 @@ export function CampaignSuggestions() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {isLoading ? (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+                <div key={i} className="animate-pulse border border-gray-200 rounded-lg p-6">
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6 mb-4"></div>
+                  <div className="h-12 bg-blue-200 rounded w-full"></div>
                 </div>
               ))}
             </div>
           ) : suggestions && suggestions.length > 0 ? (
-            <div className="space-y-4">
-              {suggestions.map((suggestion, index) => (
-                <Card key={index} className="border-l-4 border-l-purple-500">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(suggestion.type)}
-                        <h4 className="font-semibold text-lg">{suggestion.title}</h4>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {getTypeLabel(suggestion.type)}
-                        </Badge>
-                        <Badge className={`text-xs ${getPriorityColor(suggestion.priority)}`}>
-                          {suggestion.priority}
-                        </Badge>
+            <div className="space-y-6">
+              {suggestions.slice(0, 4).map((suggestion, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-6 border-l-4 border-l-purple-600">
+                  {/* Header with icon, title and badge */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      {getTypeIcon(suggestion.type)}
+                      <h3 className="text-lg font-semibold text-gray-900">{suggestion.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {getTypeLabel(suggestion.type)}
+                      </Badge>
+                      <Badge className={`text-xs font-medium ${getPriorityColor(suggestion.priority)}`}>
+                        {suggestion.priority}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Description */}
+                  <p className="text-gray-700 mb-4 leading-relaxed">{suggestion.description}</p>
+                  
+                  {/* Email Angle */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-900 mb-2">Email Angle:</h4>
+                    <p className="text-sm text-gray-600 italic leading-relaxed">"{suggestion.emailAngle}"</p>
+                  </div>
+                  
+                  {/* Key Points */}
+                  {suggestion.keyPoints && suggestion.keyPoints.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Key Points:</h4>
+                      <ul className="space-y-1">
+                        {suggestion.keyPoints.map((point, pointIndex) => (
+                          <li key={pointIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                            <span className="text-gray-400 mt-1.5 flex-shrink-0">•</span>
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Key Insights */}
+                  {suggestion.insights && suggestion.insights.length > 0 && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Key Insights:</h4>
+                      <ul className="space-y-1">
+                        {suggestion.insights.map((insight, insightIndex) => (
+                          <li key={insightIndex} className="flex items-start gap-2 text-sm text-gray-700">
+                            <span className="text-gray-400 mt-1.5 flex-shrink-0">•</span>
+                            <span>{insight}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Supporting Reports */}
+                  {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Supporting Reports:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestion.supportingReports.map((report, reportIndex) => (
+                          <span key={reportIndex} className="inline-block bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1 rounded-full">
+                            {report}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    
-                    <p className="text-gray-700 mb-3">{suggestion.description}</p>
-                    
-                    <div className="mb-3">
-                      <h5 className="font-medium text-sm text-gray-900 mb-1">Email Angle:</h5>
-                      <p className="text-sm text-gray-600 italic">"{suggestion.emailAngle}"</p>
-                    </div>
-                    
-                    {suggestion.keyPoints && suggestion.keyPoints.length > 0 && (
-                      <div className="mb-3">
-                        <h5 className="font-medium text-sm text-gray-900 mb-2">Key Points:</h5>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                          {suggestion.keyPoints.map((point, pointIndex) => (
-                            <li key={pointIndex}>{point}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {suggestion.insights && suggestion.insights.length > 0 && (
-                      <div className="mb-3">
-                        <h5 className="font-medium text-sm text-gray-900 mb-2">Key Insights:</h5>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">
-                          {suggestion.insights.map((insight, insightIndex) => (
-                            <li key={insightIndex}>{insight}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
-                      <div className="mb-4">
-                        <h5 className="font-medium text-sm text-gray-900 mb-2">Supporting Reports:</h5>
-                        <div className="flex flex-wrap gap-1">
-                          {suggestion.supportingReports.map((report, reportIndex) => (
-                            <Badge key={reportIndex} variant="secondary" className="text-xs">
-                              {report}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="mt-4 pt-3 border-t border-gray-200">
-                      <Button
-                        onClick={() => handleGenerateEmail(suggestion)}
-                        disabled={generatingFor === suggestion.title}
-                        className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                      >
-                        <Mail className="w-4 h-4" />
-                        {generatingFor === suggestion.title ? "Generating Email..." : "Generate Professional Email"}
-                      </Button>
-                      <p className="text-xs text-gray-500 mt-1 text-center">
-                        Generates email matching 13D Research professional style
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+                  )}
+                  
+                  {/* Generate Email Button */}
+                  <Button
+                    onClick={() => handleGenerateEmail(suggestion)}
+                    disabled={generatingFor === suggestion.title}
+                    className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm font-medium"
+                  >
+                    <Mail className="w-4 h-4" />
+                    {generatingFor === suggestion.title ? "Generating Email..." : "Generate Professional Email"}
+                  </Button>
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    Generates email matching 13D Research professional style
+                  </p>
+                </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8">
+            <div className="text-center py-12">
               <Lightbulb className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">No campaign suggestions available at the moment.</p>
-              <p className="text-sm text-gray-500 mt-1">Try refreshing or uploading more research reports.</p>
+              <p className="text-gray-600 mb-2">No campaign suggestions available at the moment.</p>
+              <p className="text-sm text-gray-500">Try refreshing or uploading more research reports.</p>
             </div>
           )}
         </CardContent>
