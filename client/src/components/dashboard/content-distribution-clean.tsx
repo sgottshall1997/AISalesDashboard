@@ -387,19 +387,58 @@ export function ContentDistribution() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button 
-                onClick={() => {
-                  if (selectedReport) {
-                    setIsGeneratingSummary(true);
-                    summarizeReportMutation.mutate(selectedReport);
-                  }
-                }}
-                disabled={!selectedReport || isGeneratingSummary}
-                className="flex items-center gap-2"
-              >
-                <Bot className="w-4 h-4" />
-                {isGeneratingSummary ? "Parsing..." : "Parse Report"}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    if (selectedReport) {
+                      setIsGeneratingSummary(true);
+                      summarizeReportMutation.mutate(selectedReport);
+                    }
+                  }}
+                  disabled={!selectedReport || isGeneratingSummary}
+                  className="flex items-center gap-2"
+                >
+                  <Bot className="w-4 h-4" />
+                  {isGeneratingSummary ? "Parsing..." : "Parse Report"}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    if (selectedReport) {
+                      try {
+                        const response = await fetch(`/api/report-summaries`);
+                        const summaries = await response.json();
+                        const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+                        
+                        if (reportSummary) {
+                          setReportSummary(reportSummary.parsed_summary);
+                          toast({
+                            title: "Summary Loaded",
+                            description: "Previously saved summary loaded successfully.",
+                          });
+                        } else {
+                          toast({
+                            title: "No Saved Summary",
+                            description: "No previously saved summary found. Try parsing the report first.",
+                            variant: "destructive",
+                          });
+                        }
+                      } catch (error) {
+                        toast({
+                          title: "Error",
+                          description: "Failed to load saved summary.",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}
+                  disabled={!selectedReport}
+                  className="flex items-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Load Saved Summary
+                </Button>
+              </div>
             </div>
 
             {reportSummary && (
