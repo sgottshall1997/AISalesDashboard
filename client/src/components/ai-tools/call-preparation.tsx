@@ -8,13 +8,20 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Phone, User, Building, TrendingUp, MessageCircle, HelpCircle, Loader2 } from "lucide-react";
+import { Phone, User, Building, Building2, TrendingUp, MessageCircle, HelpCircle, Loader2 } from "lucide-react";
+
+interface TalkingPoint {
+  mainPoint: string;
+  subBullets: string[];
+}
 
 interface CallPrepResult {
   prospectSnapshot: string;
+  personalBackground?: string;
+  companyOverview?: string;
   topInterests: string;
   portfolioInsights: string;
-  talkingPoints: string[];
+  talkingPoints: (string | TalkingPoint)[];
   smartQuestions: string[];
 }
 
@@ -226,6 +233,32 @@ export function CallPreparation() {
               </div>
             </div>
 
+            {/* Personal Background */}
+            {callPrepResult.personalBackground && (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <User className="w-4 h-4 mr-2 text-indigo-600" />
+                  <h3 className="font-semibold">Personal Background</h3>
+                </div>
+                <div className="bg-indigo-50 p-3 rounded-lg">
+                  <p className="text-sm">{callPrepResult.personalBackground}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Company Overview */}
+            {callPrepResult.companyOverview && (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Building className="w-4 h-4 mr-2 text-cyan-600" />
+                  <h3 className="font-semibold">Company Overview</h3>
+                </div>
+                <div className="bg-cyan-50 p-3 rounded-lg">
+                  <p className="text-sm">{callPrepResult.companyOverview}</p>
+                </div>
+              </div>
+            )}
+
             {/* Top Interests */}
             <div className="space-y-2">
               <div className="flex items-center">
@@ -255,16 +288,30 @@ export function CallPreparation() {
                 <h3 className="font-semibold">Talking Points for Call</h3>
               </div>
               <div className="bg-orange-50 p-3 rounded-lg">
-                <ul className="space-y-2">
-                  {callPrepResult.talkingPoints.map((point, index) => (
-                    <li key={index} className="flex items-start">
-                      <Badge variant="outline" className="mr-2 mt-0.5 text-xs">
-                        {index + 1}
-                      </Badge>
-                      <span className="text-sm">{point}</span>
-                    </li>
+                <div className="space-y-4">
+                  {callPrepResult.talkingPoints.map((point: any, index: number) => (
+                    <div key={index} className="space-y-2">
+                      <div className="flex items-start">
+                        <Badge variant="outline" className="mr-2 mt-0.5 text-xs">
+                          {index + 1}
+                        </Badge>
+                        <span className="text-sm font-medium">
+                          {typeof point === 'string' ? point : point.mainPoint}
+                        </span>
+                      </div>
+                      {typeof point === 'object' && point.subBullets && point.subBullets.length > 0 && (
+                        <ul className="ml-8 space-y-1">
+                          {point.subBullets.map((bullet: string, bulletIndex: number) => (
+                            <li key={bulletIndex} className="text-sm text-gray-600 flex items-start">
+                              <span className="mr-2">•</span>
+                              <span>{bullet}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             </div>
 
