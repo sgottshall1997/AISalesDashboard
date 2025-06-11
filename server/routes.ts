@@ -1631,8 +1631,11 @@ Spencer`;
         });
       }
 
-      // Optimize content for AI processing - chunk large content
-      if (actualContent.length > 50000) {
+      // Store original content for WILTW parsing
+      const originalContent = actualContent;
+      
+      // Optimize content for AI processing - chunk large content only for non-WILTW reports
+      if (actualContent.length > 50000 && promptType !== "wiltw_parser") {
         // Take meaningful chunks from the content for analysis
         const chunks = [];
         const chunkSize = 15000;
@@ -1649,6 +1652,10 @@ Spencer`;
         
         actualContent = chunks.join('\n\n--- SECTION BREAK ---\n\n');
         console.log('Content chunked, new length:', actualContent.length);
+      } else if (actualContent.length > 50000 && promptType === "wiltw_parser") {
+        // For WILTW reports, use a different strategy - take larger chunks but preserve structure
+        actualContent = actualContent.substring(0, 80000); // Take first 80k characters to preserve structure
+        console.log('WILTW content truncated to preserve structure, new length:', actualContent.length);
       }
       
       console.log('Final content check before prompts:', {
@@ -1785,9 +1792,17 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       let summary = detailedSummary;
 
       // For WILTW reports, generate additional structured and comprehensive summaries
+      console.log('Checking if WILTW parser should generate three summaries:', {
+        promptType,
+        isWILTW: promptType === "wiltw_parser",
+        willGenerateThreeSummaries: promptType === "wiltw_parser"
+      });
+      
       if (promptType === "wiltw_parser") {
+        console.log('Starting WILTW three-part summary generation...');
         // Generate the structured article-by-article analysis using the enhanced parser
-        const parsedData = parseWILTWReport(actualContent);
+        const parsedData = parseWILTWReport(originalContent);
+        console.log('Parsed WILTW data:', { articlesCount: parsedData.articles.length });
         
         const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report contains ${parsedData.articles.length} numbered articles that have been pre-extracted.
 
@@ -1827,6 +1842,7 @@ Content: ${article.fullContent}
 
 MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articles using the exact format specified. Do not skip any articles and maintain consistent depth across all analyses.`;
 
+        console.log('Making structured summary API call...');
         const structuredResponse = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -1844,6 +1860,7 @@ MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articl
         });
 
         structuredSummary = structuredResponse.choices[0].message.content || '';
+        console.log('Structured summary generated, length:', structuredSummary.length);
 
         // Generate the comprehensive summary (this uses the same system prompt as the detailedSummary)
         const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
@@ -1871,6 +1888,7 @@ ${actualContent}
 
 Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
 
+        console.log('Making comprehensive summary API call...');
         const comprehensiveResponse = await openai.chat.completions.create({
           model: "gpt-4o",
           messages: [
@@ -1888,6 +1906,7 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
         });
 
         comprehensiveSummary = comprehensiveResponse.choices[0].message.content || '';
+        console.log('Comprehensive summary generated, length:', comprehensiveSummary.length);
 
         // Combine all three summaries for WILTW reports
         const combinedSummary = `## Structured Article-by-Article Analysis
@@ -1907,6 +1926,9 @@ ${detailedSummary}
 ${comprehensiveSummary}`;
 
         summary = combinedSummary;
+        console.log('WILTW three-part summary completed. Combined summary length:', summary.length);
+      } else {
+        console.log('Not a WILTW parser, using single summary approach');
       }
       
       // Store the generated summary (overwrite if exists)
