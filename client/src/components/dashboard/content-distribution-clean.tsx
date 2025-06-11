@@ -553,14 +553,14 @@ export function ContentDistribution() {
                     onClick={() => {
                       if (selectedFiles.length > 0) {
                         setIsUploadingMultiple(true);
-                        uploadMultiplePdfsMutation.mutate(selectedFiles);
+                        multipleUploadMutation.mutate(selectedFiles);
                       }
                     }}
-                    disabled={selectedFiles.length === 0 || isUploadingMultiple}
+                    disabled={selectedFiles.length === 0 || multipleUploadMutation.isPending}
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
                   >
                     <Upload className="w-4 h-4" />
-                    {isUploadingMultiple ? `Processing ${selectedFiles.length} files...` : `Upload & Parse ${selectedFiles.length} Files`}
+                    {multipleUploadMutation.isPending ? `Processing ${selectedFiles.length} files...` : `Upload & Parse ${selectedFiles.length} Files`}
                   </Button>
                 </div>
                 

@@ -279,6 +279,122 @@ const upload = multer({
   }
 });
 
+// Helper function to process a single PDF file
+async function processSinglePdf(file: Express.Multer.File, reportType: string) {
+  // Extract text content from uploaded PDF buffer
+  let extractedText = '';
+  
+  try {
+    // Check if buffer exists
+    if (!file.buffer) {
+      throw new Error('File buffer is not available - multer may not be configured correctly');
+    }
+    
+    // Extract actual PDF content using pdf2json library
+    const pdfFilename = file.originalname;
+    
+    console.log('Processing PDF with pdf2json:', {
+      filename: pdfFilename,
+      bufferSize: file.buffer.length
+    });
+    
+    // Extract text using pdf2json library
+    extractedText = await new Promise<string>((resolve, reject) => {
+      const pdfParser = new (PDFParser as any)(null, true);
+      
+      pdfParser.on("pdfParser_dataError", (errData: any) => {
+        reject(new Error(`PDF parsing error: ${errData.parserError}`));
+      });
+      
+      pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+        try {
+          // Extract text from all pages
+          let fullText = '';
+          
+          if (pdfData.Pages) {
+            for (const page of pdfData.Pages) {
+              if (page.Texts) {
+                for (const text of page.Texts) {
+                  if (text.R) {
+                    for (const run of text.R) {
+                      if (run.T) {
+                        // Decode URI component and add space
+                        fullText += decodeURIComponent(run.T) + ' ';
+                      }
+                    }
+                  }
+                }
+              }
+              fullText += '\n\n'; // Page break
+            }
+          }
+          
+          // Clean up the text
+          fullText = fullText
+            .replace(/\s+/g, ' ')
+            .replace(/\n\s*\n/g, '\n\n')
+            .trim();
+            
+          resolve(fullText);
+        } catch (extractError) {
+          reject(new Error(`Error extracting text from PDF: ${extractError}`));
+        }
+      });
+      
+      // Parse the PDF buffer
+      pdfParser.parseBuffer(file.buffer);
+    });
+
+    console.log('PDF text extraction successful:', {
+      filename: pdfFilename,
+      extractedLength: extractedText.length,
+      preview: extractedText.substring(0, 200) + '...'
+    });
+
+  } catch (parseError) {
+    console.error('PDF parsing failed:', parseError);
+    throw new Error(`Failed to extract text from PDF: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+  }
+
+  // Determine parser type and parse content
+  let parsedContent: any;
+  let reportTitle = file.originalname.replace('.pdf', '');
+  
+  if (reportType === 'watmtu') {
+    parsedContent = parseWATMTUReport(extractedText);
+    reportTitle = `WATMTU Report - ${new Date().toISOString().split('T')[0]}`;
+  } else {
+    parsedContent = parseWILTWReport(extractedText);
+    reportTitle = `WILTW Report - ${new Date().toISOString().split('T')[0]}`;
+  }
+
+  // Store in database
+  const reportData = {
+    title: reportTitle,
+    type: reportType.toUpperCase(),
+    published_date: new Date(),
+    content_summary: parsedContent.summary || '',
+    engagement_level: 'medium',
+    tags: parsedContent.tags || [],
+    full_content: extractedText,
+    open_rate: null,
+    click_rate: null,
+    article_summaries: parsedContent.articles || [],
+    key_themes: parsedContent.themes || [],
+    sentiment_analysis: parsedContent.sentiment || null,
+    reading_time_minutes: Math.ceil(extractedText.length / 1000), // Rough estimate
+  };
+
+  const createdReport = await storage.createContentReport(reportData);
+  
+  return {
+    reportId: createdReport.id,
+    title: reportTitle,
+    type: reportType,
+    summary: parsedContent.summary
+  };
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
@@ -514,16 +630,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced PDF upload endpoint with actual PDF text extraction
-  app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
+  app.post("/api/upload-pdf", upload.array('pdf', 10), async (req: Request, res: Response) => {
     try {
-      const file = req.file;
+      const files = req.files as Express.Multer.File[];
+      const singleFile = req.file;
       const reportType = req.body.reportType || 'wiltw';
-      const parserType = req.body.parserType || (reportType === 'watmtu' ? 'watmtu_parser' : 'wiltw_parser');
+      const parserType = req.body.parserType || 'auto_detect';
       
-      if (!file) {
-        return res.status(400).json({ error: 'No PDF file uploaded' });
+      // Handle both single and multiple file uploads
+      const filesToProcess = files && files.length > 0 ? files : (singleFile ? [singleFile] : []);
+      
+      if (filesToProcess.length === 0) {
+        return res.status(400).json({ error: 'No PDF files uploaded' });
       }
 
+      // If multiple files, return batch processing response
+      if (filesToProcess.length > 1) {
+        const results = [];
+        const errors = [];
+
+        for (const file of filesToProcess) {
+          try {
+            // Auto-detect parser type based on filename
+            const currentFileType = file.originalname.toLowerCase().includes('watmtu') ? 'watmtu' : 'wiltw';
+            
+            console.log('Processing file:', {
+              filename: file.originalname,
+              detectedType: currentFileType,
+              size: file.size
+            });
+
+            // Process the PDF inline for batch upload
+            let extractedText = '';
+            
+            // Extract text content from uploaded PDF buffer
+            if (!file.buffer) {
+              throw new Error('File buffer is not available');
+            }
+            
+            // Extract text using pdf2json library
+            extractedText = await new Promise<string>((resolve, reject) => {
+              const pdfParser = new (PDFParser as any)(null, true);
+              
+              pdfParser.on("pdfParser_dataError", (errData: any) => {
+                reject(new Error(`PDF parsing error: ${errData.parserError}`));
+              });
+              
+              pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+                try {
+                  let fullText = '';
+                  
+                  if (pdfData.Pages) {
+                    for (const page of pdfData.Pages) {
+                      if (page.Texts) {
+                        for (const text of page.Texts) {
+                          if (text.R) {
+                            for (const run of text.R) {
+                              if (run.T) {
+                                fullText += decodeURIComponent(run.T) + ' ';
+                              }
+                            }
+                          }
+                        }
+                      }
+                      fullText += '\n\n';
+                    }
+                  }
+                  
+                  fullText = fullText.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n\n').trim();
+                  resolve(fullText);
+                } catch (extractError) {
+                  reject(new Error(`Error extracting text from PDF: ${extractError}`));
+                }
+              });
+              
+              pdfParser.parseBuffer(file.buffer);
+            });
+
+            // Parse content based on type
+            let parsedContent: any;
+            let reportTitle = file.originalname.replace('.pdf', '');
+            
+            if (currentFileType === 'watmtu') {
+              parsedContent = parseWATMTUReport(extractedText);
+              reportTitle = `WATMTU Report - ${new Date().toISOString().split('T')[0]}`;
+            } else {
+              parsedContent = parseWILTWReport(extractedText);
+              reportTitle = `WILTW Report - ${new Date().toISOString().split('T')[0]}`;
+            }
+
+            // Store in database
+            const reportData = {
+              title: reportTitle,
+              type: currentFileType.toUpperCase(),
+              published_date: new Date(),
+              content_summary: parsedContent.summary || '',
+              engagement_level: 'medium',
+              tags: parsedContent.tags || [],
+              full_content: extractedText,
+              open_rate: null,
+              click_rate: null,
+              article_summaries: parsedContent.articles || [],
+              key_themes: parsedContent.themes || [],
+              sentiment_analysis: parsedContent.sentiment || null,
+              reading_time_minutes: Math.ceil(extractedText.length / 1000),
+            };
+
+            const createdReport = await storage.createContentReport(reportData);
+            const processedData = {
+              reportId: createdReport.id,
+              title: reportTitle,
+              type: currentFileType,
+              summary: parsedContent.summary
+            };
+            results.push({
+              filename: file.originalname,
+              type: currentFileType,
+              success: true,
+              reportId: processedData.reportId
+            });
+          } catch (error) {
+            console.error(`Error processing ${file.originalname}:`, error);
+            errors.push({
+              filename: file.originalname,
+              error: error instanceof Error ? error.message : 'Unknown error'
+            });
+          }
+        }
+
+        return res.json({
+          success: true,
+          results,
+          errors,
+          successCount: results.length,
+          errorCount: errors.length,
+          message: `Processed ${results.length} files successfully${errors.length > 0 ? `, ${errors.length} failed` : ''}`
+        });
+      }
+
+      // Single file processing
+      const file = filesToProcess[0];
+      const detectedType = file.originalname.toLowerCase().includes('watmtu') ? 'watmtu' : 'wiltw';
+      
       console.log('File upload debug:', {
         fieldname: file.fieldname,
         originalname: file.originalname,
