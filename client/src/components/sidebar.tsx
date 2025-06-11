@@ -10,7 +10,8 @@ import {
   Menu, 
   X, 
   User,
-  Upload
+  Upload,
+  Brain
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: "overview", name: "Overview", icon: BarChart3 },
     { id: "invoicing", name: "Invoicing Assistant", icon: FileText },
     { id: "content", name: "Content Distribution", icon: TrendingUp },
+    { id: "ai-tools", name: "AI Content Tools", icon: Brain },
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
     { id: "followup", name: "Task Tracker", icon: CheckSquare },
     { id: "upload", name: "CSV Upload", icon: Upload },

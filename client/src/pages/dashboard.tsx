@@ -3,6 +3,7 @@ import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
 import InvoicingAssistant from "@/components/invoicing-assistant";
 import { ContentDistribution } from "@/components/dashboard/content-distribution-clean";
+import { AIContentTools } from "@/components/ai-content-tools";
 import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
@@ -23,6 +24,12 @@ export default function Dashboard() {
         return (
           <div className="space-y-6 p-6">
             <ContentDistribution />
+          </div>
+        );
+      case "ai-tools":
+        return (
+          <div className="space-y-6 p-6">
+            <AIContentTools />
           </div>
         );
       case "pipeline":

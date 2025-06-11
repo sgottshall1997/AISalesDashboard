@@ -1,0 +1,76 @@
+You're the backend+frontend AI engineer inside my Replit project: `AISalesDashboard`.
+
+I want to implement the following **6 new high-impact features**. Build each modularly and explain dependencies if needed.
+
+# 🎯 Add a new top-level menu/tab: “AI Content Tools” where all these tools will be domiciled 
+
+---
+
+### 1. 📈 THEME TRACKER (Time-Series Trend Engine)
+**Goal:** Track how often keywords/themes appear across all reports, and visualize them over time.
+**Tasks:**
+- Index all WILTW/WATMTU titles and summaries by date
+- Extract top 100 recurring themes via NLP (noun phrases, named entities)
+- Store time-series counts (e.g. "copper": Jan 4x, Feb 6x...)
+- Build `/api/themes/timeseries` endpoint
+- On frontend: Chart themes over time (dropdown to select theme) using Recharts line graph
+- Optional: Alert if theme spike >300% over 30 days
+
+---
+
+### 2. 🎯 PROSPECT MATCHMAKER (Theme-to-Client)
+**Goal:** Match a prospect's stated interests to themes from reports
+**Tasks:**
+- Create input form or CRM data ingestion for `prospect_interests: ["uranium", "inflation"]`
+- Match to top 5 WILTW/WATMTU articles with best thematic overlap using cosine similarity or keyword matches
+- Build `/api/match-prospect-themes` endpoint
+- Frontend: Return matched articles with summary & confidence score
+
+---
+
+### 3. 📊 PORTFOLIO RELEVANCE SCORER
+**Goal:** Upload a client portfolio (tickers) → Score which reports are most relevant
+**Tasks:**
+- Accept CSV or textarea with tickers (e.g. AAPL, NEM, URNM)
+- Match tickers to articles with ticker mentions or sector keywords
+- Score by overlap count
+- Build `/api/relevance-score` endpoint
+- Frontend: Display top 10 matched articles with confidence bar
+
+---
+
+### 4. 💬 AI Q&A on WILTW/WATMTU Corpus
+**Goal:** Let users ask questions like “What’s 13D’s view on Chinese equities?”
+**Tasks:**
+- Aggregate all parsed reports into a searchable vector database (use `langchain + chroma` or simple semantic match with OpenAI embeddings)
+- Add `/api/ask-reports` endpoint: `{ query: string }` → `OpenAI` with context window of top 3 matching reports
+- Frontend: Q&A chatbox that streams answers
+
+---
+
+### 5. 📄 1-PAGER THEME TEAR SHEET GENERATOR
+**Goal:** Auto-generate a PDF summary for any theme (e.g. “gold miners”)
+**Tasks:**
+- Prompt OpenAI to generate:
+  - Overview paragraph
+  - Key quotes from reports
+  - Top tickers + ETFs
+  - Thesis summary
+- Generate React component to view/share/download
+- Optional: Use `html-pdf` or `puppeteer` to export as PDF
+- Add button: “Generate 1-Pager” next to each theme
+
+---
+
+### 6. 🧠 FUND MAPPING TOOL (Investor → Relevant Reports)
+**Goal:** Match public investor data (e.g. 13F holdings) or known interests to research
+**Tasks:**
+- Accept input: firm name + top 10 tickers or stated themes
+- Use ticker match + theme similarity to return matching reports
+- Endpoint: `/api/fund-mapper`
+- Output: List of top 5 articles + email draft button
+- Optional: Store investor mappings for reuse
+
+---
+
+Start with routes, controller logic, and data model changes for each module. Add mock responses and minimal UI shells for testing. Prioritize modular, reusable components with clean loading states.
