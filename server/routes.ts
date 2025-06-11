@@ -2719,7 +2719,12 @@ Generated on: ${new Date().toLocaleString()}
             for (const term of allSearchTerms) {
               const termLower = term.toLowerCase();
               const termPattern = new RegExp(`\\b${termLower}\\b`, 'gi');
-              const matches = [...report.full_content.matchAll(termPattern)];
+              const matches: RegExpExecArray[] = [];
+              let match;
+              while ((match = termPattern.exec(report.full_content)) !== null) {
+                matches.push(match);
+                if (matches.length >= 3) break; // Limit to prevent infinite loops
+              }
               
               for (const match of matches.slice(0, 2)) {
                 const matchIndex = match.index!;
@@ -2884,16 +2889,16 @@ Generated on: ${new Date().toLocaleString()}
         
         for (const word of queryWords) {
           if (report.title.toLowerCase().includes(word)) relevanceScore += 10;
-          if (report.summary && report.summary.toLowerCase().includes(word)) relevanceScore += 5;
+          if (report.content_summary && report.content_summary.toLowerCase().includes(word)) relevanceScore += 5;
           if (report.full_content && report.full_content.toLowerCase().includes(word)) relevanceScore += 3;
         }
         
-        if (relevanceScore > 15) {
+        if (relevanceScore > 8) {
           sourceReports.push({
             id: report.id,
             title: report.title,
             relevanceScore,
-            excerpt: report.summary?.substring(0, 200) || "No excerpt available"
+            excerpt: report.content_summary?.substring(0, 200) || report.full_content?.substring(0, 200) || "No excerpt available"
           });
         }
       }
@@ -3029,7 +3034,7 @@ ${topic} remains an important area for ongoing research and analysis. We recomme
         return res.status(400).json({ error: "All fund parameters required" });
       }
       
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const relevantReports = [];
       const thematicAlignment = [];
       
