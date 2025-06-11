@@ -30,7 +30,9 @@ export function ContentDistribution() {
   const [reportSummary, setReportSummary] = useState<string>("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [reportType, setReportType] = useState<string>("wiltw");
+  const [isUploadingMultiple, setIsUploadingMultiple] = useState(false);
   const [generatedEmails, setGeneratedEmails] = useState<{ [key: number]: string }>({});
   const [copiedStates, setCopiedStates] = useState<{ [key: number]: boolean }>({});
   const [loadingStates, setLoadingStates] = useState<{ [key: number]: boolean }>({});
@@ -292,6 +294,55 @@ export function ContentDistribution() {
     },
   });
 
+  const uploadMultiplePdfsMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      const results = [];
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append('pdf', file);
+        
+        // Determine parser type based on filename
+        const filename = file.name.toLowerCase();
+        let parserType = 'wiltw_parser'; // default
+        if (filename.includes('watmtu')) {
+          parserType = 'watmtu_parser';
+        }
+        formData.append('parserType', parserType);
+        
+        const response = await fetch('/api/upload-pdf', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to upload ${file.name}`);
+        }
+        
+        const result = await response.json();
+        results.push({ filename: file.name, result });
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      setIsUploadingMultiple(false);
+      setSelectedFiles([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
+      toast({
+        title: "PDFs Uploaded Successfully",
+        description: `${results.length} reports have been uploaded and automatically parsed.`,
+      });
+    },
+    onError: (error) => {
+      setIsUploadingMultiple(false);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload PDFs. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const deleteReportMutation = useMutation({
     mutationFn: async (reportId: number) => {
       const response = await apiRequest("DELETE", `/api/content-reports/${reportId}`);
@@ -345,53 +396,123 @@ export function ContentDistribution() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Single File Upload */}
+            <div className="border-b pb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Single File Upload</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
+                    Select PDF File (Thematic or Technical)
+                  </label>
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".pdf"
+                    onChange={handleFileUpload}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                    <Select value={reportType} onValueChange={setReportType}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="wiltw">Thematic</SelectItem>
+                        <SelectItem value="watmtu">Technical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex-1 flex justify-end">
+                    <Button 
+                      onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
+                      disabled={!selectedFile || uploadMutation.isPending}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {uploadMutation.isPending ? "Processing..." : "Upload & Process"}
+                    </Button>
+                  </div>
+                </div>
+                
+                {selectedFile && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      <strong>Selected:</strong> {selectedFile.name} ({getReportTypeDisplayName(reportType)})
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Multiple Files Upload */}
             <div>
-              <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
-                Select PDF File (Thematic or Technical)
-              </label>
-              <input
-                id="file-upload"
-                type="file"
-                accept=".pdf"
-                onChange={handleFileUpload}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
+              <h3 className="text-lg font-medium text-gray-900 mb-3">Bulk Upload & Auto-Parse</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="multiple-file-upload" className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Multiple PDF Files (Auto-detects WILTW/WATMTU from filename)
+                  </label>
+                  <input
+                    id="multiple-file-upload"
+                    type="file"
+                    accept=".pdf"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setSelectedFiles(files);
+                    }}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                  />
+                </div>
+                
+                <div className="flex justify-end">
+                  <Button 
+                    onClick={() => {
+                      if (selectedFiles.length > 0) {
+                        setIsUploadingMultiple(true);
+                        uploadMultiplePdfsMutation.mutate(selectedFiles);
+                      }
+                    }}
+                    disabled={selectedFiles.length === 0 || isUploadingMultiple}
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {isUploadingMultiple ? `Processing ${selectedFiles.length} files...` : `Upload & Parse ${selectedFiles.length} Files`}
+                  </Button>
+                </div>
+                
+                {selectedFiles.length > 0 && (
+                  <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm font-medium text-green-800 mb-2">
+                      Selected Files ({selectedFiles.length}):
+                    </p>
+                    <div className="space-y-1">
+                      {selectedFiles.map((file, index) => {
+                        const isWiltw = file.name.toLowerCase().includes('wiltw');
+                        const isWatmtu = file.name.toLowerCase().includes('watmtu');
+                        const parserType = isWatmtu ? 'WATMTU Parser' : 'WILTW Parser';
+                        const bgColor = isWatmtu ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
+                        
+                        return (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <span className="text-green-700">{file.name}</span>
+                            <Badge className={`${bgColor} text-xs`}>
+                              {parserType}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            
-            <div className="flex items-center gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-                <Select value={reportType} onValueChange={setReportType}>
-                  <SelectTrigger className="w-32">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="wiltw">Thematic</SelectItem>
-                    <SelectItem value="watmtu">Technical</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex-1 flex justify-end">
-                <Button 
-                  onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
-                  disabled={!selectedFile || uploadMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {uploadMutation.isPending ? "Processing..." : "Upload & Process"}
-                </Button>
-              </div>
-            </div>
-            
-            {selectedFile && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Selected:</strong> {selectedFile.name} ({getReportTypeDisplayName(reportType)})
-                </p>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

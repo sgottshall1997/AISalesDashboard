@@ -484,6 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const file = req.file;
       const reportType = req.body.reportType || 'wiltw';
+      const parserType = req.body.parserType || (reportType === 'watmtu' ? 'watmtu_parser' : 'wiltw_parser');
       
       if (!file) {
         return res.status(400).json({ error: 'No PDF file uploaded' });
@@ -633,20 +634,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const report = await storage.createContentReport(reportData);
       
+      // Automatically parse the uploaded PDF using the appropriate parser
+      let parsedSummary = '';
+      try {
+        if (parserType === 'watmtu_parser') {
+          const parsedData = parseWATMTUReport(extractedText);
+          parsedSummary = JSON.stringify(parsedData, null, 2);
+        } else {
+          // Use WILTW parser
+          const reportDate = dateStr.replace(/-/g, '-'); // Keep the date format
+          const formattedContent = formatWILTWArticles(extractedText, reportDate);
+          const parsedData = parseWILTWReport(formattedContent);
+          parsedSummary = JSON.stringify(parsedData, null, 2);
+        }
+        
+        // Store the parsed summary
+        const summaryData = {
+          title: `Parsed Summary - ${reportTitle}`,
+          type: reportType.toUpperCase() + ' Summary',
+          published_date: new Date(),
+          open_rate: '0',
+          click_rate: '0', 
+          engagement_level: 'medium' as const,
+          tags: [...tags, 'parsed-summary'],
+          content_summary: parsedSummary,
+          key_insights: [],
+          target_audience: 'Investment Professionals',
+          full_content: parsedSummary
+        };
+        
+        await storage.createContentReport(summaryData);
+        
+      } catch (parseError) {
+        console.error('Auto-parsing failed:', parseError);
+        // Continue without parsed summary if parsing fails
+      }
+      
       // Clean up uploaded file
       if (fs.existsSync(file.path)) {
         fs.unlinkSync(file.path);
       }
       
       res.json({ 
-        message: `${reportType.toUpperCase()} report uploaded successfully`,
+        message: `${reportType.toUpperCase()} report uploaded and parsed successfully`,
         report: {
           id: report.id,
           title: report.title,
           type: report.type,
-          contentLength: extractedText.length
+          contentLength: extractedText.length,
+          parsed: parsedSummary.length > 0
         },
-        reportType
+        reportType,
+        parserUsed: parserType
       });
 
     } catch (error) {
