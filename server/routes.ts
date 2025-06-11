@@ -550,7 +550,7 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
             title: report.title,
             relevanceScore,
             keyThemes,
-            publishedDate: report.uploadedAt.toISOString().split('T')[0]
+            publishedDate: (report.created_at || report.published_date || new Date()).toISOString().split('T')[0]
           });
         }
       }
@@ -593,6 +593,81 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
     } catch (error) {
       console.error("Fund mapping error:", error);
       res.status(500).json({ error: "Failed to map fund themes" });
+    }
+  });
+
+  // Theme-based email generation endpoint
+  app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
+    try {
+      const { theme, clientName, customization } = req.body;
+      
+      if (!theme) {
+        return res.status(400).json({ error: "Theme is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const emailPrompt = `You are an expert institutional sales professional writing personalized emails for 13D Research clients.
+
+Generate a professional email based on the following:
+- Theme: ${theme}
+- Client: ${clientName || 'Valued Client'}
+- Customization: ${customization || 'Standard professional approach'}
+
+Generate a JSON response with exactly this structure:
+{
+  "subject": "Professional subject line",
+  "greeting": "Personalized greeting",
+  "opening": "Opening paragraph connecting to client interests",
+  "bodyParagraphs": ["paragraph 1", "paragraph 2", "paragraph 3"],
+  "callToAction": "Clear next step or meeting request",
+  "closing": "Professional closing",
+  "keyPoints": ["key point 1", "key point 2", "key point 3"],
+  "attachmentSuggestions": ["suggested attachment 1", "suggested attachment 2"]
+}
+
+Make it professional, actionable, and aligned with institutional investment communication standards.
+Focus on value proposition and concrete insights rather than generic market commentary.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert institutional sales assistant. Generate professional email content in valid JSON format."
+          },
+          {
+            role: "user",
+            content: emailPrompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      });
+
+      const emailContent = response.choices[0].message.content;
+      
+      try {
+        const emailResult = JSON.parse(emailContent || '{}');
+        res.json(emailResult);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        res.status(500).json({ error: "Failed to parse AI response" });
+      }
+
+    } catch (error) {
+      console.error("Theme email generation error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate theme-based email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 

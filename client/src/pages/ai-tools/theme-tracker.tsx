@@ -2,8 +2,13 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, Calendar, Search, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { TrendingUp, Calendar, Search, Loader2, Mail, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ThemeData {
   theme: string;
@@ -25,7 +30,23 @@ export default function ThemeTracker() {
     try {
       const response = await fetch("/api/themes/list");
       const data = await response.json();
-      setThemes(data || []);
+      
+      // Transform the API response to match our interface
+      const transformedThemes = data.map((item: any) => ({
+        theme: item.theme,
+        frequency: item.frequency || item.totalCount || 0,
+        trend: item.trend || "stable",
+        reports: item.reports || [],
+        firstSeen: "2024-01-01", // Default values for now
+        lastSeen: new Date().toISOString().split('T')[0],
+        relevanceScore: Math.min(100, (item.frequency || item.totalCount || 0) * 8)
+      }));
+      
+      setThemes(transformedThemes);
+      toast({
+        title: "Themes Loaded",
+        description: `Found ${transformedThemes.length} themes across your reports`,
+      });
     } catch (error) {
       toast({
         title: "Error",
