@@ -540,10 +540,7 @@ export function ContentDistribution() {
                     type="file"
                     accept=".pdf"
                     multiple
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      setSelectedFiles(files);
-                    }}
+                    onChange={handleFileUpload}
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                   />
                 </div>
