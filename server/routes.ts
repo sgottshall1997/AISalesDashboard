@@ -547,28 +547,43 @@ The current market environment presents both challenges and opportunities for lo
       
       const matches = [
         {
-          name: prospectName,
-          company: "Investment Partners LLC",
-          relevanceScore: 88,
+          prospectName: prospectName,
+          company: "Investment Partners LLC", 
+          confidenceScore: 88,
+          matchReason: `Strong alignment with ${interestArray.join(', ')} investment themes. Portfolio focus matches current market opportunities in commodities and inflation hedges.`,
           interests: interestArray,
-          reasoning: `Strong alignment with ${interestArray.join(', ')} investment themes. Portfolio focus matches current market opportunities in commodities and inflation hedges.`,
-          suggestedContent: "Highlight commodity market breakouts, inflation hedge strategies, and tactical allocation recommendations from recent WATMTU reports."
+          relevantThemes: ["Commodity Supercycle", "Inflation Hedges", "Market Paradigm Shifts"],
+          suggestedTalkingPoints: [
+            "Gold breakout from 45-year downtrend line",
+            "Silver miners outperforming global indices",
+            "Strategic allocation to hard assets"
+          ]
         },
         {
-          name: "Emerging Markets Fund",
+          prospectName: "Emerging Markets Fund",
           company: "Global Asset Management",
-          relevanceScore: 72,
+          confidenceScore: 72,
+          matchReason: "Geographic focus aligns with global investment themes and sector allocation strategies",
           interests: ["Emerging Markets", "Sector Rotation"],
-          reasoning: `Geographic focus aligns with global investment themes and sector allocation strategies.`,
-          suggestedContent: "Focus on international market opportunities and sector-specific insights from WILTW research."
+          relevantThemes: ["China Bull Market", "Geopolitical Investments", "Market Dynamics"],
+          suggestedTalkingPoints: [
+            "China's secular bull market opportunity", 
+            "Contrarian positioning in emerging markets",
+            "Sector rotation strategies"
+          ]
         },
         {
-          name: "Commodities Capital",
-          company: "Resource Investment Group",
-          relevanceScore: 85,
+          prospectName: "Commodities Capital",
+          company: "Resource Investment Group", 
+          confidenceScore: 85,
+          matchReason: "Direct alignment with commodity supercycle themes and inflation hedge strategies",
           interests: ["Commodities", "Inflation", "Hard Assets"],
-          reasoning: `Direct alignment with commodity supercycle themes and inflation hedge strategies discussed across multiple reports.`,
-          suggestedContent: "Emphasize gold breakout patterns, silver performance, and long-term commodity allocation strategies."
+          relevantThemes: ["Precious Metals", "Commodity Supercycle", "Inflation Protection"],
+          suggestedTalkingPoints: [
+            "Gold vs CPI ratio breakout significance",
+            "Silver mining performance trends", 
+            "Long-term commodity allocation models"
+          ]
         }
       ];
 
