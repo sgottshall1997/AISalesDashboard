@@ -173,7 +173,22 @@ Create a compelling email following the exact format specified in the system pro
       temperature: 0.7,
     });
 
-    return response.choices[0].message.content || "Failed to generate email";
+    const rawContent = response.choices[0].message.content || "Failed to generate email";
+    
+    // Clean up the output by removing markdown formatting and symbols
+    const cleanedContent = rawContent
+      .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold formatting **text**
+      .replace(/\*([^*]+)\*/g, '$1')     // Remove italic formatting *text*
+      .replace(/^---\s*$/gm, '')        // Remove horizontal rules ---
+      .replace(/^\s*#+\s*/gm, '')       // Remove headers # ## ###
+      .replace(/📩|🔧|✅|⸻|📊|💡/g, '') // Remove emojis and special symbols
+      .replace(/\*\*Email Output\*\*/gi, '') // Remove section headers
+      .replace(/\*\*Subject\*\*/gi, 'Subject:') // Clean subject formatting
+      .replace(/\*\*Body\*\*/gi, '')     // Remove body header
+      .replace(/\n{3,}/g, '\n\n')       // Normalize multiple line breaks
+      .trim();
+
+    return cleanedContent;
   } catch (error) {
     console.error("Theme-based email generation failed:", error);
     throw new Error("Failed to generate email");
