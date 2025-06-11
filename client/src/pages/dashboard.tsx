@@ -6,6 +6,7 @@ import { ContentDistribution } from "@/components/dashboard/content-distribution
 import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
+import { TestAISuggestions } from "@/components/test-ai-suggestions";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +20,12 @@ export default function Dashboard() {
       case "invoicing":
         return <InvoicingAssistant />;
       case "content":
-        return <ContentDistribution />;
+        return (
+          <div className="space-y-6 p-6">
+            <ContentDistribution />
+            <TestAISuggestions />
+          </div>
+        );
       case "pipeline":
         return <LeadPipeline />;
       case "followup":
