@@ -243,6 +243,7 @@ export const report_summaries = pgTable("report_summaries", {
   id: serial("id").primaryKey(),
   content_report_id: integer("content_report_id").references(() => content_reports.id).notNull(),
   parsed_summary: text("parsed_summary").notNull(),
+  structured_summary: text("structured_summary"),
   comprehensive_summary: text("comprehensive_summary"),
   summary_type: text("summary_type").notNull().default("wiltw_parser"),
   created_at: timestamp("created_at").defaultNow().notNull(),

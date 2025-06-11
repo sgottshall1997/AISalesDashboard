@@ -1876,8 +1876,14 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
 
       const comprehensiveSummary = comprehensiveResponse.choices[0].message.content;
 
-      // Combine both summaries for the response
-      const combinedSummary = `## Detailed Article Analysis
+      // Combine all three summaries for the response
+      const combinedSummary = `## Structured Article-by-Article Analysis
+
+${structuredSummary}
+
+---
+
+## Detailed Article Analysis
 
 ${detailedSummary}
 
@@ -1905,6 +1911,7 @@ ${comprehensiveSummary}`;
             const newSummary = await storage.createReportSummary({
               content_report_id: parseInt(reportId),
               parsed_summary: detailedSummary || '',
+              structured_summary: structuredSummary || '',
               comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
@@ -1912,12 +1919,14 @@ ${comprehensiveSummary}`;
               id: newSummary.id, 
               content_report_id: newSummary.content_report_id,
               detailedSummaryLength: newSummary.parsed_summary?.length,
+              structuredSummaryLength: newSummary.structured_summary?.length,
               comprehensiveSummaryLength: newSummary.comprehensive_summary?.length
             });
           } else {
             // Update existing summary with new content
             const updatedSummary = await storage.updateReportSummary(existingSummary.id, {
               parsed_summary: detailedSummary || '',
+              structured_summary: structuredSummary || '',
               comprehensive_summary: comprehensiveSummary || '',
               summary_type: promptType === "wiltw_parser" ? "wiltw_parser" : "watmtu_parser"
             });
@@ -1925,6 +1934,7 @@ ${comprehensiveSummary}`;
               id: updatedSummary?.id, 
               content_report_id: updatedSummary?.content_report_id,
               detailedSummaryLength: updatedSummary?.parsed_summary?.length,
+              structuredSummaryLength: updatedSummary?.structured_summary?.length,
               comprehensiveSummaryLength: updatedSummary?.comprehensive_summary?.length
             });
           }
