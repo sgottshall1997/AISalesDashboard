@@ -428,7 +428,7 @@ export function ContentDistribution() {
               </div>
             ) : suggestions.length > 0 ? (
               suggestions.map((suggestion: any, index: number) => (
-                <div key={index} className={`border rounded-lg p-4 ${getSuggestionStyle(suggestion.type)}`}>
+                <div key={index} className={`border rounded-lg p-4 transition-all duration-200 hover:shadow-md hover:scale-[1.02] ${getSuggestionStyle(suggestion.type)}`}>
                   <div className="flex items-start">
                     <div className="flex-shrink-0">
                       {getSuggestionIcon(suggestion.type)}
@@ -464,38 +464,38 @@ export function ContentDistribution() {
                   
                   {/* Generated Email Display */}
                   {generatedEmails[index] && (
-                    <div className="mt-4 border-t pt-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h4 className="text-sm font-medium text-gray-900">Generated Email:</h4>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copyToClipboard(generatedEmails[index], index)}
-                          className="flex items-center space-x-1 text-xs"
-                        >
-                          {copiedStates[index] ? (
-                            <CheckCircle className="h-3 w-3 text-green-600" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                          <span>{copiedStates[index] ? "Copied!" : "Copy"}</span>
-                        </Button>
+                    <div className="mt-4 border-t border-gray-200 pt-4">
+                      <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-sm font-semibold text-gray-900">Generated Email</h4>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(generatedEmails[index], index)}
+                            className="flex items-center space-x-1 text-xs hover:bg-gray-50"
+                          >
+                            {copiedStates[index] ? (
+                              <CheckCircle className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <Copy className="h-3 w-3" />
+                            )}
+                            <span>{copiedStates[index] ? "Copied!" : "Copy Email"}</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => downloadSummary(suggestion, generatedEmails[index])}
+                            className="flex items-center space-x-1 text-xs hover:bg-gray-50"
+                          >
+                            <Download className="h-3 w-3" />
+                            <span>Download Summary</span>
+                          </Button>
+                        </div>
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">
+                      <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <div className="text-sm text-gray-800 leading-relaxed">
                           {generatedEmails[index]}
-                        </pre>
-                      </div>
-                      <div className="flex gap-2 mt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadSummary(suggestion, generatedEmails[index])}
-                          className="flex items-center space-x-1 text-xs"
-                        >
-                          <Download className="h-3 w-3" />
-                          <span>Download Summary</span>
-                        </Button>
+                        </div>
                       </div>
                     </div>
                   )}
