@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CampaignSuggestions } from "./ai-tools/campaign-suggestions";
 import { ThemeTracker } from "./ai-tools/theme-tracker";
 import { ProspectMatchmaker } from "./ai-tools/prospect-matchmaker";
 import { PortfolioRelevanceScorer } from "./ai-tools/portfolio-relevance-scorer";
@@ -8,6 +9,7 @@ import { AIQnA } from "./ai-tools/ai-qna";
 import { OnePagerGenerator } from "./ai-tools/one-pager-generator";
 import { FundMappingTool } from "./ai-tools/fund-mapping-tool";
 import { 
+  Lightbulb,
   TrendingUp, 
   Target, 
   BarChart3, 
@@ -18,7 +20,7 @@ import {
 } from "lucide-react";
 
 export function AIContentTools() {
-  const [activeTab, setActiveTab] = useState("theme-tracker");
+  const [activeTab, setActiveTab] = useState("campaign-suggestions");
 
   return (
     <div className="space-y-6">
@@ -33,7 +35,11 @@ export function AIContentTools() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="campaign-suggestions" className="flex items-center gap-2">
+            <Lightbulb className="w-4 h-4" />
+            Campaign Suggestions
+          </TabsTrigger>
           <TabsTrigger value="theme-tracker" className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Theme Tracker
@@ -59,6 +65,10 @@ export function AIContentTools() {
             Fund Mapper
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="campaign-suggestions">
+          <CampaignSuggestions />
+        </TabsContent>
 
         <TabsContent value="theme-tracker">
           <ThemeTracker />
