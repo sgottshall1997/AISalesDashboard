@@ -11,7 +11,8 @@ import {
   X, 
   User,
   Upload,
-  Brain
+  Brain,
+  Info
 } from "lucide-react";
 
 interface SidebarProps {
@@ -30,6 +31,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
     { id: "followup", name: "Task Tracker", icon: CheckSquare },
     { id: "upload", name: "CSV Upload", icon: Upload },
+    { id: "about", name: "About", icon: Info },
   ];
 
   const SidebarContent = () => (

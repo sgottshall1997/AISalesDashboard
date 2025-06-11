@@ -8,6 +8,7 @@ import LeadPipeline from "@/components/lead-pipeline";
 import TaskTracker from "@/components/task-tracker";
 import CsvUpload from "@/components/csv-upload";
 import { WorkingAISuggestions } from "@/components/working-ai-suggestions";
+import About from "@/pages/about";
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,6 +59,8 @@ export default function Dashboard() {
         return <TaskTracker />;
       case "upload":
         return <CsvUpload />;
+      case "about":
+        return <About />;
       default:
         return <Overview />;
     }
