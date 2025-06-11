@@ -1917,6 +1917,12 @@ ${comprehensiveSummary}`;
 
         summary = combinedSummary;
         console.log('WILTW three-part summary completed. Combined summary length:', summary.length);
+        console.log('Summary components saved:', {
+          detailedLength: detailedSummary?.length || 0,
+          structuredLength: structuredSummary?.length || 0,
+          comprehensiveLength: comprehensiveSummary?.length || 0,
+          combinedLength: summary?.length || 0
+        });
       } else {
         console.log('Not a WILTW parser, using single summary approach');
       }
