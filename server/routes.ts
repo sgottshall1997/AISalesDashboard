@@ -315,6 +315,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI-powered call preparation endpoint
+  app.post("/api/ai/generate-call-prep", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { 
+        prospectName, 
+        title = "", 
+        firmName = "", 
+        interests = [], 
+        portfolioHoldings = [], 
+        investmentStyle = "", 
+        pastInteractions = "", 
+        notes = "" 
+      } = req.body;
+
+      if (!prospectName) {
+        return res.status(400).json({ error: "Prospect name is required" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered call preparation." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const callPreparationPrompt = `
+You are an institutional sales assistant at a top-tier investment research firm.
+
+Your job is to prepare call notes for a prospect meeting. Use the provided details about the prospect and firm to generate tailored, research-backed talking points.
+
+Return a clean, professional JSON object with exactly these 5 fields:
+{
+  "prospectSnapshot": "Name, title, firm, investment style summary",
+  "topInterests": "Summarize the person's known interests (sectors, macro themes, geos)",
+  "portfolioInsights": "Mention notable holdings and how they connect to current themes from past 13D reports",
+  "talkingPoints": ["point 1", "point 2", "point 3", "point 4", "point 5"],
+  "smartQuestions": ["question 1", "question 2", "question 3"]
+}
+
+Use the following data to generate your output:
+- Name: ${prospectName}
+- Title: ${title}
+- Firm: ${firmName}
+- Interests: ${interests.join(", ")}
+- Holdings: ${portfolioHoldings.join(", ")}
+- Style: ${investmentStyle}
+- Notes: ${notes}
+- Past Interactions: ${pastInteractions}
+
+If the input is limited, use generalized themes from current macro research (commodities, de-dollarization, AI infrastructure, reshoring, China, precious metals, energy transition) to anchor ideas.
+Make it crisp, useful, and professional. Focus on actionable insights that would help during an actual sales call.
+`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert institutional sales assistant. Generate professional, actionable call preparation notes in valid JSON format."
+          },
+          {
+            role: "user",
+            content: callPreparationPrompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      });
+
+      const callPrepContent = response.choices[0].message.content;
+      
+      try {
+        const callPrepResult = JSON.parse(callPrepContent || '{}');
+        res.json(callPrepResult);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        res.status(500).json({ error: "Failed to parse AI response" });
+      }
+
+    } catch (error) {
+      console.error("Call prep generation error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate call prep notes",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI-powered prospecting intelligence endpoint
   app.post("/api/generate-prospecting-insights", async (req: Request, res: Response) => {
     try {
