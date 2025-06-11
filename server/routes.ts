@@ -712,17 +712,16 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         messages: [
           {
             role: "system",
-            content: "You are an expert institutional sales assistant. Generate professional, actionable call preparation notes in valid JSON format. If limited information is provided, use reasonable assumptions for institutional finance professionals."
+            content: "You are an expert institutional sales assistant. Generate professional, actionable call preparation notes in valid JSON format. Be concise and focus on actionable insights."
           },
           {
             role: "user",
             content: callPreparationPrompt
           }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-        timeout: 30000
+        max_tokens: 1200,
+        temperature: 0.2,
+        response_format: { type: "json_object" }
       });
 
       let callPrepContent = response.choices[0].message.content || '{}';
