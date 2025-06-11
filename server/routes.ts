@@ -1807,7 +1807,8 @@ Keep the summary under 200 words and focus on actionable insights.`;
         });
       }
 
-      const { theme, emailAngle, description, keyPoints, supportingReports } = req.body;
+      const { suggestion } = req.body;
+      const { title: theme, emailAngle, description, keyPoints, supportingReports } = suggestion;
       
       // Get all reports for content analysis
       const reports = await storage.getAllContentReports();

@@ -145,8 +145,8 @@ Spencer
 Theme: ${theme}
 Email Angle: ${emailAngle}
 Description: ${description}
-Key Points to Consider: ${keyPoints.join(', ')}
-Supporting Reports: ${supportingReports.join(', ')}
+Key Points to Consider: ${(keyPoints || []).join(', ')}
+Supporting Reports: ${(supportingReports || []).join(', ')}
 
 Available Report Content:
 ${JSON.stringify(reportContent, null, 2)}
