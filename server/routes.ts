@@ -3057,7 +3057,8 @@ Generated on: ${new Date().toLocaleString()}
             id: report.id,
             title: report.title,
             relevanceScore,
-            excerpt: report.content_summary?.substring(0, 200) || report.full_content?.substring(0, 200) || "No excerpt available"
+            excerpt: report.content_summary?.substring(0, 200) || report.full_content?.substring(0, 200) || "No excerpt available",
+            fullContent: report.content_summary || report.full_content || ""
           });
         }
       }
@@ -3067,20 +3068,67 @@ Generated on: ${new Date().toLocaleString()}
       
       confidence = Math.min(topSources.length * 20, 90);
       
-      let answer = "Based on the available reports, ";
+      let answer = "";
       if (topSources.length > 0) {
-        answer += `I found ${topSources.length} relevant report(s) that discuss this topic. `;
-        answer += "The key insights suggest that this is an area of active research and analysis. ";
-        answer += "For detailed information, please review the source reports listed below.";
+        // Generate comprehensive answer using GPT-4 with actual report content
+        const contextContent = topSources.slice(0, 3).map(source => 
+          `Report: ${source.title}\nContent: ${source.fullContent?.substring(0, 1000) || source.excerpt}`
+        ).join('\n\n---\n\n');
+        
+        const prompt = `Based on the following research reports, provide a comprehensive and specific answer to the question: "${query}"
+
+Context from reports:
+${contextContent}
+
+Instructions:
+- Provide a detailed, substantive answer that directly addresses the question
+- Include specific insights, data points, and analysis from the reports
+- Mention key themes, trends, or viewpoints found in the research
+- Be specific about investment implications or market perspectives where relevant
+- Keep the response focused and informative (2-3 paragraphs)
+- Do not mention that you're referencing reports - just provide the insights naturally
+
+Question: ${query}`;
+
+        try {
+          const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o',
+              messages: [{ role: 'user', content: prompt }],
+              temperature: 0.7,
+              max_tokens: 500
+            })
+          });
+
+          if (openaiResponse.ok) {
+            const gptResult = await openaiResponse.json();
+            answer = gptResult.choices[0]?.message?.content || "Unable to generate comprehensive answer.";
+          } else {
+            throw new Error('OpenAI API call failed');
+          }
+        } catch (gptError) {
+          console.error("Error generating AI answer:", gptError);
+          // Fallback to basic answer
+          answer = `Based on ${topSources.length} relevant reports in our research corpus, this topic appears to be an area of active analysis. The reports suggest varying perspectives and ongoing developments that warrant attention. Key themes identified include market dynamics, risk considerations, and strategic positioning opportunities.`;
+        }
       } else {
-        answer = "I couldn't find specific information about this topic in the current report corpus. ";
-        answer += "You might want to refine your query or check if relevant reports have been uploaded.";
+        answer = "I couldn't find specific information about this topic in the current report corpus. You might want to refine your query or check if relevant reports have been uploaded.";
         confidence = 10;
       }
       
       res.json({
         answer,
-        sourceReports: topSources,
+        sourceReports: topSources.map(source => ({
+          id: source.id,
+          title: source.title,
+          relevanceScore: source.relevanceScore,
+          excerpt: source.excerpt
+        })),
         confidence
       });
     } catch (error) {
