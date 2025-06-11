@@ -1,11 +1,13 @@
 import { 
   clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries, tasks,
+  ai_generated_content, ai_content_feedback,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
   type AiSuggestion, type InsertAiSuggestion, type EmailHistory, type InsertEmailHistory,
   type ReadingHistory, type InsertReadingHistory, type LeadEmailHistory, type InsertLeadEmailHistory,
   type ReportSummary, type InsertReportSummary, type Task, type InsertTask,
+  type AiGeneratedContent, type InsertAiGeneratedContent, type AiContentFeedback, type InsertAiContentFeedback,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -109,6 +111,19 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: number): Promise<boolean>;
+
+  // AI Feedback Loop
+  createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent>;
+  createAiContentFeedback(feedback: InsertAiContentFeedback): Promise<AiContentFeedback>;
+  getAiGeneratedContentWithFeedback(contentId: number): Promise<(AiGeneratedContent & { feedback: AiContentFeedback[] }) | undefined>;
+  getAiFeedbackAnalytics(): Promise<{
+    totalContent: number;
+    totalFeedback: number;
+    thumbsUpCount: number;
+    thumbsDownCount: number;
+    avgRating: number;
+    feedbackByType: { [key: string]: number };
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {

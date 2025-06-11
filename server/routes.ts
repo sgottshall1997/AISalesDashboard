@@ -1869,6 +1869,87 @@ Generated on: ${new Date().toLocaleString()}
     }
   });
 
+  // AI Feedback Loop API Routes
+  
+  // Store AI-generated content
+  app.post("/api/ai/content", async (req: Request, res: Response) => {
+    try {
+      const { content_type, theme_id, original_prompt, generated_content, context_data } = req.body;
+      
+      if (!content_type || !original_prompt || !generated_content) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const contentData = {
+        content_type,
+        theme_id: theme_id || null,
+        original_prompt,
+        generated_content,
+        context_data: context_data || null
+      };
+
+      const aiContent = await storage.createAiGeneratedContent(contentData);
+      res.json(aiContent);
+    } catch (error) {
+      console.error("Error storing AI content:", error);
+      res.status(500).json({ error: "Failed to store AI content" });
+    }
+  });
+
+  // Submit feedback for AI-generated content
+  app.post("/api/ai/content/:contentId/feedback", async (req: Request, res: Response) => {
+    try {
+      const contentId = parseInt(req.params.contentId);
+      const { rating, improvement_suggestion, edited_version, feedback_type } = req.body;
+      
+      if (!rating) {
+        return res.status(400).json({ error: "Rating is required" });
+      }
+
+      const feedbackData = {
+        content_id: contentId,
+        rating,
+        improvement_suggestion: improvement_suggestion || null,
+        edited_version: edited_version || null,
+        feedback_type: feedback_type || "rating"
+      };
+
+      const feedback = await storage.createAiContentFeedback(feedbackData);
+      res.json(feedback);
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      res.status(500).json({ error: "Failed to submit feedback" });
+    }
+  });
+
+  // Get feedback analytics
+  app.get("/api/ai/feedback/analytics", async (req: Request, res: Response) => {
+    try {
+      const analytics = await storage.getAiFeedbackAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching feedback analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  // Get AI content with feedback
+  app.get("/api/ai/content/:contentId", async (req: Request, res: Response) => {
+    try {
+      const contentId = parseInt(req.params.contentId);
+      const content = await storage.getAiGeneratedContentWithFeedback(contentId);
+      
+      if (!content) {
+        return res.status(404).json({ error: "Content not found" });
+      }
+      
+      res.json(content);
+    } catch (error) {
+      console.error("Error fetching AI content:", error);
+      res.status(500).json({ error: "Failed to fetch content" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

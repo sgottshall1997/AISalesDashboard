@@ -297,3 +297,47 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
+
+// AI Feedback Loop Tables
+export const ai_generated_content = pgTable("ai_generated_content", {
+  id: serial("id").primaryKey(),
+  content_type: text("content_type").notNull(), // "email", "suggestion", "summary"
+  theme_id: text("theme_id"), // Links to the original suggestion theme
+  original_prompt: text("original_prompt").notNull(),
+  generated_content: text("generated_content").notNull(),
+  context_data: json("context_data").$type<{
+    theme?: string;
+    emailAngle?: string;
+    keyPoints?: string[];
+    supportingReports?: string[];
+  }>(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const ai_content_feedback = pgTable("ai_content_feedback", {
+  id: serial("id").primaryKey(),
+  content_id: integer("content_id").references(() => ai_generated_content.id).notNull(),
+  rating: text("rating").notNull(), // "thumbs_up", "thumbs_down"
+  improvement_suggestion: text("improvement_suggestion"), // Optional text feedback
+  edited_version: text("edited_version"), // User's edited version of the content
+  feedback_type: text("feedback_type").notNull().default("rating"), // "rating", "edit", "suggestion"
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Insert schemas for feedback tables
+export const insertAiGeneratedContentSchema = createInsertSchema(ai_generated_content).omit({
+  id: true,
+  created_at: true,
+});
+
+export const insertAiContentFeedbackSchema = createInsertSchema(ai_content_feedback).omit({
+  id: true,
+  created_at: true,
+});
+
+// Types for feedback tables
+export type AiGeneratedContent = typeof ai_generated_content.$inferSelect;
+export type InsertAiGeneratedContent = z.infer<typeof insertAiGeneratedContentSchema>;
+
+export type AiContentFeedback = typeof ai_content_feedback.$inferSelect;
+export type InsertAiContentFeedback = z.infer<typeof insertAiContentFeedbackSchema>;
