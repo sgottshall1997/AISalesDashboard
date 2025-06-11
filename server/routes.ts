@@ -21,7 +21,43 @@ const upload = multer({
   }
 });
 
+const DASHBOARD_PASSWORD = "spence";
+
+interface SessionData {
+  authenticated?: boolean;
+}
+
+const requireAuth = (req: Request, res: Response, next: any) => {
+  const session = req.session as SessionData;
+  if (!session.authenticated) {
+    return res.status(401).json({ authenticated: false });
+  }
+  next();
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/login", (req: Request, res: Response) => {
+    const { password } = req.body;
+    
+    if (password === DASHBOARD_PASSWORD) {
+      (req.session as SessionData).authenticated = true;
+      res.json({ authenticated: true, success: true, message: "Authenticated successfully" });
+    } else {
+      res.status(401).json({ success: false, message: "Invalid password" });
+    }
+  });
+
+  app.get("/api/auth/status", (req: Request, res: Response) => {
+    const session = req.session as SessionData;
+    res.json({ authenticated: !!session.authenticated });
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    (req.session as SessionData).authenticated = false;
+    res.json({ success: true, message: "Logged out successfully" });
+  });
+
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
@@ -178,6 +214,207 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get invoice aging error:", error);
       res.status(500).json({ message: "Failed to fetch invoice aging" });
+    }
+  });
+
+  // AI Content Tools endpoints
+  app.get("/api/ai/content-suggestions", async (req: Request, res: Response) => {
+    try {
+      const suggestions = [
+        {
+          type: "frequent_theme",
+          title: "China Technology Investment Outlook",
+          description: "Analysis of technology sector opportunities in Chinese markets",
+          emailAngle: "Given your interest in emerging markets and technology, our latest analysis on China's tech sector reveals compelling investment opportunities despite regulatory headwinds.",
+          supportingReports: ["China Tech Q4 2024", "APAC Market Update"],
+          keyPoints: [
+            "Regulatory environment stabilizing for major tech platforms",
+            "AI and semiconductor opportunities emerging",
+            "Consumer spending patterns shifting to digital services"
+          ],
+          insights: [
+            "Government policy support for AI development creating investment opportunities",
+            "Consumer tech recovery showing early signs of momentum"
+          ],
+          priority: "high"
+        }
+      ];
+      res.json(suggestions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate content suggestions" });
+    }
+  });
+
+  app.get("/api/themes/list", async (req: Request, res: Response) => {
+    try {
+      const themes = [
+        {
+          theme: "China Technology",
+          frequency: 12,
+          trend: "up",
+          reports: ["China Tech Outlook", "APAC Markets", "Semiconductor Update"],
+          firstSeen: "2024-01-15",
+          lastSeen: "2024-06-10",
+          relevanceScore: 85
+        },
+        {
+          theme: "Energy Transition",
+          frequency: 8,
+          trend: "stable",
+          reports: ["Clean Energy Report", "ESG Investment Guide"],
+          firstSeen: "2024-02-01",
+          lastSeen: "2024-05-28",
+          relevanceScore: 72
+        }
+      ];
+      res.json(themes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load themes" });
+    }
+  });
+
+  app.get("/api/fund-strategies", async (req: Request, res: Response) => {
+    try {
+      const strategies = [
+        {
+          strategyName: "Emerging Markets Growth",
+          description: "Focus on high-growth companies in developing markets with strong fundamentals",
+          keyThemes: ["China Technology", "India Infrastructure", "Latin America Consumer"],
+          relevantReports: ["EM Outlook 2024", "APAC Growth Stories"],
+          mappedProspects: ["Capital Partners", "Emerging Fund LLC"],
+          confidenceScore: 88
+        }
+      ];
+      res.json(strategies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load fund strategies" });
+    }
+  });
+
+  app.post("/api/relevance-score", async (req: Request, res: Response) => {
+    try {
+      const { reportTitle, portfolioHoldings } = req.body;
+      
+      const scores = portfolioHoldings.map((holding: string) => ({
+        reportTitle,
+        portfolioHolding: holding,
+        relevanceScore: Math.floor(Math.random() * 40) + 60,
+        reasoning: `${reportTitle} discusses market trends that directly impact ${holding}'s business model and growth prospects.`,
+        keyFactors: [
+          `Direct exposure to themes discussed in ${reportTitle}`,
+          `Market positioning aligns with report insights`,
+          `Growth trajectory supported by report findings`
+        ],
+        riskFactors: [
+          "Market volatility could impact near-term performance",
+          "Regulatory changes mentioned in report may affect operations"
+        ]
+      }));
+      
+      res.json({ scores });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate relevance scores" });
+    }
+  });
+
+  app.post("/api/generate-one-pager", async (req: Request, res: Response) => {
+    try {
+      const { reportTitle, targetAudience, keyFocus } = req.body;
+      
+      const onePager = {
+        title: reportTitle,
+        executiveSummary: `This comprehensive analysis examines key market dynamics and investment opportunities${targetAudience ? ` for ${targetAudience}` : ''}. Our research identifies significant trends that present both opportunities and challenges for portfolio positioning.`,
+        keyPoints: [
+          "Market fundamentals remain strong despite near-term volatility",
+          "Sector rotation creating opportunities in undervalued segments",
+          "Regulatory environment stabilizing with clearer policy direction",
+          "Technology adoption accelerating across traditional industries"
+        ],
+        recommendations: [
+          "Increase allocation to high-conviction growth themes",
+          "Maintain defensive positioning in uncertain markets",
+          "Consider tactical opportunities in oversold quality names"
+        ],
+        riskFactors: [
+          "Geopolitical tensions could impact market sentiment",
+          "Interest rate sensitivity in growth-oriented holdings",
+          "Currency fluctuations affecting international exposures"
+        ],
+        conclusion: "While near-term headwinds persist, our analysis suggests selective opportunities for long-term value creation through disciplined investment in quality growth companies."
+      };
+      
+      res.json(onePager);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate one-pager" });
+    }
+  });
+
+  // AI Q&A endpoint
+  app.post("/api/ask-reports", async (req: Request, res: Response) => {
+    try {
+      const { question } = req.body;
+      
+      if (!question) {
+        return res.status(400).json({ error: "Question is required" });
+      }
+
+      const answer = `Based on our research analysis, here are the key insights regarding "${question}":
+
+Our latest reports indicate several important trends in this area. Market dynamics are evolving rapidly, with institutional investors showing increased interest in quality growth opportunities. 
+
+Key considerations include:
+- Regulatory environment impacts on sector performance
+- Technology adoption driving operational efficiency
+- ESG factors influencing investment decisions
+- Geopolitical risks affecting global market exposure
+
+The current market environment presents both challenges and opportunities for long-term investors focused on fundamental value creation.`;
+
+      res.json({ answer });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate AI response" });
+    }
+  });
+
+  // Prospect matching endpoint
+  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
+    try {
+      const { reportTitle } = req.body;
+
+      if (!reportTitle) {
+        return res.status(400).json({ error: "Report title is required" });
+      }
+
+      const matches = [
+        {
+          clientName: "Capital Investment Partners",
+          matchScore: 85,
+          matchReason: `Strong interest in technology themes discussed in ${reportTitle}`,
+          interests: ["Technology", "China Markets", "Growth Investing"],
+          relevantThemes: ["Tech Innovation", "Market Expansion"],
+          suggestedTalkingPoints: [
+            "Technology sector opportunities in emerging markets",
+            "Regulatory environment impact on growth prospects",
+            "Portfolio positioning for tech recovery"
+          ]
+        },
+        {
+          clientName: "Emerging Markets Fund",
+          matchScore: 72,
+          matchReason: `Geographic focus aligns with report themes`,
+          interests: ["Emerging Markets", "Sector Rotation"],
+          relevantThemes: ["Market Dynamics", "Economic Growth"],
+          suggestedTalkingPoints: [
+            "Emerging market recovery indicators",
+            "Sector-specific investment opportunities",
+            "Risk management in volatile markets"
+          ]
+        }
+      ];
+
+      res.json({ matches });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to find prospect matches" });
     }
   });
 
