@@ -95,6 +95,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leads endpoints
+  app.get("/api/leads", async (req: Request, res: Response) => {
+    try {
+      const leads = await storage.getAllLeads();
+      res.json(leads);
+    } catch (error) {
+      console.error("Get leads error:", error);
+      res.status(500).json({ message: "Failed to fetch leads" });
+    }
+  });
+
+  app.get("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.getLead(id);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      console.error("Get lead error:", error);
+      res.status(500).json({ message: "Failed to fetch lead" });
+    }
+  });
+
+  app.post("/api/leads", async (req: Request, res: Response) => {
+    try {
+      const lead = await storage.createLead(req.body);
+      res.json(lead);
+    } catch (error) {
+      console.error("Create lead error:", error);
+      res.status(500).json({ message: "Failed to create lead" });
+    }
+  });
+
+  app.patch("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const lead = await storage.updateLead(id, req.body);
+      
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+      
+      res.json(lead);
+    } catch (error) {
+      console.error("Update lead error:", error);
+      res.status(500).json({ message: "Failed to update lead" });
+    }
+  });
+
+  app.delete("/api/leads/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteLead(id);
+      res.json({ message: "Lead deleted successfully" });
+    } catch (error) {
+      console.error("Delete lead error:", error);
+      res.status(500).json({ message: "Failed to delete lead" });
+    }
+  });
+
   // Content reports endpoints
   app.get("/api/content-reports", async (req: Request, res: Response) => {
     try {
