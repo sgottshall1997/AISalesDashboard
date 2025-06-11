@@ -47,6 +47,18 @@ export function ContentDistribution() {
       .trim();
   };
 
+  // Function to get display name for report type
+  const getReportTypeDisplayName = (type: string): string => {
+    switch (type) {
+      case 'wiltw':
+        return 'Thematic';
+      case 'watmtu':
+        return 'Technical';
+      default:
+        return type.toUpperCase();
+    }
+  };
+
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
     queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
@@ -324,7 +336,7 @@ export function ContentDistribution() {
           <div className="space-y-4">
             <div>
               <label htmlFor="file-upload" className="block text-sm font-medium text-gray-700 mb-2">
-                Select PDF File (WILTW or WATMTU)
+                Select PDF File (Thematic or Technical)
               </label>
               <input
                 id="file-upload"
@@ -343,8 +355,8 @@ export function ContentDistribution() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="wiltw">WILTW</SelectItem>
-                    <SelectItem value="watmtu">WATMTU</SelectItem>
+                    <SelectItem value="wiltw">Thematic</SelectItem>
+                    <SelectItem value="watmtu">Technical</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -364,7 +376,7 @@ export function ContentDistribution() {
             {selectedFile && (
               <div className="mt-4 p-3 bg-blue-50 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  <strong>Selected:</strong> {selectedFile.name} ({reportType.toUpperCase()})
+                  <strong>Selected:</strong> {selectedFile.name} ({getReportTypeDisplayName(reportType)})
                 </p>
               </div>
             )}
