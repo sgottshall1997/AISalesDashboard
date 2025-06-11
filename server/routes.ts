@@ -3204,39 +3204,38 @@ Question: ${query}`;
       const topReports = relevantReports.slice(0, 5);
       
       const title = `${topic} - Investment Analysis`;
-      const content = `# ${title}
-      
-**Prepared for:** ${audience}
-**Date:** ${new Date().toLocaleDateString()}
+      const content = `${title}
 
-## Executive Summary
+Prepared for: ${audience}
+Date: ${new Date().toLocaleDateString()}
+
+Executive Summary
 
 This analysis examines ${topic} based on our latest research and market intelligence. Our research indicates significant developments in this area that warrant attention from ${audience.toLowerCase()}.
 
-## Key Insights
+Key Insights
 
 ${keyPoints && keyPoints.length > 0 ? 
-  keyPoints.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n') :
+  keyPoints.map((point: string, index: number) => `• ${point}`).join('\n') :
   '• Market dynamics show evolving trends\n• Risk-return profiles are shifting\n• Opportunities exist for strategic positioning'
 }
 
-## Market Analysis
+Market Analysis
 
 Based on our comprehensive research corpus, ${topic.toLowerCase()} presents both opportunities and challenges. The current market environment suggests that careful analysis and strategic positioning will be critical for success.
 
-## Investment Implications
+Investment Implications
 
 For ${audience.toLowerCase()}, this analysis suggests:
-- Continued monitoring of developments
-- Assessment of portfolio implications  
-- Consideration of strategic positioning
+• Continued monitoring of developments
+• Assessment of portfolio implications  
+• Consideration of strategic positioning
 
-## Conclusion
+Conclusion
 
 ${topic} remains an important area for ongoing research and analysis. We recommend continued monitoring and strategic evaluation based on evolving market conditions.
 
----
-*This analysis is based on ${topReports.length} relevant research reports from our intelligence corpus.*`;
+This analysis is based on ${topReports.length} relevant research reports from our intelligence corpus.`;
 
       const onePager = {
         id: Date.now().toString(),
