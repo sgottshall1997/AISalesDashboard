@@ -1795,8 +1795,14 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
 
       const detailedSummary = detailedResponse.choices[0].message.content;
 
-      // Generate the structured article-by-article analysis
-      const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into a large number of clearly titled article sections (Ie 01, 02, 03, etc.).
+      let structuredSummary = '';
+      let comprehensiveSummary = '';
+      let summary = detailedSummary;
+
+      // For WILTW reports, generate additional structured and comprehensive summaries
+      if (promptType === "wiltw_parser") {
+        // Generate the structured article-by-article analysis
+        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into a large number of clearly titled article sections (Ie 01, 02, 03, etc.).
 
 For each article, do the following:
 1. Headline: Identify and restate the article's title.
@@ -1808,32 +1814,32 @@ For each article, do the following:
 
 Return the results in a structured format, clearly separating each article.`;
 
-      const structuredUserPrompt = `Analyze this investment research report titled "${title || report.title}" and provide structured analysis for each article section:
+        const structuredUserPrompt = `Analyze this investment research report titled "${title || report.title}" and provide structured analysis for each article section:
 
 ${actualContent}
 
 Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
 
-      const structuredResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: structuredSystemPrompt
-          },
-          {
-            role: "user",
-            content: structuredUserPrompt
-          }
-        ],
-        max_tokens: 4000,
-        temperature: 0.3
-      });
+        const structuredResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: structuredSystemPrompt
+            },
+            {
+              role: "user",
+              content: structuredUserPrompt
+            }
+          ],
+          max_tokens: 4000,
+          temperature: 0.3
+        });
 
-      const structuredSummary = structuredResponse.choices[0].message.content;
+        structuredSummary = structuredResponse.choices[0].message.content || '';
 
-      // Generate the comprehensive summary
-      const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
+        // Generate the comprehensive summary
+        const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
 
 ANALYZE THE FOLLOWING REPORT AND PROVIDE:
 
@@ -1852,32 +1858,32 @@ For each theme/insight, include:
 
 Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
 
-      const comprehensiveUserPrompt = `Please analyze this investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
+        const comprehensiveUserPrompt = `Please analyze this investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
 
 ${actualContent}
 
 Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
 
-      const comprehensiveResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: comprehensiveSystemPrompt
-          },
-          {
-            role: "user",
-            content: comprehensiveUserPrompt
-          }
-        ],
-        max_tokens: 4000,
-        temperature: 0.3
-      });
+        const comprehensiveResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: comprehensiveSystemPrompt
+            },
+            {
+              role: "user",
+              content: comprehensiveUserPrompt
+            }
+          ],
+          max_tokens: 4000,
+          temperature: 0.3
+        });
 
-      const comprehensiveSummary = comprehensiveResponse.choices[0].message.content;
+        comprehensiveSummary = comprehensiveResponse.choices[0].message.content || '';
 
-      // Combine all three summaries for the response with proper spacing
-      const combinedSummary = `## Structured Article-by-Article Analysis
+        // Combine all three summaries for WILTW reports
+        const combinedSummary = `## Structured Article-by-Article Analysis
 
 ${structuredSummary}
 
@@ -1893,7 +1899,8 @@ ${detailedSummary}
 
 ${comprehensiveSummary}`;
 
-      const summary = combinedSummary;
+        summary = combinedSummary;
+      }
       
       // Store the generated summary (overwrite if exists)
       if (promptType === "wiltw_parser" || promptType === "watmtu_parser") {
