@@ -2571,10 +2571,10 @@ Generated on: ${new Date().toLocaleString()}
   // AI Content Tools Routes
   app.get("/api/themes/list", async (req: Request, res: Response) => {
     try {
-      const reports = await storage.getContentReports();
+      const reports = await storage.getAllContentReports();
       const themeMap = new Map<string, { count: number, reports: string[] }>();
       
-      reports.forEach(report => {
+      reports.forEach((report: any) => {
         if (report.tags && Array.isArray(report.tags)) {
           report.tags.forEach(tag => {
             if (!themeMap.has(tag)) {

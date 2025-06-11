@@ -905,21 +905,134 @@ export function ContentDistribution() {
 
       {/* Parsed Summary Display */}
       {reportSummary && (
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <FileText className="w-5 h-5 mr-2" />
-              Parsed Summary
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
-                {formatCleanSummary(reportSummary)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mb-8 space-y-6">
+          {(() => {
+            // Parse the combined summary into three parts
+            const parseThreeParts = (summary: string) => {
+              const parts = {
+                structured: '',
+                detailed: '',
+                comprehensive: ''
+              };
+
+              // Look for the three main sections in the summary
+              const structuredMatch = summary.match(/## Structured Article Analysis[\s\S]*?(?=## Detailed Summary|$)/);
+              const detailedMatch = summary.match(/## Detailed Summary[\s\S]*?(?=## Comprehensive Analysis|$)/);
+              const comprehensiveMatch = summary.match(/## Comprehensive Analysis[\s\S]*$/);
+
+              if (structuredMatch) parts.structured = structuredMatch[0].trim();
+              if (detailedMatch) parts.detailed = detailedMatch[0].trim();
+              if (comprehensiveMatch) parts.comprehensive = comprehensiveMatch[0].trim();
+
+              // If sections aren't found, try alternative parsing
+              if (!parts.structured && !parts.detailed && !parts.comprehensive) {
+                // Split by common delimiters or fallback to single summary
+                const sections = summary.split(/(?=##\s)/);
+                if (sections.length >= 3) {
+                  parts.structured = sections[0]?.trim() || '';
+                  parts.detailed = sections[1]?.trim() || '';
+                  parts.comprehensive = sections[2]?.trim() || '';
+                } else {
+                  // Single summary - show in detailed section
+                  parts.detailed = summary;
+                }
+              }
+
+              return parts;
+            };
+
+            const summaryParts = parseThreeParts(reportSummary);
+
+            return (
+              <>
+                {/* Structured Summary */}
+                {summaryParts.structured && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-blue-700">
+                        <FileText className="w-5 h-5 mr-2" />
+                        Structured Analysis
+                      </CardTitle>
+                      <CardDescription>
+                        Organized breakdown of key themes and investment insights
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                          {formatCleanSummary(summaryParts.structured)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Detailed Summary */}
+                {summaryParts.detailed && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-green-700">
+                        <FileText className="w-5 h-5 mr-2" />
+                        Detailed Summary
+                      </CardTitle>
+                      <CardDescription>
+                        In-depth analysis with context and market implications
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                          {formatCleanSummary(summaryParts.detailed)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Comprehensive Analysis */}
+                {summaryParts.comprehensive && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-purple-700">
+                        <FileText className="w-5 h-5 mr-2" />
+                        Comprehensive Analysis
+                      </CardTitle>
+                      <CardDescription>
+                        Executive summary with strategic insights and recommendations
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                          {formatCleanSummary(summaryParts.comprehensive)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Fallback for single summary */}
+                {!summaryParts.structured && !summaryParts.detailed && !summaryParts.comprehensive && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <FileText className="w-5 h-5 mr-2" />
+                        Parsed Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
+                          {formatCleanSummary(reportSummary)}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            );
+          })()}
+        </div>
       )}
 
       {/* AI Content Suggestions */}
