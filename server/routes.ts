@@ -615,8 +615,8 @@ The current market environment presents both challenges and opportunities for lo
         }
 
         // Check summary/description for matches
-        if (report.summary) {
-          const summaryLower = report.summary.toLowerCase();
+        if (report.content_summary) {
+          const summaryLower = report.content_summary.toLowerCase();
           for (const searchTerm of searchTerms) {
             if (summaryLower.includes(searchTerm)) {
               relevanceScore += 10;
