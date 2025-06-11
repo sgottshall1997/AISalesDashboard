@@ -534,62 +534,189 @@ The current market environment presents both challenges and opportunities for lo
   });
 
   // Prospect matching endpoint
-  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
+  // Unified Prospect and Fund Matching endpoint
+  app.post("/api/unified-prospect-fund-match", async (req: Request, res: Response) => {
     try {
-      const { prospectName, interests, additionalContext } = req.body;
+      const { 
+        prospectName, company, title, fundName, strategy, riskProfile, 
+        interests, portfolioHoldings, investmentStyle, additionalContext 
+      } = req.body;
 
-      if (!prospectName || !interests) {
-        return res.status(400).json({ error: "Prospect name and interests are required" });
+      // Validate at least one identifier and one matching criteria
+      if (!prospectName && !fundName) {
+        return res.status(400).json({ error: "Either prospect name or fund name is required" });
+      }
+      if (!interests && !strategy) {
+        return res.status(400).json({ error: "Either interests or investment strategy is required" });
       }
 
-      // Parse interests into array
-      const interestArray = interests.split(',').map((i: string) => i.trim());
+      // Get all content reports from database
+      const reports = await storage.getAllContentReports();
+      const relevantReports: any[] = [];
+      const thematicAlignment: any[] = [];
       
-      const matches = [
-        {
-          prospectName: prospectName,
-          company: "Investment Partners LLC", 
-          confidenceScore: 88,
-          matchReason: `Strong alignment with ${interestArray.join(', ')} investment themes. Portfolio focus matches current market opportunities in commodities and inflation hedges.`,
-          interests: interestArray,
-          relevantThemes: ["Commodity Supercycle", "Inflation Hedges", "Market Paradigm Shifts"],
-          suggestedTalkingPoints: [
-            "Gold breakout from 45-year downtrend line",
-            "Silver miners outperforming global indices",
-            "Strategic allocation to hard assets"
-          ]
-        },
-        {
-          prospectName: "Emerging Markets Fund",
-          company: "Global Asset Management",
-          confidenceScore: 72,
-          matchReason: "Geographic focus aligns with global investment themes and sector allocation strategies",
-          interests: ["Emerging Markets", "Sector Rotation"],
-          relevantThemes: ["China Bull Market", "Geopolitical Investments", "Market Dynamics"],
-          suggestedTalkingPoints: [
-            "China's secular bull market opportunity", 
-            "Contrarian positioning in emerging markets",
-            "Sector rotation strategies"
-          ]
-        },
-        {
-          prospectName: "Commodities Capital",
-          company: "Resource Investment Group", 
-          confidenceScore: 85,
-          matchReason: "Direct alignment with commodity supercycle themes and inflation hedge strategies",
-          interests: ["Commodities", "Inflation", "Hard Assets"],
-          relevantThemes: ["Precious Metals", "Commodity Supercycle", "Inflation Protection"],
-          suggestedTalkingPoints: [
-            "Gold vs CPI ratio breakout significance",
-            "Silver mining performance trends", 
-            "Long-term commodity allocation models"
-          ]
-        }
-      ];
+      // Parse interests into searchable terms
+      const searchTerms: string[] = [];
+      if (interests) {
+        searchTerms.push(...interests.split(',').map((i: string) => i.trim().toLowerCase()));
+      }
+      if (portfolioHoldings) {
+        searchTerms.push(...portfolioHoldings.split(',').map((h: string) => h.trim().toLowerCase()));
+      }
+      if (investmentStyle) {
+        searchTerms.push(...investmentStyle.split(',').map((s: string) => s.trim().toLowerCase()));
+      }
 
-      res.json({ matches });
+      // Strategy-based theme mapping
+      const strategyThemes: { [key: string]: string[] } = {
+        'value': ['undervalued', 'dividend', 'book value', 'earnings', 'value', 'cheap', 'discount'],
+        'growth': ['growth', 'technology', 'innovation', 'expansion', 'tech', 'disruptive'],
+        'momentum': ['trending', 'momentum', 'breakout', 'technical', 'rally', 'surge'],
+        'contrarian': ['contrarian', 'oversold', 'reversal', 'turnaround', 'recovery'],
+        'balanced': ['diversified', 'allocation', 'balanced', 'mixed', 'portfolio'],
+        'income': ['dividend', 'yield', 'income', 'distribution', 'payout'],
+        'sector': ['sector', 'industry', 'focused', 'specialized'],
+        'global': ['global', 'international', 'emerging', 'markets', 'worldwide']
+      };
+
+      if (strategy && strategyThemes[strategy]) {
+        searchTerms.push(...strategyThemes[strategy]);
+      }
+
+      // Score each report based on relevance
+      for (const report of reports) {
+        let relevanceScore = 0;
+        const keyThemes: string[] = [];
+        const matchReasons: string[] = [];
+
+        // Check tags for matches
+        if (report.tags && Array.isArray(report.tags)) {
+          for (const searchTerm of searchTerms) {
+            for (const tag of report.tags) {
+              const tagLower = tag.toLowerCase();
+              if (tagLower.includes(searchTerm) || searchTerm.includes(tagLower)) {
+                relevanceScore += 25;
+                if (!keyThemes.includes(tag)) {
+                  keyThemes.push(tag);
+                }
+                matchReasons.push(`Tag match: ${tag}`);
+              }
+            }
+          }
+        }
+
+        // Check title for matches
+        const titleLower = report.title.toLowerCase();
+        for (const searchTerm of searchTerms) {
+          if (titleLower.includes(searchTerm)) {
+            relevanceScore += 15;
+            matchReasons.push(`Title match: ${searchTerm}`);
+          }
+        }
+
+        // Check summary/description for matches
+        if (report.summary) {
+          const summaryLower = report.summary.toLowerCase();
+          for (const searchTerm of searchTerms) {
+            if (summaryLower.includes(searchTerm)) {
+              relevanceScore += 10;
+              matchReasons.push(`Summary match: ${searchTerm}`);
+            }
+          }
+        }
+
+        // Additional scoring based on report type and engagement
+        if (report.engagement_level === 'high') {
+          relevanceScore += 5;
+        }
+        if (report.type === 'research') {
+          relevanceScore += 5;
+        }
+
+        // Include reports with relevance score above threshold
+        if (relevanceScore > 0) {
+          relevantReports.push({
+            id: report.id,
+            title: report.title,
+            relevanceScore: Math.min(100, relevanceScore),
+            keyThemes,
+            publishedDate: (report.created_at || report.published_date || new Date()).toISOString().split('T')[0],
+            type: report.type || 'Research',
+            matchReason: matchReasons.slice(0, 2).join('; ') || 'General relevance match'
+          });
+        }
+      }
+
+      // Sort by relevance score and take top 10
+      relevantReports.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      const topReports = relevantReports.slice(0, 10);
+
+      // Generate thematic alignment analysis
+      const themeFrequency = new Map<string, number>();
+      topReports.forEach(report => {
+        report.keyThemes.forEach((theme: string) => {
+          themeFrequency.set(theme, (themeFrequency.get(theme) || 0) + 1);
+        });
+      });
+
+      themeFrequency.forEach((count, theme) => {
+        thematicAlignment.push({
+          theme,
+          strength: Math.min(100, count * 20),
+          supportingReports: count
+        });
+      });
+
+      // Sort thematic alignment by strength
+      thematicAlignment.sort((a, b) => b.strength - a.strength);
+
+      // Generate recommendations based on risk profile and strategy
+      const recommendations: any[] = [];
+      
+      if (riskProfile === 'aggressive' || riskProfile === 'high') {
+        recommendations.push({
+          type: 'opportunity',
+          description: 'Consider higher allocation to emerging themes with strong momentum based on recent research',
+          priority: 'high'
+        });
+      }
+      
+      if (strategy === 'contrarian') {
+        recommendations.push({
+          type: 'opportunity',
+          description: 'Focus on undervalued sectors identified in recent reports for contrarian positioning',
+          priority: 'medium'
+        });
+      }
+
+      if (topReports.length > 5) {
+        recommendations.push({
+          type: 'neutral',
+          description: 'Strong research coverage available - consider diversified approach across multiple themes',
+          priority: 'medium'
+        });
+      }
+
+      // Generate summary
+      const entityName = prospectName || fundName;
+      const primaryFocus = interests || strategy || 'investment themes';
+      const summary = `Analysis for ${entityName}: Found ${topReports.length} highly relevant reports matching ${primaryFocus}. ${thematicAlignment.length > 0 ? `Primary alignment with ${thematicAlignment[0]?.theme} theme.` : ''} ${topReports.length > 0 ? `Top match: ${topReports[0]?.title} (${topReports[0]?.relevanceScore}% relevance).` : 'No specific matches found in current research database.'}`;
+
+      const response = {
+        prospectName,
+        fundName,
+        strategy,
+        riskLevel: riskProfile,
+        relevantReports: topReports,
+        thematicAlignment: thematicAlignment.slice(0, 8),
+        recommendations,
+        summary
+      };
+
+      res.json(response);
     } catch (error) {
-      res.status(500).json({ error: "Failed to find prospect matches" });
+      console.error("Unified matching error:", error);
+      res.status(500).json({ error: "Failed to find matches" });
     }
   });
 
