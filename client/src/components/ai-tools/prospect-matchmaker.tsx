@@ -21,11 +21,12 @@ interface MatchedReport {
 export function ProspectMatchmaker() {
   const [prospectName, setProspectName] = useState("");
   const [interests, setInterests] = useState("");
+  const [additionalContext, setAdditionalContext] = useState("");
   const [matchedReports, setMatchedReports] = useState<MatchedReport[]>([]);
   const { toast } = useToast();
 
   const matchProspectMutation = useMutation({
-    mutationFn: async (data: { prospectName: string; interests: string[] }) => {
+    mutationFn: async (data: { prospectName: string; interests: string[]; additionalContext?: string }) => {
       const response = await apiRequest("POST", "/api/match-prospect-themes", data);
       return response.json();
     },
@@ -56,7 +57,11 @@ export function ProspectMatchmaker() {
     }
 
     const interestArray = interests.split(",").map(s => s.trim()).filter(s => s.length > 0);
-    matchProspectMutation.mutate({ prospectName, interests: interestArray });
+    matchProspectMutation.mutate({ 
+      prospectName, 
+      interests: interestArray,
+      additionalContext: additionalContext.trim() || undefined
+    });
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -113,6 +118,8 @@ export function ProspectMatchmaker() {
                 Additional Context (optional)
               </label>
               <Textarea
+                value={additionalContext}
+                onChange={(e) => setAdditionalContext(e.target.value)}
                 placeholder="Add any additional context about the prospect's investment preferences, risk tolerance, or specific sectors of interest..."
                 rows={3}
               />

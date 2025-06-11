@@ -2635,7 +2635,7 @@ Generated on: ${new Date().toLocaleString()}
 
   app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
     try {
-      const { prospectName, interests } = req.body;
+      const { prospectName, interests, additionalContext } = req.body;
       if (!prospectName || !Array.isArray(interests)) {
         return res.status(400).json({ error: "Missing prospect name or interests" });
       }
@@ -2643,40 +2643,100 @@ Generated on: ${new Date().toLocaleString()}
       const reports = await storage.getAllContentReports();
       const matches = [];
       
+      // Create expanded search terms from interests and context
+      const allSearchTerms = [...interests];
+      if (additionalContext) {
+        const contextWords = additionalContext.toLowerCase()
+          .split(/\s+/)
+          .filter((word: string) => word.length > 3)
+          .filter((word: string) => !['looking', 'reports', 'interested', 'wants', 'needs'].includes(word));
+        allSearchTerms.push(...contextWords);
+      }
+      
       for (const report of reports) {
         let confidence = 0;
-        const matchedThemes: any[] = [];
+        const matchedThemes: string[] = [];
+        const foundTerms: string[] = [];
         
+        // Check tags for matches
         if (report.tags && Array.isArray(report.tags)) {
-          for (const interest of interests) {
+          for (const interest of allSearchTerms) {
             for (const tag of report.tags) {
               if (tag.toLowerCase().includes(interest.toLowerCase()) || 
                   interest.toLowerCase().includes(tag.toLowerCase())) {
-                confidence += 20;
+                confidence += 25;
                 if (!matchedThemes.includes(tag)) {
                   matchedThemes.push(tag);
+                }
+                if (!foundTerms.includes(interest)) {
+                  foundTerms.push(interest);
                 }
               }
             }
           }
         }
         
-        for (const interest of interests) {
+        // Check title for matches
+        for (const interest of allSearchTerms) {
           if (report.title.toLowerCase().includes(interest.toLowerCase())) {
-            confidence += 15;
-          }
-          if (report.summary && report.summary.toLowerCase().includes(interest.toLowerCase())) {
-            confidence += 10;
+            confidence += 20;
+            if (!foundTerms.includes(interest)) {
+              foundTerms.push(interest);
+            }
           }
         }
         
+        // Check full content for matches (more comprehensive search)
+        if (report.full_content) {
+          const contentLower = report.full_content.toLowerCase();
+          for (const interest of allSearchTerms) {
+            const interestLower = interest.toLowerCase();
+            
+            // Count occurrences for better scoring
+            const occurrences = (contentLower.match(new RegExp(interestLower, 'g')) || []).length;
+            if (occurrences > 0) {
+              confidence += Math.min(occurrences * 5, 30); // Cap at 30 points per term
+              if (!foundTerms.includes(interest)) {
+                foundTerms.push(interest);
+              }
+            }
+          }
+        }
+        
+        // Bonus for multiple term matches
+        if (foundTerms.length > 1) {
+          confidence += 15;
+        }
+        
         if (confidence > 0) {
+          // Generate a summary from full_content if available
+          let summary = "No content available";
+          if (report.full_content) {
+            // Extract first few sentences that contain relevant terms
+            const sentences = report.full_content.split(/[.!?]+/).slice(0, 10);
+            const relevantSentences = sentences.filter(sentence => 
+              allSearchTerms.some(term => 
+                sentence.toLowerCase().includes(term.toLowerCase())
+              )
+            );
+            
+            if (relevantSentences.length > 0) {
+              summary = relevantSentences.slice(0, 2).join('. ').trim();
+              if (summary.length > 300) {
+                summary = summary.substring(0, 300) + '...';
+              }
+            } else {
+              // Fallback to first part of content
+              summary = report.full_content.substring(0, 200).trim() + '...';
+            }
+          }
+          
           matches.push({
             id: report.id,
             title: report.title,
-            summary: report.summary || "No summary available",
+            summary,
             confidence: Math.min(confidence, 100),
-            matchedThemes,
+            matchedThemes: matchedThemes.length > 0 ? matchedThemes : foundTerms,
             publishedDate: report.published_date
           });
         }
