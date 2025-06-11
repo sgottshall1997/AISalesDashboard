@@ -372,6 +372,7 @@ async function processSinglePdf(file: Express.Multer.File, reportType: string) {
   const reportData = {
     title: reportTitle,
     type: reportType.toUpperCase(),
+    source_type: 'uploaded_pdf',
     published_date: new Date(),
     content_summary: parsedContent.summary || '',
     engagement_level: 'medium',
@@ -723,6 +724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const reportData = {
               title: reportTitle,
               type: currentFileType.toUpperCase(),
+              source_type: 'uploaded_pdf',
               published_date: new Date(),
               content_summary: parsedContent.summary || '',
               engagement_level: 'medium',
@@ -903,6 +905,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const reportData = {
         title: reportTitle,
         type: reportType.toUpperCase() + ' Report',
+        source_type: 'uploaded_pdf',
         published_date: new Date(),
         open_rate: '0',
         click_rate: '0',
@@ -946,6 +949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const summaryData = {
             title: `Parsed Summary - ${reportTitle}`,
             type: reportType.toUpperCase() + ' Summary',
+            source_type: 'parsed_summary',
             published_date: new Date(),
             open_rate: '0',
             click_rate: '0', 

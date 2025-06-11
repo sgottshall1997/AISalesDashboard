@@ -611,11 +611,13 @@ export function ContentDistribution() {
                     <SelectValue placeholder="Choose a report..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {reports.map((report: any) => (
-                      <SelectItem key={report.id} value={report.id.toString()}>
-                        {report.title}
-                      </SelectItem>
-                    ))}
+                    {reports
+                      .filter((report: any) => report.source_type === 'uploaded_pdf')
+                      .map((report: any) => (
+                        <SelectItem key={report.id} value={report.id.toString()}>
+                          {report.title}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
