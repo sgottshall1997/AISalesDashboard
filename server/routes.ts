@@ -1759,6 +1759,9 @@ Provide a JSON response with actionable prospecting insights:
         return res.status(400).json({ error: "Suggestion data is required" });
       }
 
+      // Debug logging to check the data structure
+      console.log("Campaign email suggestion data:", JSON.stringify(suggestion, null, 2));
+
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       // Use the provided 13D Research email template structure
@@ -1818,12 +1821,16 @@ ${emailTemplate}`;
       // Add report sources and article numbers at the bottom
       if (suggestion.supportingReports && suggestion.supportingReports.length > 0) {
         const reportSources = suggestion.supportingReports.map((report: string, index: number) => {
-          // Extract report type and date from report title
-          const reportMatch = report.match(/(WILTW|WATMTU).*?(\d{4}-\d{2}-\d{2})/);
-          const reportType = reportMatch ? reportMatch[1] : 'Report';
-          const reportDate = reportMatch ? reportMatch[2] : '';
-          
-          return `${index + 1}. ${reportType}${reportDate ? ` (${reportDate})` : ''}: ${report}`;
+          // Handle both full titles and short identifiers
+          const reportMatch = report.match(/(WILTW|WATMTU)[_-]?(\d{4}-\d{2}-\d{2})/);
+          if (reportMatch) {
+            const reportType = reportMatch[1];
+            const reportDate = reportMatch[2];
+            return `${index + 1}. ${reportType} Report (${reportDate})`;
+          } else {
+            // Handle cases where the report doesn't match expected pattern
+            return `${index + 1}. ${report}`;
+          }
         }).join('\n');
 
         generatedEmail += `\n\n---\n\nSource Reports:\n${reportSources}`;
