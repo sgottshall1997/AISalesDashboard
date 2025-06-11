@@ -514,23 +514,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced PDF upload endpoint with actual PDF text extraction
-  app.post("/api/upload-pdf", upload.array('pdf', 10), async (req: Request, res: Response) => {
+  app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {
-      const files = req.files as Express.Multer.File[];
+      const file = req.file;
       const reportType = req.body.reportType || 'wiltw';
-      const parserType = req.body.parserType || 'auto_detect';
+      const parserType = req.body.parserType || (reportType === 'watmtu' ? 'watmtu_parser' : 'wiltw_parser');
       
-      if (!files || files.length === 0) {
-        return res.status(400).json({ error: 'No PDF files uploaded' });
+      if (!file) {
+        return res.status(400).json({ error: 'No PDF file uploaded' });
       }
 
-      const results = [];
-      const errors = [];
-
-      // Process each file
-      for (const file of files) {
-        try {
-          console.log('File upload debug:', {
+      console.log('File upload debug:', {
         fieldname: file.fieldname,
         originalname: file.originalname,
         mimetype: file.mimetype,

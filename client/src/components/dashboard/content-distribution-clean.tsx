@@ -216,20 +216,37 @@ export function ContentDistribution() {
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setSelectedFile(file);
+    const files = Array.from(event.target.files || []);
+    const pdfFiles = files.filter(file => file.type === 'application/pdf');
+    
+    if (pdfFiles.length === 0) {
+      toast({
+        title: "Invalid Files",
+        description: "Please select PDF files only.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (pdfFiles.length === 1) {
+      setSelectedFile(pdfFiles[0]);
+      setSelectedFiles([]);
       // Auto-detect report type based on filename
-      if (file.name.toLowerCase().includes('watmtu')) {
+      if (pdfFiles[0].name.toLowerCase().includes('watmtu')) {
         setReportType('watmtu');
       } else {
         setReportType('wiltw');
       }
     } else {
+      setSelectedFiles(pdfFiles);
+      setSelectedFile(null);
+      setReportType('auto_detect'); // Let server auto-detect for each file
+    }
+    
+    if (files.length > pdfFiles.length) {
       toast({
-        title: "Invalid File",
-        description: "Please select a PDF file.",
-        variant: "destructive",
+        title: "Some Files Skipped",
+        description: `${files.length - pdfFiles.length} non-PDF files were ignored.`,
       });
     }
   };
@@ -239,6 +256,7 @@ export function ContentDistribution() {
       const formData = new FormData();
       formData.append('pdf', file);
       formData.append('reportType', reportType);
+      formData.append('parserType', 'auto_detect');
       
       const response = await fetch('/api/upload-pdf', {
         method: 'POST',
@@ -265,6 +283,60 @@ export function ContentDistribution() {
         description: "Failed to process PDF. Please try again.",
         variant: "destructive",
       });
+    },
+  });
+
+  const multipleUploadMutation = useMutation({
+    mutationFn: async (files: File[]) => {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('pdf', file);
+      });
+      formData.append('reportType', reportType);
+      formData.append('parserType', 'auto_detect');
+      
+      const response = await fetch('/api/upload-pdf', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Batch upload failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      const { results, errors, successCount, errorCount } = data;
+      
+      if (successCount > 0) {
+        toast({
+          title: "Batch Upload Completed",
+          description: `Successfully processed ${successCount} PDFs. ${errorCount > 0 ? `${errorCount} files failed.` : ''}`,
+        });
+      }
+      
+      if (errorCount > 0) {
+        toast({
+          title: "Some Uploads Failed",
+          description: `${errorCount} files could not be processed. Check console for details.`,
+          variant: "destructive",
+        });
+        console.error('Upload errors:', errors);
+      }
+      
+      setSelectedFiles([]);
+      setIsUploadingMultiple(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+    },
+    onError: (error) => {
+      console.error('Batch upload error:', error);
+      toast({
+        title: "Batch Upload Failed",
+        description: "Failed to process PDFs. Please try again.",
+        variant: "destructive",
+      });
+      setIsUploadingMultiple(false);
     },
   });
 
