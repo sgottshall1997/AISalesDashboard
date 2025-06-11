@@ -98,119 +98,161 @@ function parseWATMTUReport(content: string) {
   };
 }
 
-// WILTW Report Parser - Enhanced for actual content extraction
+// WILTW Report Parser - Enhanced to capture ALL numbered articles with consistent formatting
 function parseWILTWReport(content: string) {
-  console.log('Starting WILTW parsing, content length:', content.length);
+  console.log('Starting enhanced WILTW parsing, content length:', content.length);
   
   const articles = [];
   const insights = [];
   const themes = [];
   
-  // Remove header/footer content and split into meaningful sections
-  let cleanContent = content
-    .replace(/PRINT ONCE[\s\S]*?13D\.COM/g, '')
-    .replace(/\d+\s+OF\s+\d+/g, '')
-    .replace(/WHAT I LEARNED THIS WEEK.*?\d{4}/g, '');
+  // First, extract the table of contents to identify all article numbers and titles
+  const tocMatch = content.match(/Table of Contents([\s\S]*?)(?:Confidential|Back to ToC|STRATEGY & ASSET)/i);
+  const tocEntries = [];
   
-  // Split content by various patterns to get meaningful sections
-  const paragraphs = cleanContent
-    .split(/(?:\n\s*\n|\. {2,}|(?<=[.!?])\s{3,}|(?<=\w)\s{5,}(?=[A-Z]))/)
-    .filter(p => p.trim().length > 80)
-    .map(p => p.trim());
-  
-  console.log('Found paragraphs:', paragraphs.length);
-  
-  for (let i = 0; i < paragraphs.length; i++) {
-    const paragraph = paragraphs[i].replace(/\s+/g, ' ').trim();
+  if (tocMatch) {
+    const tocContent = tocMatch[1];
+    // Look for numbered entries (01, 02, 03, etc.) with descriptions
+    const tocPattern = /(\d{2})\s+(.*?)(?=\d{2}\s+|$)/g;
+    let match;
     
-    // Skip quotes at the beginning (they tend to be inspirational quotes)
-    if (i < 10 && (paragraph.includes('"') || paragraph.match(/[A-Z][a-z]+ [A-Z][a-z]+$/))) {
-      continue;
+    while ((match = tocPattern.exec(tocContent)) !== null) {
+      const articleNum = match[1];
+      const title = match[2].replace(/P\.\s*\d+.*$/, '').trim();
+      if (title.length > 10) {
+        tocEntries.push({
+          number: articleNum,
+          title: title.replace(/\s+/g, ' ').trim()
+        });
+      }
     }
+  }
+  
+  console.log('Found TOC entries:', tocEntries.length);
+  
+  // Now extract the actual content for each numbered article
+  for (const tocEntry of tocEntries) {
+    const articleNum = tocEntry.number;
     
-    // Look for section headers (typically all caps or numbered)
-    const lines = paragraph.split('\n');
-    const potentialTitle = lines[0].trim();
+    // Look for the article content using multiple patterns
+    const patterns = [
+      // Pattern 1: Article number followed by title and content
+      new RegExp(`${articleNum}\\s+([\\s\\S]*?)(?=\\d{2}\\s+|Back to ToC|Confidential for|$)`, 'i'),
+      // Pattern 2: Article content after a section break
+      new RegExp(`Back to ToC[\\s\\S]*?${tocEntry.title.substring(0, 30)}[\\s\\S]*?([\\s\\S]*?)(?=Back to ToC|Confidential for|\\d{2}\\s+|$)`, 'i'),
+      // Pattern 3: Look for the title anywhere in the document
+      new RegExp(`${tocEntry.title.substring(0, 50)}[\\s\\S]*?([\\s\\S]{200,2000})(?=Back to ToC|Confidential for|\\d{2}\\s+|$)`, 'i')
+    ];
     
-    // Check if this looks like a section header
-    if (potentialTitle.length > 15 && potentialTitle.length < 100) {
-      const isAllCaps = potentialTitle.toUpperCase() === potentialTitle && potentialTitle.includes(' ');
-      const isNumbered = /^\d+[\.\s]/.test(potentialTitle);
-      const isTitleCase = /^[A-Z][a-z]+(?:\s+[A-Z][a-z]*)+/.test(potentialTitle);
-      
-      if (isAllCaps || isNumbered || isTitleCase) {
-        const contentLines = lines.slice(1).join(' ').trim();
-        
-        if (contentLines.length > 100) {
-          articles.push({
-            title: potentialTitle.replace(/^\d+[\.\s]*/, '').replace(/[:\.]$/, ''),
-            content: contentLines.substring(0, 600)
-          });
-          
-          themes.push(potentialTitle.replace(/^\d+[\.\s]*/, '').replace(/[:\.]$/, ''));
-        }
+    let articleContent = '';
+    let fullTitle = tocEntry.title;
+    
+    for (const pattern of patterns) {
+      const match = content.match(pattern);
+      if (match && match[1] && match[1].trim().length > 100) {
+        articleContent = match[1].trim();
+        break;
       }
     }
     
-    // Extract insights from substantial content paragraphs
-    if (paragraph.length > 200 && paragraph.length < 1000 && 
-        !paragraph.includes('Copyright') && 
-        !paragraph.includes('Confidential') &&
-        articles.length < 15) {
+    // If we found content, clean it up and add it
+    if (articleContent && articleContent.length > 100) {
+      // Clean up the content
+      const cleanedContent = articleContent
+        .replace(/Confidential for.*$/gm, '')
+        .replace(/\d+\s+OF\s+\d+/g, '')
+        .replace(/13D RESEARCH.*$/gm, '')
+        .replace(/PRINT ONCE.*$/gm, '')
+        .replace(/Back to ToC/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
       
-      // Split into sentences and extract key insights
-      const sentences = paragraph.split(/[.!?]+/).filter(s => s.trim().length > 40);
+      // Extract the first substantial paragraph as summary
+      const paragraphs = cleanedContent.split(/\n\s*\n|\.\s{2,}/);
+      const substantialParagraphs = paragraphs.filter(p => p.trim().length > 50);
+      const summary = substantialParagraphs.slice(0, 3).join(' ').substring(0, 800);
       
-      for (const sentence of sentences.slice(0, 3)) {
+      articles.push({
+        number: parseInt(articleNum),
+        title: fullTitle,
+        content: summary,
+        fullContent: cleanedContent.substring(0, 2000) // Keep more content for analysis
+      });
+      
+      // Extract themes from the title
+      themes.push(fullTitle);
+      
+      // Extract key insights from the content
+      const sentences = cleanedContent.split(/[.!?]+/).filter(s => s.trim().length > 40);
+      for (const sentence of sentences.slice(0, 2)) {
         const cleanSentence = sentence.trim();
-        if (cleanSentence.length > 60 && cleanSentence.length < 300) {
+        if (cleanSentence.length > 60 && cleanSentence.length < 250) {
           insights.push(cleanSentence + '.');
-          
-          // Extract potential themes from longer sentences
-          const words = cleanSentence.split(' ');
-          if (words.length > 5 && words.length < 15) {
-            const potentialTheme = words.slice(0, 8).join(' ').replace(/[,.]$/, '');
-            if (potentialTheme.length > 20) {
-              themes.push(potentialTheme);
-            }
-          }
         }
       }
     }
   }
   
-  // Remove duplicates and clean up
-  const uniqueArticles = articles.filter((article, index, self) => 
-    index === self.findIndex(a => a.title === article.title)
-  );
+  // If we didn't find numbered articles, fall back to section-based parsing
+  if (articles.length === 0) {
+    console.log('No numbered articles found, using fallback parsing...');
+    
+    // Split by common section markers
+    const sections = content.split(/(?:Back to ToC|Confidential for)/);
+    
+    for (const section of sections) {
+      if (section.trim().length < 200) continue;
+      
+      const lines = section.split('\n').filter(line => line.trim().length > 0);
+      if (lines.length < 3) continue;
+      
+      // Look for potential title (first substantial line)
+      const potentialTitle = lines.find(line => 
+        line.trim().length > 20 && 
+        line.trim().length < 200 &&
+        !line.includes('RESEARCH') &&
+        !line.includes('PRINT ONCE')
+      );
+      
+      if (potentialTitle) {
+        const remainingContent = section.substring(section.indexOf(potentialTitle) + potentialTitle.length);
+        if (remainingContent.trim().length > 200) {
+          articles.push({
+            number: articles.length + 1,
+            title: potentialTitle.trim(),
+            content: remainingContent.trim().substring(0, 800),
+            fullContent: remainingContent.trim().substring(0, 2000)
+          });
+          
+          themes.push(potentialTitle.trim());
+        }
+      }
+    }
+  }
   
-  // Simple deduplication without Set iteration
-  const seenInsights = new Set();
-  const uniqueInsights = insights.filter(insight => {
-    if (seenInsights.has(insight)) return false;
-    seenInsights.add(insight);
-    return true;
-  });
+  // Sort articles by number
+  articles.sort((a, b) => a.number - b.number);
   
-  const seenThemes = new Set();
-  const uniqueThemes = themes.filter(theme => {
-    if (seenThemes.has(theme)) return false;
-    seenThemes.add(theme);
-    return true;
-  });
-  
-  console.log('WILTW parsing results:', {
-    articlesFound: uniqueArticles.length,
-    insightsFound: uniqueInsights.length,
-    themesFound: uniqueThemes.length
+  console.log('Enhanced WILTW parsing results:', {
+    articlesFound: articles.length,
+    insightsFound: insights.length,
+    themesFound: themes.length,
+    articleTitles: articles.map(a => `${a.number}: ${a.title.substring(0, 50)}...`)
   });
   
   return {
-    articles: uniqueArticles.slice(0, 8),
-    summary: `WILTW report analyzing ${uniqueArticles.length} key investment themes and market insights`,
-    keyInsights: uniqueInsights.slice(0, 8),
-    investmentThemes: uniqueThemes.slice(0, 6),
-    targetAudience: 'Investment professionals and portfolio managers'
+    articles: articles,
+    summary: `WILTW report containing ${articles.length} detailed investment articles covering market analysis, sector insights, and strategic recommendations`,
+    keyInsights: insights.slice(0, 12),
+    investmentThemes: themes.slice(0, 10),
+    targetAudience: 'Investment professionals and portfolio managers',
+    articleCount: articles.length,
+    structuredContent: articles.map(article => ({
+      articleNumber: article.number,
+      title: article.title,
+      summary: article.content,
+      keyPoints: article.fullContent.split(/[.!?]+/).filter(s => s.trim().length > 50).slice(0, 3)
+    }))
   };
 }
 
@@ -1612,29 +1654,46 @@ Spencer`;
       let userPrompt = "";
 
       if (promptType === "wiltw_parser") {
-        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into multiple clearly titled article sections.
+        // First, use our enhanced parser to extract structured articles
+        const parsedData = parseWILTWReport(actualContent);
+        
+        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report contains ${parsedData.articles.length} numbered articles that have been pre-extracted.
 
-For each article, do the following:
+For EACH of the ${parsedData.articles.length} articles provided, create a comprehensive analysis following this EXACT format:
 
-Headline: Identify and restate the article's title.
+**ARTICLE [NUMBER]: [TITLE]**
 
-Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
+**Core Thesis:** [2-3 sentence summary of the main argument]
 
-Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
+**Key Insights:**
+• [First key insight with specific data/quotes]
+• [Second key insight with supporting evidence]  
+• [Third key insight with implications]
+• [Fourth insight if substantial content available]
 
-Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
+**Investment Implications:** [Forward-looking themes and opportunities for investors]
 
-Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
+**Recommended Names:** [Any specific stocks, ETFs, indices, or investment vehicles mentioned]
 
-Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
+**Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
 
-Return the results in a structured format, clearly separating each article.`;
+---
 
-        userPrompt = `Please analyze this complete WILTW report titled "${title || report.title}" and parse ALL articles according to the format specified. Extract all numbered article sections from the actual report content provided:
+CRITICAL REQUIREMENTS:
+- Process ALL ${parsedData.articles.length} articles - do not skip any
+- Maintain consistent formatting across all articles
+- Extract specific data points, percentages, and concrete details
+- Each article must have the exact same structure and depth of analysis
+- Use the article numbers and titles exactly as provided`;
 
-${actualContent}
+        userPrompt = `Analyze these ${parsedData.articles.length} pre-extracted articles from the WILTW report "${title || report.title}". Process each article thoroughly and maintain consistent formatting:
 
-IMPORTANT: Analyze ALL articles found in the actual report content. Each article should follow the exact formatting structure with Headline, Core Thesis, Key Insights, Investment Implications, Recommended Names, and Category Tag.`;
+${parsedData.articles.map(article => `
+**ARTICLE ${article.number}: ${article.title}**
+Content: ${article.fullContent}
+`).join('\n---\n')}
+
+MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articles using the exact format specified. Do not skip any articles and maintain consistent depth across all analyses.`;
       } else if (promptType === "watmtu_parser") {
         systemPrompt = `You are an expert investment research analyst specializing in market analysis and technical indicators. You've received a WATMTU (What Are The Markets Telling Us) report from 13D Research focusing on market trends, technical analysis, and asset allocation strategies.
 
