@@ -404,31 +404,54 @@ export default function ContentSection() {
                               </p>
                             )}
                             <div className="mt-3">
-                              <Button
-                                onClick={() => {
-                                  console.log('BUTTON CLICKED - Starting generation for:', suggestion.title);
+                              <button
+                                onClick={async () => {
+                                  console.log('AI OUTPUT BUTTON CLICKED for:', suggestion.title);
                                   setCurrentSuggestion(suggestion);
-                                  generateEmailMutation.mutate(suggestion);
+                                  
+                                  try {
+                                    const response = await fetch('/api/ai/generate-theme-email', {
+                                      method: 'POST',
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                      },
+                                      body: JSON.stringify({
+                                        theme: suggestion.title,
+                                        emailAngle: suggestion.emailAngle,
+                                        description: suggestion.description,
+                                        keyPoints: suggestion.keyPoints,
+                                        supportingReports: suggestion.supportingReports
+                                      })
+                                    });
+                                    
+                                    if (response.ok) {
+                                      const data = await response.json();
+                                      setGeneratedEmail(data.email);
+                                      setEmailDialogOpen(true);
+                                      toast({
+                                        title: "AI Output Generated",
+                                        description: "Your personalized content has been created successfully.",
+                                      });
+                                    }
+                                  } catch (error) {
+                                    console.error('Error:', error);
+                                    toast({
+                                      title: "Error",
+                                      description: "Failed to generate AI output. Please try again.",
+                                      variant: "destructive",
+                                    });
+                                  }
                                 }}
-                                disabled={generateEmailMutation.isPending}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90 transition-all"
                                 style={{
-                                  backgroundColor: generateEmailMutation.isPending && currentSuggestion === suggestion ? "#6b7280" : testColor,
-                                  border: "none"
+                                  backgroundColor: testColor,
+                                  border: "none",
+                                  cursor: "pointer"
                                 }}
                               >
-                                {generateEmailMutation.isPending && currentSuggestion === suggestion ? (
-                                  <>
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                    Generating...
-                                  </>
-                                ) : (
-                                  <>
-                                    <Mail className="h-4 w-4" />
-                                    Generate Email
-                                  </>
-                                )}
-                              </Button>
+                                <Mail className="h-4 w-4" />
+                                Generate AI Output
+                              </button>
                               
                               {generateEmailMutation.isPending && currentSuggestion === suggestion && (
                                 <div className="bg-gray-50 rounded-md p-3 border">
