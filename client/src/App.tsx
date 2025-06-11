@@ -10,6 +10,7 @@ import InvoiceDetail from "@/pages/invoice-detail";
 import LeadDetail from "@/pages/lead-detail";
 import ClientDetail from "@/pages/client-detail";
 import { AIAnalytics } from "@/pages/ai-analytics";
+import About from "@/pages/about";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/leads/:id" component={LeadDetail} />
       <Route path="/client/:id" component={ClientDetail} />
       <Route path="/ai-analytics" component={AIAnalytics} />
+      <Route path="/about" component={About} />
       <Route component={NotFound} />
     </Switch>
   );

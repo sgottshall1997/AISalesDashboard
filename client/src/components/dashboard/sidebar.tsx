@@ -10,7 +10,9 @@ import {
   Send, 
   Menu,
   Bell,
-  User
+  User,
+  Upload,
+  Info
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,6 +25,11 @@ const navigation = [
   { name: "Content Distribution", href: "/content", icon: BarChart3 },
   { name: "Lead Pipeline", href: "/pipeline", icon: Users },
   { name: "Follow-Up Generator", href: "/followup", icon: Send },
+];
+
+const additionalNavigation = [
+  { name: "CSV Upload", href: "/csv-upload", icon: Upload },
+  { name: "About", href: "/about", icon: Info },
 ];
 
 export function Sidebar({ className }: SidebarProps) {
@@ -43,6 +50,28 @@ export function Sidebar({ className }: SidebarProps) {
 
       <nav className="mt-5 flex-1 px-2 space-y-1">
         {navigation.map((item) => {
+          const isActive = location === item.href;
+          return (
+            <Link key={item.name} href={item.href}>
+              <a
+                className={`${
+                  isActive
+                    ? "bg-primary text-white"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                } group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors`}
+              >
+                <item.icon className="mr-3 h-5 w-5" />
+                {item.name}
+              </a>
+            </Link>
+          );
+        })}
+        
+        {/* Divider */}
+        <div className="border-t border-gray-200 my-4"></div>
+        
+        {/* Additional Navigation */}
+        {additionalNavigation.map((item) => {
           const isActive = location === item.href;
           return (
             <Link key={item.name} href={item.href}>
