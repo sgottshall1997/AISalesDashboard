@@ -2568,6 +2568,448 @@ Generated on: ${new Date().toLocaleString()}
     }
   });
 
+  // AI Content Tools Routes
+  app.get("/api/themes/list", async (req: Request, res: Response) => {
+    try {
+      const reports = await storage.getContentReports();
+      const themeMap = new Map<string, { count: number, reports: string[] }>();
+      
+      reports.forEach(report => {
+        if (report.tags && Array.isArray(report.tags)) {
+          report.tags.forEach(tag => {
+            if (!themeMap.has(tag)) {
+              themeMap.set(tag, { count: 0, reports: [] });
+            }
+            const existing = themeMap.get(tag)!;
+            existing.count++;
+            existing.reports.push(report.title);
+          });
+        }
+      });
+      
+      const themes = Array.from(themeMap.entries()).map(([theme, data]) => ({
+        theme,
+        totalCount: data.count,
+        reports: data.reports
+      })).sort((a, b) => b.totalCount - a.totalCount);
+      
+      res.json(themes);
+    } catch (error) {
+      console.error("Error fetching themes:", error);
+      res.status(500).json({ error: "Failed to fetch themes" });
+    }
+  });
+
+  app.get("/api/themes/timeseries", async (req: Request, res: Response) => {
+    try {
+      const { theme } = req.query;
+      if (!theme || typeof theme !== 'string') {
+        return res.status(400).json({ error: "Theme parameter required" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const timeSeriesData = new Map<string, { count: number, reports: string[] }>();
+      
+      reports.forEach(report => {
+        if (report.tags && Array.isArray(report.tags) && report.tags.includes(theme)) {
+          const dateKey = new Date(report.published_date).toISOString().split('T')[0];
+          if (!timeSeriesData.has(dateKey)) {
+            timeSeriesData.set(dateKey, { count: 0, reports: [] });
+          }
+          const existing = timeSeriesData.get(dateKey)!;
+          existing.count++;
+          existing.reports.push(report.title);
+        }
+      });
+      
+      const sortedData = Array.from(timeSeriesData.entries())
+        .map(([date, data]) => ({ date, count: data.count, reports: data.reports }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      res.json(sortedData);
+    } catch (error) {
+      console.error("Error fetching theme timeseries:", error);
+      res.status(500).json({ error: "Failed to fetch theme timeseries" });
+    }
+  });
+
+  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
+    try {
+      const { prospectName, interests } = req.body;
+      if (!prospectName || !Array.isArray(interests)) {
+        return res.status(400).json({ error: "Missing prospect name or interests" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const matches = [];
+      
+      for (const report of reports) {
+        let confidence = 0;
+        const matchedThemes = [];
+        
+        if (report.tags && Array.isArray(report.tags)) {
+          for (const interest of interests) {
+            for (const tag of report.tags) {
+              if (tag.toLowerCase().includes(interest.toLowerCase()) || 
+                  interest.toLowerCase().includes(tag.toLowerCase())) {
+                confidence += 20;
+                if (!matchedThemes.includes(tag)) {
+                  matchedThemes.push(tag);
+                }
+              }
+            }
+          }
+        }
+        
+        for (const interest of interests) {
+          if (report.title.toLowerCase().includes(interest.toLowerCase())) {
+            confidence += 15;
+          }
+          if (report.summary && report.summary.toLowerCase().includes(interest.toLowerCase())) {
+            confidence += 10;
+          }
+        }
+        
+        if (confidence > 0) {
+          matches.push({
+            id: report.id,
+            title: report.title,
+            summary: report.summary || "No summary available",
+            confidence: Math.min(confidence, 100),
+            matchedThemes,
+            publishedDate: report.published_date
+          });
+        }
+      }
+      
+      matches.sort((a, b) => b.confidence - a.confidence);
+      res.json({ matches: matches.slice(0, 10) });
+    } catch (error) {
+      console.error("Error matching prospect themes:", error);
+      res.status(500).json({ error: "Failed to match prospect themes" });
+    }
+  });
+
+  app.post("/api/relevance-score", async (req: Request, res: Response) => {
+    try {
+      const { tickers } = req.body;
+      if (!Array.isArray(tickers)) {
+        return res.status(400).json({ error: "Tickers must be an array" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const scoredReports = [];
+      
+      for (const report of reports) {
+        let relevanceScore = 0;
+        const matchedTickers = [];
+        const sectorMatches = [];
+        
+        for (const ticker of tickers) {
+          const tickerRegex = new RegExp(`\\b${ticker}\\b`, 'gi');
+          if (report.title.match(tickerRegex) || 
+              (report.summary && report.summary.match(tickerRegex)) ||
+              (report.full_content && report.full_content.match(tickerRegex))) {
+            relevanceScore += 25;
+            if (!matchedTickers.includes(ticker)) {
+              matchedTickers.push(ticker);
+            }
+          }
+        }
+        
+        const sectorKeywords = ['technology', 'energy', 'healthcare', 'finance', 'mining', 'utilities'];
+        for (const sector of sectorKeywords) {
+          if (report.title.toLowerCase().includes(sector) || 
+              (report.summary && report.summary.toLowerCase().includes(sector))) {
+            relevanceScore += 5;
+            if (!sectorMatches.includes(sector)) {
+              sectorMatches.push(sector);
+            }
+          }
+        }
+        
+        if (relevanceScore > 0) {
+          scoredReports.push({
+            id: report.id,
+            title: report.title,
+            summary: report.summary || "No summary available",
+            relevanceScore: Math.min(relevanceScore, 100),
+            matchedTickers,
+            sectorMatches,
+            publishedDate: report.published_date
+          });
+        }
+      }
+      
+      scoredReports.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      res.json({ scoredReports: scoredReports.slice(0, 15) });
+    } catch (error) {
+      console.error("Error scoring portfolio relevance:", error);
+      res.status(500).json({ error: "Failed to score portfolio relevance" });
+    }
+  });
+
+  app.post("/api/ask-reports", async (req: Request, res: Response) => {
+    try {
+      const { query } = req.body;
+      if (!query || typeof query !== 'string') {
+        return res.status(400).json({ error: "Query parameter required" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const sourceReports = [];
+      let confidence = 0;
+      
+      const queryWords = query.toLowerCase().split(' ').filter(word => word.length > 3);
+      
+      for (const report of reports) {
+        let relevanceScore = 0;
+        
+        for (const word of queryWords) {
+          if (report.title.toLowerCase().includes(word)) relevanceScore += 10;
+          if (report.summary && report.summary.toLowerCase().includes(word)) relevanceScore += 5;
+          if (report.full_content && report.full_content.toLowerCase().includes(word)) relevanceScore += 3;
+        }
+        
+        if (relevanceScore > 15) {
+          sourceReports.push({
+            id: report.id,
+            title: report.title,
+            relevanceScore,
+            excerpt: report.summary?.substring(0, 200) || "No excerpt available"
+          });
+        }
+      }
+      
+      sourceReports.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      const topSources = sourceReports.slice(0, 5);
+      
+      confidence = Math.min(topSources.length * 20, 90);
+      
+      let answer = "Based on the available reports, ";
+      if (topSources.length > 0) {
+        answer += `I found ${topSources.length} relevant report(s) that discuss this topic. `;
+        answer += "The key insights suggest that this is an area of active research and analysis. ";
+        answer += "For detailed information, please review the source reports listed below.";
+      } else {
+        answer = "I couldn't find specific information about this topic in the current report corpus. ";
+        answer += "You might want to refine your query or check if relevant reports have been uploaded.";
+        confidence = 10;
+      }
+      
+      res.json({
+        answer,
+        sourceReports: topSources,
+        confidence
+      });
+    } catch (error) {
+      console.error("Error processing Q&A query:", error);
+      res.status(500).json({ error: "Failed to process query" });
+    }
+  });
+
+  app.post("/api/generate-one-pager", async (req: Request, res: Response) => {
+    try {
+      const { topic, audience, tone, keyPoints } = req.body;
+      if (!topic || !audience) {
+        return res.status(400).json({ error: "Topic and audience are required" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const relevantReports = [];
+      
+      const topicWords = topic.toLowerCase().split(' ');
+      for (const report of reports) {
+        let relevanceScore = 0;
+        
+        for (const word of topicWords) {
+          if (report.title.toLowerCase().includes(word)) relevanceScore += 15;
+          if (report.summary && report.summary.toLowerCase().includes(word)) relevanceScore += 10;
+        }
+        
+        if (relevanceScore > 20) {
+          relevantReports.push({
+            id: report.id,
+            title: report.title,
+            relevanceScore
+          });
+        }
+      }
+      
+      relevantReports.sort((a, b) => b.relevanceScore - a.relevanceScore);
+      const topReports = relevantReports.slice(0, 5);
+      
+      const title = `${topic} - Investment Analysis`;
+      const content = `# ${title}
+      
+**Prepared for:** ${audience}
+**Date:** ${new Date().toLocaleDateString()}
+
+## Executive Summary
+
+This analysis examines ${topic} based on our latest research and market intelligence. Our research indicates significant developments in this area that warrant attention from ${audience.toLowerCase()}.
+
+## Key Insights
+
+${keyPoints && keyPoints.length > 0 ? 
+  keyPoints.map((point: string, index: number) => `${index + 1}. ${point}`).join('\n') :
+  '• Market dynamics show evolving trends\n• Risk-return profiles are shifting\n• Opportunities exist for strategic positioning'
+}
+
+## Market Analysis
+
+Based on our comprehensive research corpus, ${topic.toLowerCase()} presents both opportunities and challenges. The current market environment suggests that careful analysis and strategic positioning will be critical for success.
+
+## Investment Implications
+
+For ${audience.toLowerCase()}, this analysis suggests:
+- Continued monitoring of developments
+- Assessment of portfolio implications  
+- Consideration of strategic positioning
+
+## Conclusion
+
+${topic} remains an important area for ongoing research and analysis. We recommend continued monitoring and strategic evaluation based on evolving market conditions.
+
+---
+*This analysis is based on ${topReports.length} relevant research reports from our intelligence corpus.*`;
+
+      const onePager = {
+        id: Date.now().toString(),
+        title,
+        content,
+        keyInsights: keyPoints || ['Market Analysis', 'Investment Implications', 'Strategic Considerations'],
+        sourceReports: topReports,
+        generatedAt: new Date().toISOString()
+      };
+      
+      res.json({ onePager });
+    } catch (error) {
+      console.error("Error generating one-pager:", error);
+      res.status(500).json({ error: "Failed to generate one-pager" });
+    }
+  });
+
+  app.get("/api/fund-strategies", async (req: Request, res: Response) => {
+    try {
+      const strategies = [
+        { id: 'value', name: 'Value Investing', description: 'Focus on undervalued securities' },
+        { id: 'growth', name: 'Growth Investing', description: 'Target high-growth companies' },
+        { id: 'momentum', name: 'Momentum Strategy', description: 'Follow market trends' },
+        { id: 'contrarian', name: 'Contrarian Investing', description: 'Against market sentiment' }
+      ];
+      res.json(strategies);
+    } catch (error) {
+      console.error("Error fetching fund strategies:", error);
+      res.status(500).json({ error: "Failed to fetch strategies" });
+    }
+  });
+
+  app.post("/api/map-fund-themes", async (req: Request, res: Response) => {
+    try {
+      const { fundName, strategy, riskProfile } = req.body;
+      if (!fundName || !strategy || !riskProfile) {
+        return res.status(400).json({ error: "All fund parameters required" });
+      }
+      
+      const reports = await storage.getContentReports();
+      const relevantReports = [];
+      const thematicAlignment = [];
+      
+      const strategyThemes = {
+        'value': ['undervalued', 'dividend', 'book value', 'earnings'],
+        'growth': ['growth', 'technology', 'innovation', 'expansion'],
+        'momentum': ['trending', 'momentum', 'breakout', 'technical'],
+        'contrarian': ['contrarian', 'oversold', 'reversal', 'turnaround']
+      };
+      
+      const themes = strategyThemes[strategy as keyof typeof strategyThemes] || [];
+      
+      for (const report of reports) {
+        let relevanceScore = 0;
+        const keyThemes = [];
+        
+        if (report.tags && Array.isArray(report.tags)) {
+          for (const theme of themes) {
+            for (const tag of report.tags) {
+              if (tag.toLowerCase().includes(theme) || theme.includes(tag.toLowerCase())) {
+                relevanceScore += 20;
+                if (!keyThemes.includes(tag)) {
+                  keyThemes.push(tag);
+                }
+              }
+            }
+          }
+        }
+        
+        if (relevanceScore > 0) {
+          relevantReports.push({
+            id: report.id,
+            title: report.title,
+            relevanceScore: Math.min(relevanceScore, 100),
+            keyThemes,
+            publishedDate: report.published_date
+          });
+        }
+      }
+      
+      const themeMap = new Map<string, { strength: number, reports: number }>();
+      relevantReports.forEach(report => {
+        report.keyThemes.forEach(theme => {
+          if (!themeMap.has(theme)) {
+            themeMap.set(theme, { strength: 0, reports: 0 });
+          }
+          const existing = themeMap.get(theme)!;
+          existing.strength += report.relevanceScore / relevantReports.length;
+          existing.reports++;
+        });
+      });
+      
+      Array.from(themeMap.entries()).forEach(([theme, data]) => {
+        thematicAlignment.push({
+          theme,
+          strength: Math.round(data.strength),
+          supportingReports: data.reports
+        });
+      });
+      
+      const recommendations = [
+        {
+          type: 'opportunity' as const,
+          description: `Based on ${strategy} strategy, consider increasing exposure to identified themes`,
+          priority: 'medium' as const
+        },
+        {
+          type: 'neutral' as const,
+          description: `Monitor developments in aligned thematic areas for ${riskProfile} risk tolerance`,
+          priority: 'low' as const
+        }
+      ];
+      
+      if (riskProfile === 'aggressive') {
+        recommendations.push({
+          type: 'opportunity' as const,
+          description: 'Consider higher allocation to emerging themes with strong momentum',
+          priority: 'high' as const
+        });
+      }
+      
+      const analysis = {
+        fundName,
+        strategy,
+        riskLevel: riskProfile,
+        relevantReports: relevantReports.slice(0, 10),
+        thematicAlignment: thematicAlignment.slice(0, 8),
+        recommendations
+      };
+      
+      res.json({ analysis });
+    } catch (error) {
+      console.error("Error mapping fund themes:", error);
+      res.status(500).json({ error: "Failed to map fund themes" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -77,7 +77,7 @@ export function PortfolioRelevanceScorer() {
       });
     });
     
-    return [...new Set(tickers)];
+    return Array.from(new Set(tickers));
   };
 
   const handleAnalyze = () => {
