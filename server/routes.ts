@@ -1776,7 +1776,7 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
         promptPreview: userPrompt.substring(0, 300)
       });
 
-      // Generate the detailed summary first
+      // Generate the original detailed summary first
       const detailedResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
@@ -1794,6 +1794,43 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       });
 
       const detailedSummary = detailedResponse.choices[0].message.content;
+
+      // Generate the structured article-by-article analysis
+      const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into a large number of clearly titled article sections (Ie 01, 02, 03, etc.).
+
+For each article, do the following:
+1. Headline: Identify and restate the article's title.
+2. Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
+3. Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
+4. Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
+5. Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
+6. Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
+
+Return the results in a structured format, clearly separating each article.`;
+
+      const structuredUserPrompt = `Analyze this investment research report titled "${title || report.title}" and provide structured analysis for each article section:
+
+${actualContent}
+
+Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
+
+      const structuredResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: structuredSystemPrompt
+          },
+          {
+            role: "user",
+            content: structuredUserPrompt
+          }
+        ],
+        max_tokens: 4000,
+        temperature: 0.3
+      });
+
+      const structuredSummary = structuredResponse.choices[0].message.content;
 
       // Generate the comprehensive summary
       const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
