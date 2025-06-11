@@ -536,36 +536,39 @@ The current market environment presents both challenges and opportunities for lo
   // Prospect matching endpoint
   app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
     try {
-      const { reportTitle } = req.body;
+      const { prospectName, interests, additionalContext } = req.body;
 
-      if (!reportTitle) {
-        return res.status(400).json({ error: "Report title is required" });
+      if (!prospectName || !interests) {
+        return res.status(400).json({ error: "Prospect name and interests are required" });
       }
 
+      // Parse interests into array
+      const interestArray = interests.split(',').map((i: string) => i.trim());
+      
       const matches = [
         {
-          clientName: "Capital Investment Partners",
-          matchScore: 85,
-          matchReason: `Strong interest in technology themes discussed in ${reportTitle}`,
-          interests: ["Technology", "China Markets", "Growth Investing"],
-          relevantThemes: ["Tech Innovation", "Market Expansion"],
-          suggestedTalkingPoints: [
-            "Technology sector opportunities in emerging markets",
-            "Regulatory environment impact on growth prospects",
-            "Portfolio positioning for tech recovery"
-          ]
+          name: prospectName,
+          company: "Investment Partners LLC",
+          relevanceScore: 88,
+          interests: interestArray,
+          reasoning: `Strong alignment with ${interestArray.join(', ')} investment themes. Portfolio focus matches current market opportunities in commodities and inflation hedges.`,
+          suggestedContent: "Highlight commodity market breakouts, inflation hedge strategies, and tactical allocation recommendations from recent WATMTU reports."
         },
         {
-          clientName: "Emerging Markets Fund",
-          matchScore: 72,
-          matchReason: `Geographic focus aligns with report themes`,
+          name: "Emerging Markets Fund",
+          company: "Global Asset Management",
+          relevanceScore: 72,
           interests: ["Emerging Markets", "Sector Rotation"],
-          relevantThemes: ["Market Dynamics", "Economic Growth"],
-          suggestedTalkingPoints: [
-            "Emerging market recovery indicators",
-            "Sector-specific investment opportunities",
-            "Risk management in volatile markets"
-          ]
+          reasoning: `Geographic focus aligns with global investment themes and sector allocation strategies.`,
+          suggestedContent: "Focus on international market opportunities and sector-specific insights from WILTW research."
+        },
+        {
+          name: "Commodities Capital",
+          company: "Resource Investment Group",
+          relevanceScore: 85,
+          interests: ["Commodities", "Inflation", "Hard Assets"],
+          reasoning: `Direct alignment with commodity supercycle themes and inflation hedge strategies discussed across multiple reports.`,
+          suggestedContent: "Emphasize gold breakout patterns, silver performance, and long-term commodity allocation strategies."
         }
       ];
 
@@ -1759,8 +1762,7 @@ Provide a JSON response with actionable prospecting insights:
         return res.status(400).json({ error: "Suggestion data is required" });
       }
 
-      // Debug logging to check the data structure
-      console.log("Campaign email suggestion data:", JSON.stringify(suggestion, null, 2));
+
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
