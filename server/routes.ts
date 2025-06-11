@@ -844,6 +844,133 @@ CRITICAL:
     }
   });
 
+  // Lead pipeline email generation endpoint
+  app.post("/api/ai/generate-email", async (req: Request, res: Response) => {
+    try {
+      const { type, leadId, context } = req.body;
+      
+      if (type !== "lead_outreach" || !leadId) {
+        return res.status(400).json({ error: "Invalid request parameters" });
+      }
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
+        });
+      }
+
+      // Get lead data
+      const lead = await storage.getLead(leadId);
+      if (!lead) {
+        return res.status(404).json({ error: "Lead not found" });
+      }
+
+      // Get recent reports for context
+      const contentReports = await storage.getRecentReports(10);
+      const reportContext = contentReports.slice(0, 3).map((report: any) => 
+        `Report: ${report.title}\nSummary: ${report.content_summary || report.summary || 'No summary available'}`
+      ).join('\n\n');
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
+
+TEMPLATE TO FOLLOW EXACTLY:
+Hi ${lead.name},
+
+Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 1)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 2)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 3)
+
+These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
+
+On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
+
+I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
+
+Best,
+Spencer
+
+DATA TO USE:
+${reportContext || 'No reports selected'}
+
+CRITICAL: 
+- Use bullet points (•) NOT paragraphs
+- Make each bullet detailed with specific data/percentages/ratios from reports
+- Include market implications and context in each bullet
+- Each bullet must reference (Article 1), (Article 2), (Article 3)
+- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
+- Keep conversational tone, avoid formal business language
+- Maximum 275 words`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided."
+          },
+          {
+            role: "user",
+            content: emailPrompt
+          }
+        ],
+        max_tokens: 400,
+        temperature: 0.1
+      });
+
+      let emailContent = response.choices[0].message.content || "Unable to generate email";
+      
+      // Remove all *** symbols from output
+      emailContent = emailContent.replace(/\*\*\*/g, '');
+      
+      // Aggressively strip any subject lines
+      emailContent = emailContent.replace(/^Subject:.*$/gm, '');
+      emailContent = emailContent.replace(/^.*Subject:.*$/gm, '');
+      
+      // Strip formal opening paragraphs
+      emailContent = emailContent.replace(/^.*I hope this message finds you well\..*$/gm, '');
+      emailContent = emailContent.replace(/^.*Given your.*interest.*$/gm, '');
+      emailContent = emailContent.replace(/^.*I wanted to follow up.*$/gm, '');
+      
+      // Convert paragraph blocks to bullet points if AI generated paragraphs instead
+      emailContent = emailContent.replace(/^(Our recent report highlights.*?)\./gm, '• **Market Shift**: $1. (Article 1)');
+      emailContent = emailContent.replace(/^(Moreover.*?)\./gm, '• **Strategic Opportunity**: $1. (Article 2)');
+      emailContent = emailContent.replace(/^(Additionally.*?)\./gm, '• **Key Development**: $1. (Article 3)');
+      
+      // Strip formal closing paragraphs
+      emailContent = emailContent.replace(/I would be delighted.*$/gm, '');
+      emailContent = emailContent.replace(/Looking forward.*$/gm, '');
+      emailContent = emailContent.replace(/Would you be available.*$/gm, '');
+      emailContent = emailContent.replace(/Please let me know.*convenient.*$/gm, '');
+      emailContent = emailContent.replace(/Could we schedule.*$/gm, '');
+      
+      // Strip formal signatures
+      emailContent = emailContent.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
+      emailContent = emailContent.replace(/13D Research$/, '');
+      
+      // Clean up multiple newlines
+      emailContent = emailContent.replace(/\n{3,}/g, '\n\n').trim();
+
+      // Return in the format expected by the lead pipeline
+      res.json({
+        subject: `Quick insights for ${lead.company}`,
+        body: emailContent
+      });
+
+    } catch (error) {
+      console.error("Generate email error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate AI email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Theme-based email generation endpoint
   app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
     try {
