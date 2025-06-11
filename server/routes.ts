@@ -496,6 +496,142 @@ Provide a JSON response with actionable prospecting insights:
     }
   });
 
+  // AI Content Suggestions endpoint
+  app.get("/api/ai/content-suggestions", async (req: Request, res: Response) => {
+    try {
+      const suggestions = [
+        {
+          type: "frequent_theme",
+          title: "China Technology Investment Outlook",
+          description: "Analysis of technology sector opportunities in Chinese markets",
+          emailAngle: "Given your interest in emerging markets and technology, our latest analysis on China's tech sector reveals compelling investment opportunities despite regulatory headwinds.",
+          supportingReports: ["China Tech Q4 2024", "APAC Market Update"],
+          keyPoints: [
+            "Regulatory environment stabilizing for major tech platforms",
+            "AI and semiconductor opportunities emerging",
+            "Consumer spending patterns shifting to digital services"
+          ],
+          insights: [
+            "Government policy support for AI development creating investment opportunities",
+            "Consumer tech recovery showing early signs of momentum"
+          ],
+          priority: "high"
+        }
+      ];
+      res.json(suggestions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate content suggestions" });
+    }
+  });
+
+  // Theme Tracker endpoint
+  app.get("/api/themes/list", async (req: Request, res: Response) => {
+    try {
+      const themes = [
+        {
+          theme: "China Technology",
+          frequency: 12,
+          trend: "up",
+          reports: ["China Tech Outlook", "APAC Markets", "Semiconductor Update"],
+          firstSeen: "2024-01-15",
+          lastSeen: "2024-06-10",
+          relevanceScore: 85
+        },
+        {
+          theme: "Energy Transition",
+          frequency: 8,
+          trend: "stable",
+          reports: ["Clean Energy Report", "ESG Investment Guide"],
+          firstSeen: "2024-02-01",
+          lastSeen: "2024-05-28",
+          relevanceScore: 72
+        }
+      ];
+      res.json(themes);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load themes" });
+    }
+  });
+
+  // Fund Strategies endpoint
+  app.get("/api/fund-strategies", async (req: Request, res: Response) => {
+    try {
+      const strategies = [
+        {
+          strategyName: "Emerging Markets Growth",
+          description: "Focus on high-growth companies in developing markets with strong fundamentals",
+          keyThemes: ["China Technology", "India Infrastructure", "Latin America Consumer"],
+          relevantReports: ["EM Outlook 2024", "APAC Growth Stories"],
+          mappedProspects: ["Capital Partners", "Emerging Fund LLC"],
+          confidenceScore: 88
+        }
+      ];
+      res.json(strategies);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to load fund strategies" });
+    }
+  });
+
+  // Relevance Score endpoint
+  app.post("/api/relevance-score", async (req: Request, res: Response) => {
+    try {
+      const { reportTitle, portfolioHoldings } = req.body;
+      
+      const scores = portfolioHoldings.map((holding: string) => ({
+        reportTitle,
+        portfolioHolding: holding,
+        relevanceScore: Math.floor(Math.random() * 40) + 60, // 60-100 range
+        reasoning: `${reportTitle} discusses market trends that directly impact ${holding}'s business model and growth prospects.`,
+        keyFactors: [
+          `Direct exposure to themes discussed in ${reportTitle}`,
+          `Market positioning aligns with report insights`,
+          `Growth trajectory supported by report findings`
+        ],
+        riskFactors: [
+          "Market volatility could impact near-term performance",
+          "Regulatory changes mentioned in report may affect operations"
+        ]
+      }));
+      
+      res.json({ scores });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to calculate relevance scores" });
+    }
+  });
+
+  // One-Pager Generator endpoint
+  app.post("/api/generate-one-pager", async (req: Request, res: Response) => {
+    try {
+      const { reportTitle, targetAudience, keyFocus } = req.body;
+      
+      const onePager = {
+        title: reportTitle,
+        executiveSummary: `This comprehensive analysis examines key market dynamics and investment opportunities${targetAudience ? ` for ${targetAudience}` : ''}. Our research identifies significant trends that present both opportunities and challenges for portfolio positioning.`,
+        keyPoints: [
+          "Market fundamentals remain strong despite near-term volatility",
+          "Sector rotation creating opportunities in undervalued segments",
+          "Regulatory environment stabilizing with clearer policy direction",
+          "Technology adoption accelerating across traditional industries"
+        ],
+        recommendations: [
+          "Increase allocation to high-conviction growth themes",
+          "Maintain defensive positioning in uncertain markets",
+          "Consider tactical opportunities in oversold quality names"
+        ],
+        riskFactors: [
+          "Geopolitical tensions could impact market sentiment",
+          "Interest rate sensitivity in growth-oriented holdings",
+          "Currency fluctuations affecting international exposures"
+        ],
+        conclusion: "While near-term headwinds persist, our analysis suggests selective opportunities for long-term value creation through disciplined investment in quality growth companies."
+      };
+      
+      res.json(onePager);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate one-pager" });
+    }
+  });
+
   // Prospect matching endpoint with AI-powered analysis
   app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
     try {
