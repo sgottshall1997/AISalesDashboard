@@ -3515,15 +3515,16 @@ This analysis is based on ${topReports.length} relevant research reports from ou
             role: "system",
             content: `You are an AI assistant that analyzes investment report content and matches it with relevant prospects based on their investment interests and preferences.
 
-Given a report summary and a list of prospects with their investment interests, identify which prospects would be most interested in this report content.
+Given a report summary and a list of prospects with their business details, identify which prospects would be most interested in this report content based on their company profile, engagement level, stage, and interest tags.
 
 For each relevant match, provide:
 1. The prospect's name and company
-2. A relevance score (0-100) based on how well the report aligns with their interests
+2. A relevance score (0-100) based on how well the report aligns with their profile
 3. Specific reasoning for why this prospect would be interested
 4. Which sections or topics from the report would be most relevant to them
 5. Suggested approach for sharing this content
 
+Consider their stage (prospect, qualified, proposal), engagement level, and interest tags when scoring relevance.
 Only include prospects with a relevance score of 50 or higher. Rank by relevance score (highest first).`
           },
           {
@@ -3535,11 +3536,12 @@ Prospects to match against:
 ${prospects.map(p => `
 Name: ${p.name}
 Company: ${p.company}
-Investment Focus: ${p.investment_focus || 'General investing'}
-Risk Tolerance: ${p.risk_tolerance || 'Medium'}
-Investment Timeline: ${p.investment_timeline || 'Medium-term'}
+Stage: ${p.stage || 'prospect'}
+Likelihood of Closing: ${p.likelihood_of_closing || 'medium'}
+Engagement Level: ${p.engagement_level || 'none'}
 Notes: ${p.notes || 'No additional notes'}
-Tags: ${p.tags?.join(', ') || 'No tags'}
+Interest Tags: ${p.interest_tags ? (Array.isArray(p.interest_tags) ? p.interest_tags.join(', ') : p.interest_tags.toString()) : 'No tags'}
+How Heard: ${p.how_heard || 'Not specified'}
 `).join('\n---\n')}
 
 Please analyze this report content and identify which prospects would be most interested, providing detailed matching information in the following JSON format:
