@@ -1662,46 +1662,31 @@ Spencer`;
       let userPrompt = "";
 
       if (promptType === "wiltw_parser") {
-        // First, use our enhanced parser to extract structured articles
-        const parsedData = parseWILTWReport(actualContent);
+        // Use enhanced investment research analysis for WILTW reports
+        systemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive WILTW investment report and extract actionable intelligence.
+
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
+
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
         
-        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report contains ${parsedData.articles.length} numbered articles that have been pre-extracted.
+        userPrompt = `Please analyze this WILTW investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
 
-For EACH of the ${parsedData.articles.length} articles provided, create a comprehensive analysis following this EXACT format:
+${actualContent}
 
-**ARTICLE [NUMBER]: [TITLE]**
-
-**Core Thesis:** [2-3 sentence summary of the main argument]
-
-**Key Insights:**
-• [First key insight with specific data/quotes]
-• [Second key insight with supporting evidence]  
-• [Third key insight with implications]
-• [Fourth insight if substantial content available]
-
-**Investment Implications:** [Forward-looking themes and opportunities for investors]
-
-**Recommended Names:** [Any specific stocks, ETFs, indices, or investment vehicles mentioned]
-
-**Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
-
----
-
-CRITICAL REQUIREMENTS:
-- Process ALL ${parsedData.articles.length} articles - do not skip any
-- Maintain consistent formatting across all articles
-- Extract specific data points, percentages, and concrete details
-- Each article must have the exact same structure and depth of analysis
-- Use the article numbers and titles exactly as provided`;
-
-        userPrompt = `Analyze these ${parsedData.articles.length} pre-extracted articles from the WILTW report "${title || report.title}". Process each article thoroughly and maintain consistent formatting:
-
-${parsedData.articles.map(article => `
-**ARTICLE ${article.number}: ${article.title}**
-Content: ${article.fullContent}
-`).join('\n---\n')}
-
-MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articles using the exact format specified. Do not skip any articles and maintain consistent depth across all analyses.`;
+Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
       } else if (promptType === "watmtu_parser") {
         systemPrompt = `You are an expert investment research analyst specializing in market analysis and technical indicators. You've received a WATMTU (What Are The Markets Telling Us) report from 13D Research focusing on market trends, technical analysis, and asset allocation strategies.
 
@@ -1801,24 +1786,46 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
 
       // For WILTW reports, generate additional structured and comprehensive summaries
       if (promptType === "wiltw_parser") {
-        // Generate the structured article-by-article analysis
-        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report is divided into a large number of clearly titled article sections (Ie 01, 02, 03, etc.).
+        // Generate the structured article-by-article analysis using the enhanced parser
+        const parsedData = parseWILTWReport(actualContent);
+        
+        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title || report.title}. The report contains ${parsedData.articles.length} numbered articles that have been pre-extracted.
 
-For each article, do the following:
-1. Headline: Identify and restate the article's title.
-2. Core Thesis: Summarize the main argument or thesis in 2–3 sentences.
-3. Key Insights: Bullet the top 3–5 data points, quotes, or arguments that support the thesis.
-4. Investment Implications: If applicable, list any forward-looking insights or themes that investors should pay attention to.
-5. Recommended Names (if any): List any specific equities, ETFs, or indices mentioned.
-6. Category Tag: Assign a category from this list — Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other.
+For EACH of the ${parsedData.articles.length} articles provided, create a comprehensive analysis following this EXACT format:
 
-Return the results in a structured format, clearly separating each article.`;
+**ARTICLE [NUMBER]: [TITLE]**
 
-        const structuredUserPrompt = `Analyze this investment research report titled "${title || report.title}" and provide structured analysis for each article section:
+**Core Thesis:** [2-3 sentence summary of the main argument]
 
-${actualContent}
+**Key Insights:**
+• [First key insight with specific data/quotes]
+• [Second key insight with supporting evidence]  
+• [Third key insight with implications]
+• [Fourth insight if substantial content available]
 
-Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
+**Investment Implications:** [Forward-looking themes and opportunities for investors]
+
+**Recommended Names:** [Any specific stocks, ETFs, indices, or investment vehicles mentioned]
+
+**Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
+
+---
+
+CRITICAL REQUIREMENTS:
+- Process ALL ${parsedData.articles.length} articles - do not skip any
+- Maintain consistent formatting across all articles
+- Extract specific data points, percentages, and concrete details
+- Each article must have the exact same structure and depth of analysis
+- Use the article numbers and titles exactly as provided`;
+
+        const structuredUserPrompt = `Analyze these ${parsedData.articles.length} pre-extracted articles from the WILTW report "${title || report.title}". Process each article thoroughly and maintain consistent formatting:
+
+${parsedData.articles.map(article => `
+**ARTICLE ${article.number}: ${article.title}**
+Content: ${article.fullContent}
+`).join('\n---\n')}
+
+MANDATORY: Create detailed analysis for ALL ${parsedData.articles.length} articles using the exact format specified. Do not skip any articles and maintain consistent depth across all analyses.`;
 
         const structuredResponse = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -1838,7 +1845,7 @@ Process each numbered article section following the exact format specified. Ensu
 
         structuredSummary = structuredResponse.choices[0].message.content || '';
 
-        // Generate the comprehensive summary
+        // Generate the comprehensive summary (this uses the same system prompt as the detailedSummary)
         const comprehensiveSystemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive investment report and extract actionable intelligence.
 
 ANALYZE THE FOLLOWING REPORT AND PROVIDE:
@@ -1858,7 +1865,7 @@ For each theme/insight, include:
 
 Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
 
-        const comprehensiveUserPrompt = `Please analyze this investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
+        const comprehensiveUserPrompt = `Please analyze this WILTW investment research report titled "${title || report.title}" and provide comprehensive insights for investment professionals:
 
 ${actualContent}
 
