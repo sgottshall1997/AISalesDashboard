@@ -1,83 +1,76 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect, useCallback } from "react";
 
 export function useAuth() {
-  const queryClient = useQueryClient();
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    
-    const checkAuth = async () => {
-      try {
-        const response = await fetch("/api/auth/status", {
-          credentials: "include"
-        });
-        
-        if (mounted) {
-          if (response.ok) {
-            const userData = await response.json();
-            setUser(userData);
-          } else {
-            setUser(null);
-          }
-          setIsLoading(false);
-        }
-      } catch (err) {
-        if (mounted) {
-          setError(err);
-          setUser(null);
-          setIsLoading(false);
-        }
+  const checkAuth = useCallback(async () => {
+    try {
+      const response = await fetch("/api/auth/status", {
+        credentials: "include"
+      });
+      
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        setUser(null);
       }
-    };
-
-    checkAuth();
-    
-    return () => {
-      mounted = false;
-    };
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const loginMutation = useMutation({
-    mutationFn: async (password: string) => {
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  const login = useCallback(async (password: string) => {
+    setIsLoggingIn(true);
+    try {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ password }),
       });
+      
       if (!response.ok) {
         throw new Error("Invalid password");
       }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
-    },
-  });
+      
+      const userData = await response.json();
+      setUser(userData);
+      return userData;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }, []);
 
-  const logoutMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/auth/logout", {
+  const logout = useCallback(async () => {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/auth/logout", {
         method: "POST",
+        credentials: "include",
       });
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
-    },
-  });
+      setUser(null);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, []);
 
   return {
     user,
     isLoading,
-    isAuthenticated: !!user && !error,
-    login: loginMutation.mutateAsync,
-    logout: logoutMutation.mutateAsync,
-    isLoggingIn: loginMutation.isPending,
-    isLoggingOut: logoutMutation.isPending,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    isLoggingIn,
+    isLoggingOut,
   };
 }
