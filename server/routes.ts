@@ -552,23 +552,15 @@ The current market environment presents both challenges and opportunities for lo
         return res.status(400).json({ error: "Either interests or investment strategy is required" });
       }
 
-      // Get reports with structured analysis data, ordered by newest first
-      const reportsWithAnalysis = await db
-        .select({
-          id: content_reports.id,
-          title: content_reports.title,
-          type: content_reports.type,
-          tags: content_reports.tags,
-          published_date: content_reports.published_date,
-          engagement_level: content_reports.engagement_level,
-          content_summary: content_reports.content_summary,
-          summaryId: report_summaries.id,
-          parsedData: report_summaries.parsed_data,
-          summaryText: report_summaries.summary
-        })
-        .from(content_reports)
-        .leftJoin(report_summaries, eq(content_reports.id, report_summaries.content_report_id))
-        .orderBy(desc(content_reports.published_date));
+      // Get reports using existing storage interface
+      const allReports = await storage.getAllContentReports();
+      
+      // Sort reports by newest first
+      const reportsWithAnalysis = allReports.sort((a, b) => {
+        const dateA = a.published_date ? new Date(a.published_date).getTime() : 0;
+        const dateB = b.published_date ? new Date(b.published_date).getTime() : 0;
+        return dateB - dateA; // Newest first
+      });
 
       const relevantReports: any[] = [];
       const thematicAlignment: any[] = [];
@@ -642,58 +634,14 @@ The current market environment presents both challenges and opportunities for lo
           }
         }
 
-        // Check structured analysis data (parsed summaries) - high priority
-        if (report.parsedData) {
-          try {
-            const parsed = typeof report.parsedData === 'string' 
-              ? JSON.parse(report.parsedData) 
-              : report.parsedData;
-            
-            // Check investment themes in structured data
-            if (parsed.investmentThemes && Array.isArray(parsed.investmentThemes)) {
-              for (const theme of parsed.investmentThemes) {
-                const themeLower = theme.toLowerCase();
-                for (const searchTerm of expandedSearchTerms) {
-                  if (themeLower.includes(searchTerm) || searchTerm.includes(themeLower)) {
-                    relevanceScore += 25;
-                    if (!keyThemes.includes(theme)) {
-                      keyThemes.push(theme);
-                    }
-                    matchReasons.push(`Investment theme: ${theme}`);
-                  }
-                }
-              }
+        // Check content summary for matches
+        if (report.content_summary) {
+          const summaryLower = report.content_summary.toLowerCase();
+          for (const searchTerm of expandedSearchTerms) {
+            if (summaryLower.includes(searchTerm)) {
+              relevanceScore += 15;
+              matchReasons.push(`Content summary match: ${searchTerm}`);
             }
-
-            // Check key insights in structured data
-            if (parsed.keyInsights && Array.isArray(parsed.keyInsights)) {
-              for (const insight of parsed.keyInsights) {
-                const insightLower = insight.toLowerCase();
-                for (const searchTerm of expandedSearchTerms) {
-                  if (insightLower.includes(searchTerm)) {
-                    relevanceScore += 20;
-                    matchReasons.push(`Key insight match: ${searchTerm}`);
-                  }
-                }
-              }
-            }
-
-            // Check article summaries for specific mentions
-            if (parsed.articles && Array.isArray(parsed.articles)) {
-              for (const article of parsed.articles) {
-                if (article.summary || article.title) {
-                  const articleText = `${article.title || ''} ${article.summary || ''}`.toLowerCase();
-                  for (const searchTerm of expandedSearchTerms) {
-                    if (articleText.includes(searchTerm)) {
-                      relevanceScore += 15;
-                      matchReasons.push(`Article content: ${article.title || 'Article'}`);
-                    }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            // If parsing fails, continue without structured data
           }
         }
 
