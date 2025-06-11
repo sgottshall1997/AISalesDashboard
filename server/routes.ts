@@ -351,7 +351,13 @@ Focus on prospects with clear alignment between their stated interests and the r
       }
 
       try {
-        const parsedResponse = JSON.parse(aiResponse);
+        // Clean the AI response by removing markdown code blocks
+        let cleanedResponse = aiResponse.trim();
+        if (cleanedResponse.startsWith('```')) {
+          cleanedResponse = cleanedResponse.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+        }
+        cleanedResponse = cleanedResponse.trim();
+        const parsedResponse = JSON.parse(cleanedResponse);
         
         // Validate and clean the response
         const matches = parsedResponse.matches?.filter((match: any) => {
