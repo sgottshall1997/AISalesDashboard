@@ -1,10 +1,19 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
+import session from "express-session";
+import cookieParser from "cookie-parser";
 import { storage } from "./storage";
 import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+
+// Extend session type
+declare module "express-session" {
+  interface SessionData {
+    authenticated?: boolean;
+  }
+}
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
@@ -20,7 +29,48 @@ const upload = multer({
   }
 });
 
+// Authentication configuration
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || "spence";
+
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: any) => {
+  if (req.session?.authenticated) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Authentication routes
+  app.post("/api/auth/login", (req: Request, res: Response) => {
+    const { password } = req.body;
+    
+    if (password === DASHBOARD_PASSWORD) {
+      req.session.authenticated = true;
+      res.json({ authenticated: true, success: true, message: "Authenticated successfully" });
+    } else {
+      res.status(401).json({ success: false, message: "Invalid password" });
+    }
+  });
+
+  app.get("/api/auth/status", (req: Request, res: Response) => {
+    if (req.session?.authenticated) {
+      res.json({ authenticated: true });
+    } else {
+      res.status(401).json({ authenticated: false });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        res.status(500).json({ success: false, message: "Failed to logout" });
+      } else {
+        res.json({ success: true, message: "Logged out successfully" });
+      }
+    });
+  });
   // Dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
