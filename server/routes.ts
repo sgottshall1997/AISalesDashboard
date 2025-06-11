@@ -384,6 +384,60 @@ Focus on prospects with clear alignment between their stated interests and the r
     }
   });
 
+  // Generate prospect email endpoint
+  app.post("/api/generate-prospect-email", async (req: Request, res: Response) => {
+    try {
+      const { prospectName, reportTitle, keyTalkingPoints, matchReason } = req.body;
+
+      if (!prospectName || !reportTitle) {
+        return res.status(400).json({ error: "Prospect name and report title are required" });
+      }
+
+      // Create AI prompt for email generation
+      const prompt = `Generate a personalized prospecting email following this specific format and tone:
+
+PROSPECT INFORMATION:
+- Name: ${prospectName}
+- Report: ${reportTitle}
+- Key talking points: ${keyTalkingPoints?.join(', ') || 'investment insights'}
+- Match reason: ${matchReason || 'aligned investment interests'}
+
+EMAIL FORMAT TO FOLLOW:
+"Hi [Name] - I hope you are doing well. I wanted to share our recent report that discussed [topic] given your [interest]. [Line about 13D's process and how this ties in]. [Future outlook on the space]. Please let me know if you would like me to send over additional reports on this topic. -Spencer"
+
+REQUIREMENTS:
+1. Use the exact greeting: "Hi ${prospectName} - I hope you are doing well."
+2. Reference the specific report and why it's relevant to their interests
+3. Include a sentence about 13D's research process and unique insights
+4. Add a forward-looking perspective on the investment space
+5. End with the offer for additional reports and "-Spencer"
+6. Keep the tone professional but personable
+7. Keep it concise (3-4 sentences max)
+
+Generate the email now:`;
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 300
+      });
+
+      const emailContent = response.choices[0]?.message?.content?.trim() || '';
+      
+      res.json({ 
+        email: emailContent,
+        prospectName,
+        reportTitle
+      });
+
+    } catch (error: any) {
+      console.error("Error generating prospect email:", error);
+      res.status(500).json({ error: "Failed to generate email" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

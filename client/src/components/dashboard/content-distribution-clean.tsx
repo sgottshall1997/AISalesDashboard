@@ -36,6 +36,10 @@ export function ContentDistribution() {
   const [prospectMatches, setProspectMatches] = useState<any[]>([]);
   const [isMatchingProspects, setIsMatchingProspects] = useState(false);
   const [showProspectDialog, setShowProspectDialog] = useState(false);
+  const [generatedEmail, setGeneratedEmail] = useState<string>('');
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailProspectName, setEmailProspectName] = useState<string>('');
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -401,6 +405,40 @@ export function ContentDistribution() {
       toast({
         title: "Matching Failed",
         description: "Failed to match prospects. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for email generation
+  const generateEmailMutation = useMutation({
+    mutationFn: async (data: { 
+      prospectName: string; 
+      reportTitle: string; 
+      keyTalkingPoints: string[]; 
+      matchReason: string 
+    }) => {
+      const response = await apiRequest("POST", "/api/generate-prospect-email", data);
+      return response.json();
+    },
+    onMutate: () => {
+      setIsGeneratingEmail(true);
+    },
+    onSuccess: (data) => {
+      setGeneratedEmail(data.email);
+      setEmailProspectName(data.prospectName);
+      setShowEmailDialog(true);
+      setIsGeneratingEmail(false);
+      toast({
+        title: "Email Generated",
+        description: `Created personalized email for ${data.prospectName}`,
+      });
+    },
+    onError: (error: any) => {
+      setIsGeneratingEmail(false);
+      toast({
+        title: "Email Generation Failed",
+        description: "Failed to generate email. Please try again.",
         variant: "destructive",
       });
     },
@@ -995,12 +1033,55 @@ export function ContentDistribution() {
                           <h4 className="font-semibold text-sm mb-1">Why This Match:</h4>
                           <p className="text-sm text-gray-700">{match.reasoning}</p>
                         </div>
-                        {match.suggestedContent && (
+                        {match.keyTalkingPoints && (
                           <div>
-                            <h4 className="font-semibold text-sm mb-1">Suggested Content to Share:</h4>
-                            <p className="text-sm text-gray-700">{match.suggestedContent}</p>
+                            <h4 className="font-semibold text-sm mb-1">Key Talking Points:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {match.keyTalkingPoints.map((point: string, i: number) => (
+                                <Badge key={i} variant="secondary" className="text-xs">
+                                  {point}
+                                </Badge>
+                              ))}
+                            </div>
                           </div>
                         )}
+                        {match.suggestedApproach && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Suggested Approach:</h4>
+                            <p className="text-sm text-gray-700">{match.suggestedApproach}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="pt-3 border-t">
+                        <Button
+                          onClick={() => {
+                            const reportTitle = selectedReport ? 
+                              reports.find((r: any) => r.id.toString() === selectedReport)?.title || "Recent Report" :
+                              "Recent Report";
+                            
+                            generateEmailMutation.mutate({
+                              prospectName: match.name,
+                              reportTitle,
+                              keyTalkingPoints: match.keyTalkingPoints || [],
+                              matchReason: match.matchReason || match.reasoning || ""
+                            });
+                          }}
+                          disabled={isGeneratingEmail}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                          size="sm"
+                        >
+                          {isGeneratingEmail ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                              Generating Email...
+                            </>
+                          ) : (
+                            <>
+                              <Mail className="w-4 h-4 mr-2" />
+                              Generate Email
+                            </>
+                          )}
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
