@@ -342,8 +342,25 @@ export function ContentDistribution() {
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
+      const report = reports.find((r: any) => r.id.toString() === reportId);
+      if (!report) throw new Error("Report not found");
+
+      // Automatically detect report type and use appropriate parser
+      const isWATMTU = report.title.includes("WATMTU") || report.type === "WATMTU Report";
+      const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
+
+      console.log('Frontend debug - sending summarization request:', {
+        reportId: report.id,
+        reportIdType: typeof report.id,
+        title: report.title,
+        promptType: promptType
+      });
+
       const response = await apiRequest("POST", "/api/ai/summarize-report", {
-        reportId: parseInt(reportId)
+        reportId: report.id.toString(),
+        title: report.title,
+        content: report.full_content || report.content_summary,
+        promptType: promptType
       });
       return response.json();
     },
