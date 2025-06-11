@@ -754,7 +754,7 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         `${email.email_type === 'incoming' ? 'FROM' : 'TO'} ${lead.name} (${new Date(email.sent_date).toLocaleDateString()}):\nSubject: ${email.subject}\n${email.content}`
       ).join('\n\n---\n\n') || 'No previous email history';
 
-      const emailPrompt = `You are Spencer from 13D Research writing a personalized follow-up email to a lead. Generate a professional, concise email that references specific insights from our research reports.
+      const emailPrompt = `You are Spencer from 13D Research writing a personalized follow-up email to a lead. Use this exact professional style and format:
 
 LEAD INFORMATION:
 - Name: ${lead.name}
@@ -769,15 +769,18 @@ ${reportContext || 'No reports selected'}
 RECENT EMAIL HISTORY:
 ${emailContext}
 
-Generate a personalized email that:
-1. References specific insights from the selected reports that align with their interests
-2. Maintains professional institutional tone
-3. Includes concrete investment themes or market insights
-4. Suggests a clear next step (call, meeting, or additional research)
-5. Keeps to 250 words maximum
-6. Uses Spencer's direct, knowledgeable communication style
+STYLE REQUIREMENTS:
+1. Start with "Hi [Name]," 
+2. Follow with "Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly [their specific interests]."
+3. Use 2-3 bullet points (•) with specific insights from the reports
+4. Each bullet should have a bold headline followed by detailed explanation
+5. End with "I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help."
+6. Sign "Best, Spencer"
+7. Keep conversational but authoritative tone
+8. Include specific data points, ratios, or market signals when available
+9. Maximum 200 words
 
-Write the email as plain text, ready to send.`;
+Generate the email using this exact format and style.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
