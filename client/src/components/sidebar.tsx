@@ -12,7 +12,14 @@ import {
   User,
   Upload,
   Brain,
-  Info
+  Info,
+  Phone,
+  Lightbulb,
+  Target,
+  MessageCircle,
+  Building2,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
 
 interface SidebarProps {
@@ -22,16 +29,24 @@ interface SidebarProps {
 
 export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [aiToolsExpanded, setAiToolsExpanded] = useState(true);
 
   const navigation = [
     { id: "overview", name: "Overview", icon: BarChart3 },
     { id: "invoicing", name: "Invoicing Assistant", icon: FileText },
     { id: "content", name: "Content Distribution", icon: TrendingUp },
-    { id: "ai-tools", name: "AI Content Tools", icon: Brain },
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
     { id: "followup", name: "Task Tracker", icon: CheckSquare },
     { id: "upload", name: "CSV Upload", icon: Upload },
     { id: "about", name: "About", icon: Info },
+  ];
+
+  const aiTools = [
+    { id: "call-preparation", name: "Call Preparation", icon: Phone },
+    { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb },
+    { id: "prospect-matchmaker", name: "Prospect Match", icon: Target },
+    { id: "ai-qna", name: "AI Q&A", icon: MessageCircle },
+    { id: "fund-mapping", name: "Fund Mapping", icon: Building2 },
   ];
 
   const SidebarContent = () => (
@@ -72,6 +87,50 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
               </button>
             );
           })}
+
+          {/* AI Content Tools Section */}
+          <div className="mt-6">
+            <div className="px-2 py-2">
+              <button
+                onClick={() => setAiToolsExpanded(!aiToolsExpanded)}
+                className="flex items-center justify-between w-full text-xs font-semibold text-gray-400 uppercase tracking-wider hover:text-gray-600"
+              >
+                <span>AI Content Tools</span>
+                {aiToolsExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+
+            {aiToolsExpanded && (
+              <div className="space-y-1">
+                {aiTools.map((tool) => {
+                  const Icon = tool.icon;
+                  const isActive = activeSection === tool.id;
+                  
+                  return (
+                    <button
+                      key={tool.id}
+                      onClick={() => {
+                        onSectionChange(tool.id);
+                        setMobileOpen(false);
+                      }}
+                      className={`${
+                        isActive
+                          ? 'bg-primary text-white'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ml-4`}
+                    >
+                      <Icon className="mr-3 flex-shrink-0 h-4 w-4" />
+                      {tool.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
       </div>
       
