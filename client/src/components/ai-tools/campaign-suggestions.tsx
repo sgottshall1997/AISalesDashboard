@@ -214,7 +214,7 @@ export function CampaignSuggestions() {
                     )}
                     
                     {suggestion.supportingReports && suggestion.supportingReports.length > 0 && (
-                      <div>
+                      <div className="mb-4">
                         <h5 className="font-medium text-sm text-gray-900 mb-2">Supporting Reports:</h5>
                         <div className="flex flex-wrap gap-1">
                           {suggestion.supportingReports.map((report, reportIndex) => (
@@ -225,6 +225,20 @@ export function CampaignSuggestions() {
                         </div>
                       </div>
                     )}
+                    
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      <Button
+                        onClick={() => handleGenerateEmail(suggestion)}
+                        disabled={generatingFor === suggestion.title}
+                        className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Mail className="w-4 h-4" />
+                        {generatingFor === suggestion.title ? "Generating Email..." : "Generate Professional Email"}
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-1 text-center">
+                        Generates email matching 13D Research professional style
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -238,6 +252,33 @@ export function CampaignSuggestions() {
           )}
         </CardContent>
       </Card>
+
+      {/* Email Generation Dialog */}
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Generated Professional Email</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+                {generatedEmail}
+              </pre>
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => copyToClipboard(generatedEmail)}
+                className="flex items-center space-x-2"
+              >
+                <Copy className="h-4 w-4" />
+                <span>Copy to Clipboard</span>
+              </Button>
+              <Button onClick={() => setEmailDialogOpen(false)}>Close</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2646,6 +2646,124 @@ Generated on: ${new Date().toLocaleString()}
     }
   });
 
+  // Campaign email generation with 13D Research style
+  app.post("/api/ai/generate-campaign-email", async (req: Request, res: Response) => {
+    try {
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI email generation." 
+        });
+      }
+
+      const { suggestion, emailStyle } = req.body;
+      
+      if (!suggestion) {
+        return res.status(400).json({ error: "Suggestion is required" });
+      }
+
+      const exampleEmailStyle = `Hi ____________ – I hope you're doing well.
+ 
+As the broader markets remain volatile and increasingly narrow in leadership, 13D Research continues to help investors navigate with clarity. Our highest-conviction themes - rooted in secular shifts we have been closely monitoring - are now outperforming dramatically. Our Highest Conviction Ideas portfolio is up 19.6% YTD, outpacing the S&P 500 by over 20%. We believe these shifts are still in the early innings.
+ 
+Below are some of the most compelling insights we've recently shared with clients, along with key investment implications:
+ 
+Gold's Historic Breakout:
+1.      Gold has surged past a 45-year downtrend when measured against CPI, with junior gold miners now outperforming seniors (a bullish inflection that has historically signaled massive upside). 
+2.      Our 13D Gold Miners Index is up over 55% YTD as we are focused on nimble producers with upside from consolidation potential.
+ 
+Commodities Supercycle Broadens:
+1.      Breakouts in copper, silver, fertilizers, and even coal point to a new phase of this uptrend. Our overweight to commodity-linked equities continues to deliver alpha amid declining USD and rising inflation expectations.
+2.      Agriculture, energy storage, and hard asset producers are all key focuses.
+ 
+Grid Infrastructure: The $21 Trillion Opportunity: 
+1.      Power outages are rising worldwide, and demand from AI, EVs, and Bitcoin mining is pushing grids past their limits, with over $21 trillion in grid investment needed by 2050 - providing a generational opportunity across copper, batteries, and high-voltage equipment.
+2.      We are focused on manufacturers of grid infrastructure, battery storage systems, and companies enabling smart grid digitization.
+ 
+Critical Minerals: The Geopolitical Pressure Point: 
+1.      China's dominance over the rare-earth supply chain has become a strategic lever of geopolitical power, with export controls threatening US weapons systems, semiconductors, and clean tech.
+1.      The US is 100% import-reliant for 12 critical minerals and lacks refining capacity, leaving supply chains dangerously exposed.
+2.      Our 13D Critical Minerals Index (focused on Western producers) is already outperforming as global investment pours into securing mine independence.
+ 
+Bitcoin's Evolving Use Case:
+1.      Bitcoin is undergoing a quiet transformation as Layer-2 innovation and DeFi infrastructure (BTCFi) are unlocking new functionality beyond simply "digital gold."
+2.      As Bitcoin becomes a platform for smart contracts, lending, and NFTs, it could drive a new wave of demand and broader adoption.
+3.      We closely monitor Bitcoin's technical positioning to identify when it is overbought or oversold—giving clients a tactical edge - for example, we started to exit bitcoin after its run up late last year, then re-entered the position in April as conditions reset. 
+1.      This disciplined approach enables us to capitalize on volatility while managing risk.
+ 
+If you are interested in learning more about what we are closely monitoring and how we are allocating across these themes, I'd be happy to set up a call to discuss.
+ 
+Best, 
+Spencer`;
+
+      const prompt = `Generate a professional investment research email that matches the exact style and formatting of the example provided. Use this investment theme suggestion:
+
+Title: ${suggestion.title}
+Description: ${suggestion.description}
+Email Angle: ${suggestion.emailAngle}
+Key Points: ${suggestion.keyPoints ? suggestion.keyPoints.join(', ') : 'N/A'}
+Insights: ${suggestion.insights ? suggestion.insights.join(', ') : 'N/A'}
+Supporting Reports: ${suggestion.supportingReports ? suggestion.supportingReports.join(', ') : 'N/A'}
+
+STYLE REQUIREMENTS:
+- Start with "Hi ____________ – I hope you're doing well."
+- Include performance metrics and specific numbers where relevant
+- Use numbered bullet points (1. 2. etc.) for key insights
+- Structure with clear thematic sections like the example
+- End with offer to discuss further and sign "Best, Spencer"
+- Keep the professional, confident tone of an investment research firm
+- Include specific actionable investment themes
+- Reference market conditions and opportunities
+- Generate compelling subject line starting with "Subject: "
+
+Format exactly like the example email provided.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are Spencer from 13D Research, a leading investment research firm. Generate professional investment emails that match the exact style, tone, and formatting of the provided example. Include compelling subject lines and maintain the authoritative yet approachable voice of an investment expert.`
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      });
+
+      const generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+
+      // Store AI-generated content for feedback tracking
+      try {
+        const contentData = {
+          content_type: "campaign_email",
+          original_prompt: `Campaign: ${suggestion.title}, Angle: ${suggestion.emailAngle}`,
+          generated_content: generatedEmail,
+          theme_id: suggestion.title || null,
+          context_data: {
+            keyPoints: suggestion.keyPoints,
+            theme: suggestion.title,
+            emailAngle: suggestion.emailAngle,
+            supportingReports: suggestion.supportingReports
+          }
+        };
+        
+        await storage.createAiGeneratedContent(contentData);
+      } catch (storageError) {
+        console.error("Failed to store AI content for feedback:", storageError);
+        // Still return the email even if feedback storage fails
+      }
+
+      res.json({ email: generatedEmail });
+    } catch (error) {
+      console.error("Error generating campaign email:", error);
+      res.status(500).json({ error: "Failed to generate email" });
+    }
+  });
+
   // AI Feedback Loop API Routes
   
   // Store AI-generated content
