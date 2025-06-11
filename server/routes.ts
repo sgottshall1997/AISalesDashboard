@@ -647,6 +647,8 @@ The current market environment presents both challenges and opportunities for lo
 Generate a JSON response with exactly this structure:
 {
   "prospectSnapshot": "Name, title, firm, investment style summary",
+  "personalBackground": "Professional background, career highlights, education, previous roles, tenure at current firm, and any notable achievements or expertise areas",
+  "companyOverview": "Company description, AUM, investment focus, notable positions, recent performance, and key facts relevant for introductory calls",
   "topInterests": "Summarize the person's known interests (sectors, macro themes, geos)",
   "portfolioInsights": "Mention notable holdings and how they connect to current themes from past 13D reports",
   "talkingPoints": [
@@ -710,16 +712,17 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         messages: [
           {
             role: "system",
-            content: "You are an expert institutional sales assistant. Generate professional, actionable call preparation notes in valid JSON format."
+            content: "You are an expert institutional sales assistant. Generate professional, actionable call preparation notes in valid JSON format. If limited information is provided, use reasonable assumptions for institutional finance professionals."
           },
           {
             role: "user",
             content: callPreparationPrompt
           }
         ],
-        max_tokens: 1500,
+        max_tokens: 2000,
         temperature: 0.3,
-        response_format: { type: "json_object" }
+        response_format: { type: "json_object" },
+        timeout: 30000
       });
 
       let callPrepContent = response.choices[0].message.content || '{}';

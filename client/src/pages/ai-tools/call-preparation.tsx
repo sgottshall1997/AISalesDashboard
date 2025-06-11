@@ -17,6 +17,8 @@ interface TalkingPoint {
 
 interface CallPrepResult {
   prospectSnapshot: string;
+  personalBackground: string;
+  companyOverview: string;
   topInterests: string;
   portfolioInsights: string;
   talkingPoints: TalkingPoint[];
@@ -267,6 +269,30 @@ ${callPrepResult.smartQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}`
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-700">{callPrepResult.prospectSnapshot}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-sm">
+                  <User className="w-4 h-4 mr-2" />
+                  Personal Background
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700">{callPrepResult.personalBackground}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center text-sm">
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Company Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700">{callPrepResult.companyOverview}</p>
               </CardContent>
             </Card>
 
