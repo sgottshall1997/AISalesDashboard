@@ -650,7 +650,13 @@ Generate a JSON response with exactly this structure:
   "topInterests": "Summarize the person's known interests (sectors, macro themes, geos)",
   "portfolioInsights": "Mention notable holdings and how they connect to current themes from past 13D reports",
   "talkingPoints": ["point 1", "point 2", "point 3", "point 4", "point 5"],
-  "smartQuestions": ["question 1", "question 2", "question 3"]
+  "smartQuestions": [
+    "What are your current views on [relevant macro theme from recent 13D reports] and how does it align with your portfolio positioning?",
+    "Which sectors or geographies are you most focused on for new opportunities in the next 6-12 months?",
+    "How do you typically evaluate and size positions when considering new investment themes?",
+    "What information sources do you find most valuable for staying ahead of market developments?",
+    "Are there any emerging themes or contrarian views you're exploring that might not be on most investors' radar?"
+  ]
 }
 
 Use the following data to generate your output:
@@ -663,7 +669,11 @@ Use the following data to generate your output:
 - Notes: ${notes}
 - Past Interactions: ${pastInteractions}
 
-If the input is limited, use generalized themes from current macro research (commodities, de-dollarization, AI infrastructure, reshoring, China, precious metals, energy transition) to anchor ideas.
+For smartQuestions, use these exact 5 standardized questions, but customize the first one with a relevant macro theme:
+1. Replace "[relevant macro theme from recent 13D reports]" with an appropriate theme based on the prospect's interests or current market focus (commodities, de-dollarization, AI infrastructure, reshoring, China, precious metals, energy transition)
+2-5. Use the remaining questions exactly as specified in the JSON structure
+
+If the input is limited, use generalized themes from current macro research to anchor ideas.
 Make it crisp, useful, and professional. Focus on actionable insights that would help during an actual sales call.
 `;
 
