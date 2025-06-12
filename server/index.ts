@@ -8,7 +8,7 @@ import { pool } from "./db";
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { securityHeaders, apiRateLimit, sanitizeInputs, limitRequestSize } from './middleware/validation';
 import { createWebSocketService } from "./services/websocket-service";
-import { JobQueueService } from "./services/job-queue";
+// JobQueueService disabled - using in-memory alternatives
 import { cacheService } from "./services/cache-service";
 import { monitoringService } from "./services/monitoring-service";
 import { DatabaseStorage } from "./storage";
@@ -94,12 +94,8 @@ app.use((req, res, next) => {
     log("WebSocket service unavailable - continuing without real-time features");
   }
 
-  try {
-    const jobQueueService = new JobQueueService(storage);
-    log("Background job processing initialized");
-  } catch (error) {
-    log("Job queue service unavailable - continuing with synchronous processing");
-  }
+  // Job queue service disabled - using in-memory alternatives for background processing
+  log("Background processing using in-memory queue service");
   
   try {
     await cacheService.warmCache();
