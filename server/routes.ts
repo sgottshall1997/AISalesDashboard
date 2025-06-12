@@ -1401,16 +1401,12 @@ CRITICAL:
     try {
       const { lead, emailHistory, contentReports, selectedReportIds, leadName, leadCompany, reports } = req.body;
       
-      // Support multiple parameter formats for flexibility
-      const leadData = lead || { name: leadName, company: leadCompany };
-      
-      if (!leadData.name && !leadData.company && !leadName && !leadCompany) {
-        return res.status(400).json({ error: "Lead data (name or company) is required" });
-      }
-      
-      // Ensure we have at least a name or company
-      if (!leadData.name) leadData.name = leadName || "Prospect";
-      if (!leadData.company) leadData.company = leadCompany || "Organization";
+      // Build lead data from any available parameters
+      const leadData = {
+        name: (lead && lead.name) || leadName || "Prospect",
+        company: (lead && lead.company) || leadCompany || "Organization",
+        interest_tags: (lead && lead.interest_tags) || []
+      };
 
       if (!process.env.OPENAI_API_KEY) {
         return res.status(400).json({ 
