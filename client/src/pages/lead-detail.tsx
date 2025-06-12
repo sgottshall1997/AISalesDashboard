@@ -260,13 +260,13 @@ export default function LeadDetail() {
     mutationFn: async () => {
       if (!lead) return null;
       
-      const response = await apiRequest("POST", "/api/ai/generate-call-prep", {
+      const response = await apiRequest("/api/ai/generate-call-prep", "POST", {
         prospectName: lead.name,
         firmName: lead.company,
         interests: lead.interest_tags?.join(', ') || '',
         notes: lead.notes || ''
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       if (data) {
@@ -290,12 +290,12 @@ export default function LeadDetail() {
     mutationFn: async () => {
       if (!emailHistory || emailHistory.length === 0) return null;
       
-      const response = await apiRequest("POST", "/api/ai/summarize-emails", {
+      const response = await apiRequest("/api/ai/summarize-emails", "POST", {
         emails: emailHistory,
         leadName: lead?.name,
         company: lead?.company
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       if (data?.summary) {
@@ -1062,117 +1062,11 @@ export default function LeadDetail() {
                       Select Reports to Reference (Optional)
                     </Label>
                     
-                    {/* Helper function to format report titles */}
-                    {(() => {
-                      const formatReportTitle = (title: string) => {
-                        if (title.includes('WILTW_')) {
-                          return title.replace('WILTW_', 'WILTW ').replace(/(\d{4})-(\d{2})-(\d{2})/, '$2-$3-$1');
-                        } else if (title.includes('WATMTU_')) {
-                          return title.replace('WATMTU_', 'WATMTU ').replace(/(\d{4})-(\d{2})-(\d{2})/, '$2-$3-$1');
-                        }
-                        return title;
-                      };
-
-                      const wiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
-                      const watmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
-                      const otherReports = reportSummaries.filter((summary: any) => 
-                        !summary.report?.title?.includes('WILTW') && !summary.report?.title?.includes('WATMTU')
-                      );
-
-                      return (
-                        <>
-                          {/* WILTW Reports Section */}
-                          {wiltwReports.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-semibold text-gray-700">WILTW Reports</h4>
-                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-blue-50">
-                                {wiltwReports.map((summary: any) => (
-                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedReportIds.includes(summary.content_report_id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                                        } else {
-                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                                        }
-                                      }}
-                                      className="rounded"
-                                    />
-                                    <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* WATMTU Reports Section */}
-                          {watmtuReports.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-semibold text-gray-700">WATMTU Reports</h4>
-                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-green-50">
-                                {watmtuReports.map((summary: any) => (
-                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedReportIds.includes(summary.content_report_id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                                        } else {
-                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                                        }
-                                      }}
-                                      className="rounded"
-                                    />
-                                    <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Other Reports Section */}
-                          {otherReports.length > 0 && (
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-semibold text-gray-700">Other Reports</h4>
-                              <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2 bg-gray-50">
-                                {otherReports.map((summary: any) => (
-                                  <label key={summary.id} className="flex items-center space-x-2 cursor-pointer">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedReportIds.includes(summary.content_report_id)}
-                                      onChange={(e) => {
-                                        if (e.target.checked) {
-                                          setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                                        } else {
-                                          setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                                        }
-                                      }}
-                                      className="rounded"
-                                    />
-                                    <span className="text-sm">
-                                      {formatReportTitle(summary.report.title)}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {selectedReportIds.length > 0 && (
-                            <p className="text-xs text-gray-600">
-                              {selectedReportIds.length} report{selectedReportIds.length > 1 ? 's' : ''} selected
-                            </p>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <ReportSelector 
+                      reportSummaries={reportSummaries}
+                      selectedReportIds={selectedReportIds}
+                      setSelectedReportIds={setSelectedReportIds}
+                    />
                   </div>
                 )}
                 

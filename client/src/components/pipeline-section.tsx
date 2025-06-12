@@ -75,10 +75,10 @@ export default function PipelineSection() {
     );
   }
 
-  const prospects = leads?.filter((lead: any) => lead.stage === "prospect") || [];
-  const qualified = leads?.filter((lead: any) => lead.stage === "qualified") || [];
-  const proposals = leads?.filter((lead: any) => lead.stage === "proposal") || [];
-  const closedWon = leads?.filter((lead: any) => lead.stage === "closed_won") || [];
+  const prospects = (leads && Array.isArray(leads)) ? leads.filter((lead: any) => lead.stage === "prospect") : [];
+  const qualified = (leads && Array.isArray(leads)) ? leads.filter((lead: any) => lead.stage === "qualified") : [];
+  const proposals = (leads && Array.isArray(leads)) ? leads.filter((lead: any) => lead.stage === "proposal") : [];
+  const closedWon = (leads && Array.isArray(leads)) ? leads.filter((lead: any) => lead.stage === "closed_won") : [];
 
   const getStageColor = (stage: string) => {
     switch (stage) {

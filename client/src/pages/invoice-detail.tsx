@@ -152,8 +152,8 @@ export default function InvoiceDetail() {
 
   const generateAISuggestionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/generate-followup`, {});
-      return response.json();
+      const response = await apiRequest(`/api/invoices/${invoiceId}/generate-followup`, "POST", {});
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'ai-suggestion'] });
@@ -166,8 +166,8 @@ export default function InvoiceDetail() {
 
   const generateSummaryMutation = useMutation({
     mutationFn: async (conversationText: string) => {
-      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/summary`, { conversation: conversationText });
-      return response.json();
+      const response = await apiRequest(`/api/invoices/${invoiceId}/summary`, "POST", { conversation: conversationText });
+      return response;
     },
     onSuccess: (data) => {
       setEmailSummary(data.summary);
@@ -187,8 +187,8 @@ export default function InvoiceDetail() {
 
   const deleteEmailMutation = useMutation({
     mutationFn: async (emailId: number) => {
-      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}/emails/${emailId}`);
-      return response.json();
+      const response = await apiRequest(`/api/invoices/${invoiceId}/emails/${emailId}`, "DELETE");
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/invoices/${invoiceId}/emails`] });
