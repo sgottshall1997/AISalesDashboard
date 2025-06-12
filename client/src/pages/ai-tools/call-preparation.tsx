@@ -9,6 +9,7 @@ import { Phone, User, Building2, TrendingUp, MessageCircle, Copy, Loader2 } from
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import Layout from "@/components/layout";
 
 interface TalkingPoint {
   mainPoint: string;
@@ -112,17 +113,18 @@ ${callPrepResult.smartQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}`
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Call Preparation</h1>
-          <p className="text-gray-600 mt-2">
-            Generate comprehensive call prep notes with talking points and strategic questions
-          </p>
+    <Layout>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Call Preparation</h1>
+            <p className="text-gray-600 mt-2">
+              Generate comprehensive call prep notes with talking points and strategic questions
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
         <Card>
           <CardHeader>
@@ -383,7 +385,8 @@ ${callPrepResult.smartQuestions.map((q, idx) => `${idx + 1}. ${q}`).join('\n')}`
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 }

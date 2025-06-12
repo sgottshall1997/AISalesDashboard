@@ -16,6 +16,7 @@ import UnifiedProspectFundMatcher from "@/pages/ai-tools/unified-prospect-fund-m
 import AIQnA from "@/pages/ai-tools/ai-qna";
 import OnePager from "@/pages/ai-tools/one-pager";
 import CampaignSuggestions from "@/pages/ai-tools/campaign-suggestions";
+import CallPreparation from "@/pages/ai-tools/call-preparation";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/ai-tools/ai-qna" component={AIQnA} />
       <Route path="/ai-tools/one-pager" component={OnePager} />
       <Route path="/ai-tools/campaign-suggestions" component={CampaignSuggestions} />
+      <Route path="/ai-tools/call-preparation" component={CallPreparation} />
       <Route path="/about" component={About} />
       <Route component={NotFound} />
     </Switch>
