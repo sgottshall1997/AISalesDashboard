@@ -184,7 +184,7 @@ export default function LeadDetail() {
 
   const updateNotesMutation = useMutation({
     mutationFn: async (newNotes: string) => {
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { notes: newNotes });
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", { notes: newNotes });
       return response.json();
     },
     onSuccess: () => {
@@ -202,7 +202,7 @@ export default function LeadDetail() {
       if (!lead || !contentReports) return null;
       
       // Use OpenAI to generate a personalized email
-      const response = await apiRequest("POST", "/api/ai/generate-lead-email", {
+      const response = await apiRequest("/api/ai/generate-lead-email", "POST", {
         lead,
         emailHistory: emailHistory || [],
         contentReports: contentReports.slice(0, 5),

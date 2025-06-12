@@ -73,7 +73,7 @@ export default function LeadPipeline() {
 
   const generateEmailMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      const response = await apiRequest("POST", "/api/ai/generate-email", {
+      const response = await apiRequest("/api/ai/generate-email", "POST", {
         type: "lead_outreach",
         leadId,
         context: { stage: selectedLead?.stage }
@@ -100,7 +100,7 @@ export default function LeadPipeline() {
 
   const updateLeadMutation = useMutation({
     mutationFn: async ({ leadId, updates }: { leadId: number; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, updates);
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", updates);
       return response.json();
     },
     onSuccess: () => {

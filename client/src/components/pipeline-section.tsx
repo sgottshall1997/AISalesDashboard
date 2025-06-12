@@ -25,7 +25,7 @@ export default function PipelineSection() {
 
   const generateEmailMutation = useMutation({
     mutationFn: async (leadData: any) => {
-      const response = await apiRequest("POST", "/api/ai/generate-email", {
+      const response = await apiRequest("/api/ai/generate-email", "POST", {
         type: "lead_outreach",
         leadId: leadData.id,
         context: {
