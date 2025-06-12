@@ -36,6 +36,7 @@ export function CallPreparation() {
   const [pastInteractions, setPastInteractions] = useState("");
   const [notes, setNotes] = useState("");
   const [callPrepResult, setCallPrepResult] = useState<CallPrepResult | null>(null);
+  const [callPrepContentId, setCallPrepContentId] = useState<number | null>(null);
   
   const { toast } = useToast();
 
