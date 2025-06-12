@@ -76,7 +76,13 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
       // Parse the AI response and structure it
       const structuredData = parseAIResponse(data.content);
       setOnePagerData({
-        ...structuredData,
+        title: structuredData.title || "Investment One-Pager",
+        executiveSummary: structuredData.executiveSummary || "",
+        keyInsights: structuredData.keyInsights || [],
+        marketAnalysis: structuredData.marketAnalysis || "",
+        investmentThesis: structuredData.investmentThesis || "",
+        riskFactors: structuredData.riskFactors || [],
+        recommendations: structuredData.recommendations || [],
         sourceReports: reports.slice(0, 5).map(r => r.title || "Research Report"),
         generatedDate: new Date()
       });
@@ -211,8 +217,9 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
 
       {/* Generated One-Pager Display */}
       {onePagerData.title && (
-        <Card id="one-pager-content">
-          <CardHeader className="border-b">
+        <AiFeedback contentId={onePagerContentId || undefined}>
+          <Card id="one-pager-content">
+            <CardHeader className="border-b">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <CardTitle className="text-2xl">{onePagerData.title}</CardTitle>
@@ -332,7 +339,8 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
               </>
             )}
           </CardContent>
-        </Card>
+          </Card>
+        </AiFeedback>
       )}
     </div>
   );

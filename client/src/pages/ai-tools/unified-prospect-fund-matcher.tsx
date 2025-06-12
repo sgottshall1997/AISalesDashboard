@@ -333,9 +333,10 @@ export default function UnifiedProspectFundMatcher() {
 
       {/* Results */}
       {results && (
-        <div className="space-y-6">
-          {/* Summary */}
-          <Card>
+        <AiFeedback contentId={matcherContentId || undefined}>
+          <div className="space-y-6">
+            {/* Summary */}
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
                 <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
@@ -475,7 +476,8 @@ export default function UnifiedProspectFundMatcher() {
               )}
             </div>
           )}
-        </div>
+          </div>
+        </AiFeedback>
       )}
 
       {matchMutation.isPending && (
