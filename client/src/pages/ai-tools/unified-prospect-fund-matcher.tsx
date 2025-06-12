@@ -9,6 +9,7 @@ import { Search, Target, Building2, Loader2, TrendingUp, FileText } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { AiFeedback } from "@/components/ai-feedback";
 import Layout from "@/components/layout";
 
 interface MatchedReport {
@@ -58,6 +59,7 @@ export default function UnifiedProspectFundMatcher() {
   const [additionalContext, setAdditionalContext] = useState("");
   
   const [results, setResults] = useState<MatchResults | null>(null);
+  const [matcherContentId, setMatcherContentId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const matchMutation = useMutation({
@@ -67,6 +69,7 @@ export default function UnifiedProspectFundMatcher() {
     },
     onSuccess: (data) => {
       setResults(data);
+      setMatcherContentId(data.contentId || null);
       const entityName = data.prospectName || data.fundName || "Entity";
       toast({
         title: "Matching Complete",

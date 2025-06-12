@@ -9,6 +9,7 @@ import { FileText, Download, TrendingUp, Calendar, Target, AlertCircle } from "l
 import { ExportActions } from "./export-actions";
 import { useAutoSave, saveToLibrary } from "./content-library";
 import { useToast } from "@/hooks/use-toast";
+import { AiFeedback } from "./ai-feedback";
 
 interface OnePagerData {
   title: string;
@@ -42,6 +43,7 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
   });
   const [isGenerating, setIsGenerating] = useState(false);
   const [customPrompt, setCustomPrompt] = useState("");
+  const [onePagerContentId, setOnePagerContentId] = useState<number | null>(null);
   const { toast } = useToast();
   const { loadSaved, clearSaved } = useAutoSave(customPrompt, "one-pager-prompt");
 
@@ -78,6 +80,7 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
         sourceReports: reports.slice(0, 5).map(r => r.title || "Research Report"),
         generatedDate: new Date()
       });
+      setOnePagerContentId(data.contentId || null);
 
       // Save to content library
       saveToLibrary(
