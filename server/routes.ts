@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Leads endpoints
-  app.get("/api/leads", async (req: Request, res: Response) => {
+  app.get("/api/leads", requireAuth, async (req: Request, res: Response) => {
     try {
       const leads = await storage.getAllLeads();
       res.json(leads);
@@ -108,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/leads/:id", async (req: Request, res: Response) => {
+  app.get("/api/leads/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const lead = await storage.getLead(id);
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/leads", async (req: Request, res: Response) => {
+  app.post("/api/leads", requireAuth, async (req: Request, res: Response) => {
     try {
       const lead = await storage.createLead(req.body);
       res.json(lead);
