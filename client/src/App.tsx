@@ -14,6 +14,7 @@ import About from "@/pages/about";
 import NotFound from "@/pages/not-found";
 import UnifiedProspectFundMatcher from "@/pages/ai-tools/unified-prospect-fund-matcher";
 import AIQnA from "@/pages/ai-tools/ai-qna";
+import OnePager from "@/pages/ai-tools/one-pager";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/ai-analytics" component={AIAnalytics} />
       <Route path="/ai-tools/unified-prospect-fund-matcher" component={UnifiedProspectFundMatcher} />
       <Route path="/ai-tools/ai-qna" component={AIQnA} />
+      <Route path="/ai-tools/one-pager" component={OnePager} />
       <Route path="/about" component={About} />
       <Route component={NotFound} />
     </Switch>

@@ -479,32 +479,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-one-pager", async (req: Request, res: Response) => {
     try {
       const { reportTitle, targetAudience, keyFocus } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI one-pager generation." 
+        });
+      }
+
+      // Get recent reports for context
+      const allReports = await storage.getAllContentReports();
+      const recentReports = allReports
+        .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
+        .slice(0, 10);
+
+      // Get report summaries for context
+      const reportContext = [];
+      for (const report of recentReports) {
+        try {
+          const summary = await storage.getReportSummary(report.id);
+          if (summary && summary.parsed_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: summary.parsed_summary.substring(0, 600),
+              type: report.type
+            });
+          } else if (report.content_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: report.content_summary.substring(0, 500),
+              type: report.type
+            });
+          }
+        } catch (err) {
+          // Skip if no summary available
+        }
+      }
+
+      const contextText = reportContext.map(r => 
+        `${r.title} (${r.type}, ${new Date(r.date).toLocaleDateString()}): ${r.summary}`
+      ).join('\n\n');
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const systemPrompt = `You are a senior analyst at 13D Research. Based only on the provided WILTW and WATMTU reports, generate a client-facing One-Pager for internal use.
+
+Your output must follow this structure exactly:
+
+**📌 Title:**  
+{{reportTitle}}
+
+**👥 Target Audience:**  
+{{targetAudience}}
+
+**📄 Executive Summary:**  
+Provide a focused 3–5 sentence overview of the theme. Highlight current market relevance, strategic considerations, and major opportunity signals. Tailor it to the audience (e.g. institutional PMs).
+
+**📈 Growth Drivers:**  
+- List 2–4 **specific** drivers from recent reports — e.g. supply/demand imbalance, CAPEX trends, price breakouts, geopolitical tailwinds  
+- Use data or breakout commentary if available
+
+**⚠️ Risk Landscape:**  
+- List 2–3 real risks related to the theme — e.g. regulatory uncertainty, production disruption, demand lag  
+- Be balanced but clear about magnitude and timeline
+
+**✅ Portfolio Takeaways:**  
+Provide 2–3 recommendations tailored to {{targetAudience}}. Should reference positioning logic, long-term thesis alignment, or relative value rotation.
+
+**📚 Sources:**  
+Include WILTW or WATMTU dates used for the output.
+
+**Constraints:**  
+- No filler or fluff
+- Avoid generic macro language unless explicitly mentioned in the reports
+- Keep under 350 words
+- Base all insights on provided report content only`;
+
+      const userPrompt = `Generate a one-pager with these inputs:
+- **Title**: ${reportTitle || "Market Overview"}
+- **Audience**: ${targetAudience || "Portfolio Managers"}
+- **Key Focus Areas**: ${keyFocus || "Growth opportunities and risk assessment"}
+
+Recent 13D Report Context:
+${contextText}
+
+Create a professional one-pager following the structured format exactly.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        max_tokens: 600,
+        temperature: 0.2
+      });
+
+      const content = response.choices[0].message.content || "Unable to generate one-pager";
       
+      // Extract source reports mentioned
+      const sourceReports = reportContext
+        .filter(r => content.toLowerCase().includes(r.title.toLowerCase().substring(0, 15)))
+        .map(r => r.title)
+        .slice(0, 5);
+
       const onePager = {
-        title: reportTitle,
-        executiveSummary: `This comprehensive analysis examines key market dynamics and investment opportunities${targetAudience ? ` for ${targetAudience}` : ''}. Our research identifies significant trends that present both opportunities and challenges for portfolio positioning.`,
-        keyPoints: [
-          "Market fundamentals remain strong despite near-term volatility",
-          "Sector rotation creating opportunities in undervalued segments",
-          "Regulatory environment stabilizing with clearer policy direction",
-          "Technology adoption accelerating across traditional industries"
-        ],
-        recommendations: [
-          "Increase allocation to high-conviction growth themes",
-          "Maintain defensive positioning in uncertain markets",
-          "Consider tactical opportunities in oversold quality names"
-        ],
-        riskFactors: [
-          "Geopolitical tensions could impact market sentiment",
-          "Interest rate sensitivity in growth-oriented holdings",
-          "Currency fluctuations affecting international exposures"
-        ],
-        conclusion: "While near-term headwinds persist, our analysis suggests selective opportunities for long-term value creation through disciplined investment in quality growth companies."
+        title: reportTitle || "Market Overview",
+        content: content,
+        executiveSummary: "Generated using 13D's structured one-pager format",
+        sourceReports: sourceReports,
+        generatedDate: new Date(),
+        targetAudience: targetAudience || "Portfolio Managers",
+        keyFocus: keyFocus || "Growth opportunities and risk assessment"
       };
       
       res.json(onePager);
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate one-pager" });
+      console.error("One-pager generation error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate one-pager",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
