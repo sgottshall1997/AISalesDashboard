@@ -111,7 +111,7 @@ function OpenTasks() {
 }
 
 function SeverelyOverdueInvoices() {
-  const { data: overdueInvoices, isLoading } = useQuery({
+  const { data: overdueInvoices, isLoading } = useQuery<any[]>({
     queryKey: ["/api/invoices/severely-overdue"],
   });
 
@@ -134,7 +134,7 @@ function SeverelyOverdueInvoices() {
     );
   }
 
-  if (!overdueInvoices || overdueInvoices.length === 0) {
+  if (!overdueInvoices || !Array.isArray(overdueInvoices) || overdueInvoices.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -230,7 +230,7 @@ export default function Overview() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <KPICard
             title="Outstanding Invoices"
-            value={`$${stats?.outstandingInvoices?.toLocaleString() || '0'}`}
+            value={`$${(stats?.outstandingInvoices ?? 0).toLocaleString()}`}
             icon={DollarSign}
             trend={{ value: stats?.overdueCount || 0, label: "overdue", type: "negative" }}
             color="primary"
@@ -238,7 +238,7 @@ export default function Overview() {
           
           <KPICard
             title="Active Leads"
-            value={stats?.activeLeads?.toString() || '0'}
+            value={(stats?.activeLeads ?? 0).toString()}
             icon={Users}
             trend={{ value: 5, label: "hot prospects", type: "positive" }}
             color="secondary"
@@ -254,7 +254,7 @@ export default function Overview() {
           
           <KPICard
             title="At-Risk Renewals"
-            value={stats?.atRiskRenewals?.toString() || '0'}
+            value={(stats?.atRiskRenewals ?? 0).toString()}
             icon={AlertTriangle}
             trend={{ value: 2, label: "urgent actions", type: "negative" }}
             color="amber"
