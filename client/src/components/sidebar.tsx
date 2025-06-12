@@ -46,9 +46,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   const aiTools = [
     { id: "call-preparation", name: "Call Preparation", icon: Phone },
     { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb },
-    { id: "theme-tracker", name: "Theme Tracker", icon: TrendingUp },
     { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target },
-    { id: "portfolio-scorer", name: "Portfolio Scorer", icon: BarChart },
     { id: "ai-qna", name: "AI Q&A", icon: MessageCircle },
     { id: "one-pager", name: "One-Pager Gen", icon: FileEdit },
   ];
