@@ -108,7 +108,17 @@ app.use((req, res, next) => {
     log("Caching service unavailable - continuing without Redis caching");
   }
 
-  log("Enterprise transformation: AI feedback, search indexing, security, monitoring active");
+  // Initialize email service with scheduled reports
+  try {
+    const { EmailService } = await import("./services/email-service");
+    const emailService = new EmailService(storage);
+    await emailService.scheduleWeeklyReports();
+    log("Email scheduling configured: Weekly reports (Mon 9AM), Daily digest (Mon-Fri 8AM)");
+  } catch (error) {
+    log("Email service unavailable - continuing without scheduled reports");
+  }
+
+  log("Enterprise transformation: AI feedback, search indexing, security, monitoring, email automation active");
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
