@@ -698,8 +698,7 @@ export function ContentDistribution() {
                   onClick={async () => {
                     if (selectedReport) {
                       try {
-                        const response = await fetch(`/api/report-summaries`);
-                        const summaries = await response.json();
+                        const summaries = await apiRequest(`/api/report-summaries`, "GET");
                         const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
                         
                         if (reportSummary) {
@@ -797,8 +796,7 @@ export function ContentDistribution() {
                   onClick={async () => {
                     if (selectedReport) {
                       try {
-                        const response = await fetch(`/api/report-summaries`);
-                        const summaries = await response.json();
+                        const summaries = await apiRequest(`/api/report-summaries`, "GET");
                         const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
                         
                         if (reportSummary) {
