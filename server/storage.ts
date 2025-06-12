@@ -171,7 +171,7 @@ export class DatabaseStorage implements IStorage {
   async createClient(insertClient: InsertClient): Promise<Client> {
     const [client] = await db
       .insert(clients)
-      .values(insertClient)
+      .values([insertClient])
       .returning();
     return client;
   }
@@ -278,7 +278,7 @@ export class DatabaseStorage implements IStorage {
   async createLead(insertLead: InsertLead): Promise<Lead> {
     const [lead] = await db
       .insert(leads)
-      .values(insertLead)
+      .values([insertLead])
       .returning();
     return lead;
   }
@@ -327,7 +327,7 @@ export class DatabaseStorage implements IStorage {
   async createContentReport(insertReport: InsertContentReport): Promise<ContentReport> {
     const [report] = await db
       .insert(content_reports)
-      .values(insertReport)
+      .values([insertReport])
       .returning();
     return report;
   }

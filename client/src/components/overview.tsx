@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Task } from "@shared/schema";
 import { KPICard } from "@/components/dashboard/kpi-card";
 import { DataTable } from "@/components/compound/data-table";
+import { AnalyticsInsights } from "@/components/dashboard/analytics-insights";
 
 interface DashboardStats {
   outstandingInvoices: number;
@@ -261,10 +262,14 @@ export default function Overview() {
         </div>
 
         {/* Critical Business Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <SeverelyOverdueInvoices />
-
           <OpenTasks />
+          
+          {/* AI Insights Component */}
+          <div className="lg:col-span-1">
+            <AnalyticsInsights />
+          </div>
         </div>
       </div>
     </div>
