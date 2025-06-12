@@ -2393,7 +2393,7 @@ Based on these 13D Research insights, provide a JSON response with actionable pr
         message: "Prospecting insights generated successfully",
         insights,
         reportsAnalyzed: reportIntelligence.length,
-        totalReports: allReports.length
+        totalSummaries: recentSummaries.length
       });
 
     } catch (error) {
