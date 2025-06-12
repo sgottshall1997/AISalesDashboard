@@ -1,0 +1,95 @@
+
+Please test and confirm the functionality of every core feature in the AISalesDashboard using the live environment. This includes all frontend UI components, backend endpoints, and data flow from inputs to outputs. Use mock data where needed and simulate user interactions.
+
+---
+
+### ✅ CORE FUNCTIONALITY TESTS
+
+1. **PDF Upload & Theme Extraction**
+   - Upload a sample PDF
+   - Confirm that the text is extracted correctly and stored
+   - Verify themes are generated and stored in the database
+
+2. **One-Pager Generator**
+   - Select a report and generate a One-Pager
+   - Confirm content segments (Overview, Financials, Insights) are displayed in cards/panels
+   - Test “Download PDF” works and includes readable formatting
+   - Test “Copy to Clipboard” button
+
+3. **AI Q&A Tool**
+   - Ask a question using test context
+   - Confirm Q&A pair displays in expected layout (chat or FAQ)
+   - Verify tone is professional and consistent
+   - Confirm any lists in answers are properly formatted (bullets or numbered)
+   - If citations (e.g. [1]) appear, confirm source info is shown correctly
+
+4. **Summary Email Generator**
+   - Trigger an email summary generation
+   - Confirm text is formatted for email readability
+   - Test “Copy to Clipboard” and `mailto:` (if implemented)
+
+---
+
+### 🔁 FEEDBACK LOOP TESTS
+
+5. **Thumbs-Up/Down Rating System**
+   - For each content type (One-Pager, Q&A, Summary Email):
+     - Test thumb icons are clickable
+     - Verify UI updates on selection
+     - Confirm feedback is sent to backend and stored in `feedback` table
+
+---
+
+### 🔗 EXPORT & SHARING TESTS
+
+6. **Shareable Link Generator**
+   - Generate a One-Pager and create a shareable URL
+   - Confirm external access loads a read-only version
+
+7. **Export Options**
+   - Test “Export to PDF”
+   - Test “Export to Google Docs” (if available)
+   - Test `.docx` or Markdown download fallback
+
+---
+
+### 🧠 CLIENT MEMORY TESTS
+
+8. **Client Tagging**
+   - Generate content for a mock client
+   - Confirm client name is saved and associated
+   - Verify ability to filter or retrieve content by client tag
+
+9. **Content Library**
+   - Visit dashboard view
+   - Confirm recent content is listed (with tags/dates)
+   - Test click-through to old content
+
+---
+
+### 🔧 SYSTEM & INTEGRATION TESTS
+
+10. **Make.com or Zapier Hook**
+   - Trigger webhook (if available) to auto-generate content
+   - Confirm correct payload structure and content returned
+
+11. **Replit Deployment Health**
+   - Navigate directly to /one-pager, /qna, etc.
+   - Confirm routing works via wildcard setup
+   - Test .env vars via Replit Secrets
+   - Confirm logs show success events (e.g. “Feedback saved”)
+
+12. **Database & Session Handling**
+   - Simulate multiple users (sessions) if possible
+   - Confirm session isolation and persistence
+   - Confirm all DB entries (themes, feedback, clients) are correct
+
+---
+
+🎯 **PASS/FAIL Reporting**
+At the end of the test, return a list of:
+- ✅ Features that work as expected
+- ❌ Features that failed or threw errors
+- ⚠️ Features not implemented but referenced in UI
+
+Use real console outputs and any visible UI messages to support your report.
