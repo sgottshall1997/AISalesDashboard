@@ -1376,9 +1376,9 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
           response_format: { type: "json_object" }
         });
 
-        const response = await Promise.race([apiPromise, timeoutPromise]);
+        const response = await Promise.race([apiPromise, timeoutPromise]) as any;
         
-        let callPrepContent = response.choices[0].message.content || '{}';
+        let callPrepContent = (response.choices[0].message.content as string) || '{}';
         
         // Remove all * and # symbols from output
         callPrepContent = callPrepContent.replace(/[\*#]+/g, '');
@@ -2388,7 +2388,7 @@ Provide a JSON response with actionable prospecting insights:
 
     } catch (error) {
       console.error('Prospecting insights error:', error);
-      if (error.message?.includes('API key')) {
+      if ((error as Error).message?.includes('API key')) {
         res.status(400).json({ 
           message: "OpenAI API key required",
           error: "Please provide a valid OpenAI API key to enable AI-powered prospecting insights"
@@ -2482,6 +2482,74 @@ Provide a JSON response with actionable prospecting insights:
         timestamp: new Date().toISOString(),
         status: "unhealthy",
         error: "Health check failed"
+      });
+    }
+  });
+
+  // Performance monitoring endpoint for dashboard
+  app.get('/api/admin/performance', async (req: Request, res: Response) => {
+    try {
+      const timeRange = parseInt(req.query.timeRange as string) || 3600000; // 1 hour default
+      
+      // Mock performance data for now - would be populated by performance middleware
+      const performanceData = {
+        totalRequests: 1250,
+        averageResponseTime: 125,
+        errorCount: 3,
+        slowEndpoints: [
+          { endpoint: '/api/analytics/insights', averageTime: 1850, count: 45 },
+          { endpoint: '/api/content-reports', averageTime: 650, count: 120 },
+          { endpoint: '/api/invoices', averageTime: 450, count: 200 }
+        ],
+        errorRates: [
+          { endpoint: '/api/generate-email', errorRate: 2.1, totalRequests: 85 }
+        ]
+      };
+      
+      const memoryUsage = process.memoryUsage();
+      const uptime = process.uptime();
+      
+      const healthStatus = {
+        status: performanceData.averageResponseTime > 2000 ? 'warning' : 
+               performanceData.errorCount > 10 ? 'critical' : 'healthy' as const,
+        message: performanceData.averageResponseTime > 2000 ? 
+                'Response times are slower than expected' :
+                performanceData.errorCount > 10 ? 
+                'High error rate detected' : 
+                'All systems operating normally',
+        details: {
+          avgResponseTime: performanceData.averageResponseTime,
+          memoryUsagePercent: (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100,
+          errorRate: performanceData.totalRequests > 0 ? 
+                    (performanceData.errorCount / performanceData.totalRequests) * 100 : 0
+        }
+      };
+      
+      const currentSystemMetric = {
+        cpuUsage: 0,
+        memoryUsage: {
+          rss: memoryUsage.rss,
+          heapUsed: memoryUsage.heapUsed,
+          heapTotal: memoryUsage.heapTotal,
+          external: memoryUsage.external
+        },
+        uptime: uptime,
+        requestsPerMinute: Math.round(performanceData.totalRequests / (timeRange / 60000)),
+        averageResponseTime: performanceData.averageResponseTime,
+        errorRate: healthStatus.details.errorRate
+      };
+      
+      res.json({
+        ...performanceData,
+        healthStatus,
+        systemMetrics: [currentSystemMetric]
+      });
+      
+    } catch (error) {
+      console.error('Performance monitoring error:', error);
+      res.status(500).json({ 
+        message: "Failed to retrieve performance metrics",
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
