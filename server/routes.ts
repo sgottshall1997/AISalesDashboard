@@ -576,7 +576,11 @@ Create a professional one-pager following the structured format exactly.`;
         temperature: 0.2
       });
 
-      const content = response.choices[0].message.content || "Unable to generate one-pager";
+      let content = response.choices[0].message.content || "Unable to generate one-pager";
+      
+      // Clean markdown formatting for cleaner display
+      content = content.replace(/\*\*(.*?)\*\*/g, '$1'); // Remove **bold**
+      content = content.replace(/^#{1,6}\s+/gm, ''); // Remove ## headings
       
       // Extract source reports mentioned
       const sourceReports = reportContext

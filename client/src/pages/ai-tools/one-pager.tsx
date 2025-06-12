@@ -9,11 +9,16 @@ import { useToast } from "@/hooks/use-toast";
 
 interface OnePagerResult {
   title: string;
+  content?: string;
   executiveSummary: string;
   keyPoints: string[];
   recommendations: string[];
   riskFactors: string[];
   conclusion: string;
+  sourceReports?: string[];
+  generatedDate?: Date;
+  targetAudience?: string;
+  keyFocus?: string;
 }
 
 export default function OnePager() {
