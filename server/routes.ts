@@ -1396,6 +1396,89 @@ CRITICAL:
     }
   });
 
+  // Lead-specific email generation endpoint
+  app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
+    try {
+      const { lead, emailHistory, contentReports, selectedReportIds, leadName, leadCompany, reports } = req.body;
+      
+      // Support multiple parameter formats for flexibility
+      const leadData = lead || { name: leadName, company: leadCompany };
+      
+      if (!leadData.name && !leadData.company && !leadName && !leadCompany) {
+        return res.status(400).json({ error: "Lead data (name or company) is required" });
+      }
+      
+      // Ensure we have at least a name or company
+      if (!leadData.name) leadData.name = leadName || "Prospect";
+      if (!leadData.company) leadData.company = leadCompany || "Organization";
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
+        });
+      }
+
+      // Use provided reports or get recent ones
+      const reportsToUse = reports || contentReports || await storage.getRecentReports(5);
+      
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const emailPrompt = `You are an expert institutional sales professional writing personalized emails for 13D Research clients.
+
+Generate a professional but casual email based on:
+- Lead: ${leadData.name} at ${leadData.company || 'their organization'}
+- Interest Areas: ${leadData.interest_tags?.join(', ') || 'general investing'}
+
+Recent research context:
+${reportsToUse.slice(0, 3).map((report: any) => 
+  `- ${report.title}: ${report.content_summary || report.summary || 'Market analysis'}`
+).join('\n')}
+
+Write a concise, personalized email (under 200 words) that:
+1. Opens with a friendly greeting
+2. References relevant research insights
+3. Connects to their potential interests
+4. Ends with a soft call to action
+
+Keep the tone professional but approachable, similar to a colleague sharing insights.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert investment professional writing personalized outreach emails."
+          },
+          {
+            role: "user",
+            content: emailPrompt
+          }
+        ],
+        max_tokens: 300,
+        temperature: 0.7
+      });
+
+      let emailSuggestion = response.choices[0].message.content || "";
+      
+      // Clean up AI artifacts and formal language
+      emailSuggestion = emailSuggestion.replace(/As an AI[^.]*\./gi, '');
+      emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nTeam');
+      emailSuggestion = emailSuggestion.replace(/\n{3,}/g, '\n\n').trim();
+
+      res.json({ 
+        emailSuggestion,
+        subject: `Market insights for ${leadData.company || leadData.name}`
+      });
+
+    } catch (error) {
+      console.error("Generate lead email error:", error);
+      res.status(500).json({ 
+        message: "Failed to generate AI email",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Theme-based email generation endpoint
   app.post("/api/ai/generate-theme-email", async (req: Request, res: Response) => {
     try {
@@ -1488,7 +1571,7 @@ Focus on value proposition and concrete insights rather than generic market comm
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       // Determine if this is a WILTW or WATMTU report
-      const isWATMTU = title.includes("WATMTU") || promptType === "watmtu_parser";
+      const isWATMTU = title && title.includes("WATMTU") || promptType === "watmtu_parser";
       const reportTypeLabel = isWATMTU ? "WATMTU" : "WILTW";
 
       let summary = '';
