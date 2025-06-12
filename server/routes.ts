@@ -1946,6 +1946,42 @@ Provide a JSON response with actionable prospecting insights:
     }
   });
 
+  // AI Feedback Loop endpoint for learning from user preferences
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const { content_type, content_id, rating, comment } = req.body;
+      
+      if (!content_type || typeof rating !== 'boolean') {
+        return res.status(400).json({ error: "content_type and rating (boolean) are required" });
+      }
+
+      const feedbackData = {
+        content_type,
+        content_id: content_id || null,
+        rating,
+        comment: comment || null,
+        user_id: null // Will be set when user auth is implemented
+      };
+
+      const result = await storage.addFeedback(feedbackData);
+      res.json({ message: "Feedback recorded successfully", id: result.id });
+    } catch (error) {
+      console.error("Feedback error:", error);
+      res.status(500).json({ error: "Failed to record feedback" });
+    }
+  });
+
+  // Get feedback analytics endpoint
+  app.get("/api/feedback/analytics", async (req: Request, res: Response) => {
+    try {
+      const analytics = await storage.getFeedbackAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Feedback analytics error:", error);
+      res.status(500).json({ error: "Failed to retrieve feedback analytics" });
+    }
+  });
+
   // Campaign email generation with 13D Research style
   app.post("/api/ai/generate-campaign-email", async (req: Request, res: Response) => {
     try {

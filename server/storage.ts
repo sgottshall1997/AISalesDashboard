@@ -1,6 +1,6 @@
 import { 
   clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries, tasks,
-  ai_generated_content, ai_content_feedback,
+  ai_generated_content, ai_content_feedback, feedback,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
@@ -8,6 +8,7 @@ import {
   type ReadingHistory, type InsertReadingHistory, type LeadEmailHistory, type InsertLeadEmailHistory,
   type ReportSummary, type InsertReportSummary, type Task, type InsertTask,
   type AiGeneratedContent, type InsertAiGeneratedContent, type AiContentFeedback, type InsertAiContentFeedback,
+  type Feedback, type InsertFeedback,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -119,6 +120,16 @@ export interface IStorage {
   getAiGeneratedContentWithFeedback(contentId: number): Promise<(AiGeneratedContent & { feedback: AiContentFeedback[] }) | undefined>;
   getAiFeedbackAnalytics(): Promise<{
     totalContent: number;
+    totalFeedback: number;
+    thumbsUpCount: number;
+    thumbsDownCount: number;
+    avgRating: number;
+    feedbackByType: { [key: string]: number };
+  }>;
+
+  // General Feedback System
+  addFeedback(feedbackData: InsertFeedback): Promise<Feedback>;
+  getFeedbackAnalytics(): Promise<{
     totalFeedback: number;
     thumbsUpCount: number;
     thumbsDownCount: number;
@@ -870,6 +881,62 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     return {
       ...content[0],
       feedback
+    };
+  }
+
+  // Add feedback for AI content
+  async addFeedback(feedbackData: InsertFeedback): Promise<Feedback> {
+    const [result] = await db
+      .insert(feedback)
+      .values(feedbackData)
+      .returning();
+    return result;
+  }
+
+  async getFeedbackAnalytics(): Promise<{
+    totalFeedback: number;
+    thumbsUpCount: number;
+    thumbsDownCount: number;
+    avgRating: number;
+    feedbackByType: { [key: string]: number };
+  }> {
+    const totalFeedbackResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(feedback);
+
+    const thumbsUpResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(feedback)
+      .where(eq(feedback.rating, true));
+
+    const thumbsDownResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(feedback)
+      .where(eq(feedback.rating, false));
+
+    const feedbackByTypeResult = await db
+      .select({
+        content_type: feedback.content_type,
+        count: sql<number>`count(*)`
+      })
+      .from(feedback)
+      .groupBy(feedback.content_type);
+
+    const feedbackByType: { [key: string]: number } = {};
+    feedbackByTypeResult.forEach(row => {
+      feedbackByType[row.content_type] = row.count;
+    });
+
+    const totalFeedback = totalFeedbackResult[0]?.count || 0;
+    const thumbsUp = thumbsUpResult[0]?.count || 0;
+    const thumbsDown = thumbsDownResult[0]?.count || 0;
+
+    return {
+      totalFeedback,
+      thumbsUpCount: thumbsUp,
+      thumbsDownCount: thumbsDown,
+      avgRating: totalFeedback > 0 ? thumbsUp / totalFeedback : 0,
+      feedbackByType
     };
   }
 
