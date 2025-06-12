@@ -139,7 +139,7 @@ export default function InvoicingAssistant() {
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async ({ invoiceId, updates }: { invoiceId: number; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, updates);
+      const response = await apiRequest(`/api/invoices/${invoiceId}`, "PATCH", updates);
       return response.json();
     },
     onSuccess: () => {
@@ -154,7 +154,7 @@ export default function InvoicingAssistant() {
 
   const clearAllInvoicesMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", "/api/invoices/all", {});
+      const response = await apiRequest("/api/invoices/all", "DELETE", {});
       return response.json();
     },
     onSuccess: () => {
@@ -177,7 +177,7 @@ export default function InvoicingAssistant() {
 
   const deleteInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: number) => {
-      const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}`, {});
+      const response = await apiRequest(`/api/invoices/${invoiceId}`, "DELETE", {});
       return response.json();
     },
     onSuccess: () => {

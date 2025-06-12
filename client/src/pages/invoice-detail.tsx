@@ -240,7 +240,7 @@ export default function InvoiceDetail() {
 
   const saveNotesMutation = useMutation({
     mutationFn: async (notesText: string) => {
-      const response = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, { notes: notesText });
+      const response = await apiRequest(`/api/invoices/${invoiceId}`, "PATCH", { notes: notesText });
       return response.json();
     },
     onSuccess: () => {

@@ -35,19 +35,19 @@ export default function ClientDetail() {
 
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ["/api/clients", id],
-    queryFn: () => apiRequest("GET", `/api/clients/${id}`).then(res => res.json()),
+    queryFn: () => apiRequest(`/api/clients/${id}`, "GET").then(res => res.json()),
   });
 
   const { data: invoices = [] } = useQuery({
     queryKey: ["/api/invoices", id],
-    queryFn: () => apiRequest("GET", "/api/invoices").then(res => res.json()).then(invoices => 
+    queryFn: () => apiRequest("/api/invoices", "GET").then(res => res.json()).then(invoices => 
       invoices.filter((invoice: any) => invoice.client.id.toString() === id)
     ),
   });
 
   const { data: engagements = [] } = useQuery({
     queryKey: ["/api/client-engagements", id],
-    queryFn: () => apiRequest("GET", "/api/reading-history").then(res => res.json()).then(history => 
+    queryFn: () => apiRequest("/api/reading-history", "GET").then(res => res.json()).then(history => 
       history.filter((item: any) => item.client.id.toString() === id)
     ),
   });

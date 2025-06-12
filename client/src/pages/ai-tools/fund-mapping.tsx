@@ -27,7 +27,7 @@ export default function FundMapping() {
 
   const mappingMutation = useMutation({
     mutationFn: async (data: { fundName: string; strategy: string; riskProfile: string }) => {
-      const response = await apiRequest("POST", "/api/map-fund-themes", data);
+      const response = await apiRequest("/api/map-fund-themes", "POST", data);
       return response.json();
     },
     onSuccess: (data) => {

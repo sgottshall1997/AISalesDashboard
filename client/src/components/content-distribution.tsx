@@ -129,7 +129,7 @@ export default function ContentDistribution() {
 
   const addReadingHistoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/reading-history", data);
+      const response = await apiRequest("/api/reading-history", "POST", data);
       return response.json();
     },
     onSuccess: () => {
@@ -156,7 +156,7 @@ export default function ContentDistribution() {
 
   const deleteReadingHistoryMutation = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest("DELETE", `/api/reading-history/${id}`, {});
+      const response = await apiRequest(`/api/reading-history/${id}`, "DELETE", {});
       return response.json();
     },
     onSuccess: () => {

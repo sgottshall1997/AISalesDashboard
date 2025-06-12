@@ -16,7 +16,7 @@ import {
 export function AIAnalytics() {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ["/api/ai/feedback/analytics"],
-    queryFn: () => apiRequest("GET", "/api/ai/feedback/analytics").then(res => res.json()),
+    queryFn: () => apiRequest("/api/ai/feedback/analytics", "GET").then(res => res.json()),
   });
 
   if (isLoading) {

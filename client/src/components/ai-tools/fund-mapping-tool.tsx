@@ -42,12 +42,12 @@ export function FundMappingTool() {
 
   const { data: fundStrategies = [], isLoading: strategiesLoading } = useQuery({
     queryKey: ["/api/fund-strategies"],
-    queryFn: () => apiRequest("GET", "/api/fund-strategies").then(res => res.json()),
+    queryFn: () => apiRequest("/api/fund-strategies", "GET").then(res => res.json()),
   });
 
   const mapFundMutation = useMutation({
     mutationFn: async (data: { fundName: string; strategy: string; riskProfile: string }) => {
-      const response = await apiRequest("POST", "/api/map-fund-themes", data);
+      const response = await apiRequest("/api/map-fund-themes", "POST", data);
       return response.json();
     },
     onSuccess: (data) => {

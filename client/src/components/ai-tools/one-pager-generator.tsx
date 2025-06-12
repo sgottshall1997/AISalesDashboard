@@ -41,7 +41,7 @@ export function OnePagerGenerator() {
 
   const generateOnePagerMutation = useMutation({
     mutationFn: async (data: OnePagerRequest) => {
-      const response = await apiRequest("POST", "/api/generate-one-pager", data);
+      const response = await apiRequest("/api/generate-one-pager", "POST", data);
       return response.json();
     },
     onSuccess: (data) => {

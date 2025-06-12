@@ -96,7 +96,7 @@ export default function LeadPipeline() {
 
   const updateLeadMutation = useMutation({
     mutationFn: async ({ leadId, updates }: { leadId: number; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, updates);
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", updates);
       return response.json();
     },
     onSuccess: () => {
@@ -110,7 +110,7 @@ export default function LeadPipeline() {
 
   const updateLikelihoodMutation = useMutation({
     mutationFn: async ({ leadId, likelihood }: { leadId: number; likelihood: string }) => {
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, { likelihood_of_closing: likelihood });
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", { likelihood_of_closing: likelihood });
       return response.json();
     },
     onSuccess: () => {

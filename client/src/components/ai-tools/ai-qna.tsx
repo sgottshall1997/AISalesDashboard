@@ -42,7 +42,7 @@ export function AIQnA() {
 
   const askQuestionMutation = useMutation({
     mutationFn: async (question: string) => {
-      const response = await apiRequest("POST", "/api/ask-reports", { query: question });
+      const response = await apiRequest("/api/ask-reports", "POST", { query: question });
       return response.json();
     },
     onSuccess: (data: QnAResponse) => {

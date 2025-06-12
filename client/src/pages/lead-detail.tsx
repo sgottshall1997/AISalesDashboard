@@ -251,7 +251,7 @@ export default function LeadDetail() {
 
   const updateLeadMutation = useMutation({
     mutationFn: async (updates: Partial<Lead>) => {
-      const response = await apiRequest("PATCH", `/api/leads/${leadId}`, updates);
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", updates);
       return response.json();
     },
     onSuccess: () => {
@@ -267,7 +267,7 @@ export default function LeadDetail() {
 
   const addEmailMutation = useMutation({
     mutationFn: async (emailData: any) => {
-      const response = await apiRequest("POST", `/api/leads/${leadId}/emails`, emailData);
+      const response = await apiRequest(`/api/leads/${leadId}/emails`, "POST", emailData);
       return response.json();
     },
     onSuccess: () => {

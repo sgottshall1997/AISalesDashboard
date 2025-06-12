@@ -81,7 +81,7 @@ export default function FollowUpGenerator() {
 
   const updateClientMutation = useMutation({
     mutationFn: async ({ clientId, updates }: { clientId: number; updates: any }) => {
-      const response = await apiRequest("PATCH", `/api/clients/${clientId}`, updates);
+      const response = await apiRequest(`/api/clients/${clientId}`, "PATCH", updates);
       return response.json();
     },
     onSuccess: () => {

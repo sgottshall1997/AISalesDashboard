@@ -385,7 +385,7 @@ export function ContentDistribution() {
 
   const prospectMatchMutation = useMutation({
     mutationFn: async (reportSummary: string) => {
-      const response = await apiRequest("POST", "/api/match-prospect-themes", {
+      const response = await apiRequest("/api/match-prospect-themes", "POST", {
         reportContent: reportSummary
       });
       return response.json();
@@ -420,7 +420,7 @@ export function ContentDistribution() {
       keyTalkingPoints: string[]; 
       matchReason: string 
     }) => {
-      const response = await apiRequest("POST", "/api/generate-prospect-email", data);
+      const response = await apiRequest("/api/generate-prospect-email", "POST", data);
       return response.json();
     },
     onMutate: () => {

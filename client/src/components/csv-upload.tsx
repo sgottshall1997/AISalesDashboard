@@ -83,7 +83,7 @@ export default function CsvUpload() {
 
   const clearAllMutation = useMutation({
     mutationFn: async ({ type }: { type: string }) => {
-      const response = await apiRequest("DELETE", `/api/${type}/all`, {});
+      const response = await apiRequest(`/api/${type}/all`, "DELETE", {});
       return response.json();
     },
     onSuccess: () => {
