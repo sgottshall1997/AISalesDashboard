@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary, DashboardErrorBoundary, AIContentErrorBoundary } from "@/components/error-boundary";
 import { PageLoadingFallback } from "@/components/loading-fallback";
+import { ThemeProvider } from "@/components/theme-provider";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 
@@ -121,10 +122,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
