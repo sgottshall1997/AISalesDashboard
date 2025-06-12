@@ -466,18 +466,37 @@ export class DatabaseStorage implements IStorage {
 
   async getInvoiceWithClient(id: number): Promise<(Invoice & { client: Client }) | undefined> {
     const [result] = await db
-      .select()
+      .select({
+        id: invoices.id,
+        client_id: invoices.client_id,
+        invoice_number: invoices.invoice_number,
+        amount: invoices.amount,
+        due_date: invoices.due_date,
+        payment_status: invoices.payment_status,
+        last_reminder_sent: invoices.last_reminder_sent,
+        notes: invoices.notes,
+        created_at: invoices.created_at,
+        client: clients
+      })
       .from(invoices)
       .leftJoin(clients, eq(invoices.client_id, clients.id))
       .where(eq(invoices.id, id));
 
-    if (!result || !result.clients) {
+    if (!result || !result.client) {
       return undefined;
     }
 
     return {
-      ...result.invoices,
-      client: result.clients
+      id: result.id,
+      client_id: result.client_id,
+      invoice_number: result.invoice_number,
+      amount: result.amount,
+      due_date: result.due_date,
+      payment_status: result.payment_status,
+      last_reminder_sent: result.last_reminder_sent,
+      notes: result.notes,
+      created_at: result.created_at,
+      client: result.client
     };
   }
 
