@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader } from "@/components/page-header";
 
 export default function ThemeTracker() {
   const [selectedTheme, setSelectedTheme] = useState<string>("");
@@ -57,13 +58,13 @@ export default function ThemeTracker() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center mb-6">
-        <TrendingUp className="w-6 h-6 mr-3 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Theme Tracker - Time-Series Trend Engine</h1>
-      </div>
-
-      <Card className="max-w-4xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <PageHeader 
+        title="Theme Tracker"
+        subtitle="Time-Series Trend Engine for monitoring investment themes across research reports"
+      />
+      <div className="space-y-6 p-6">
+        <Card className="max-w-4xl">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             {/* Select Theme to Track */}
@@ -141,6 +142,7 @@ export default function ThemeTracker() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
