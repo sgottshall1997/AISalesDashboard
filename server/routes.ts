@@ -1656,6 +1656,13 @@ CRITICAL:
       
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+      // Build report context from structured analysis
+      const reportContext = selectedReportSummaries.length > 0 
+        ? selectedReportSummaries.map((item: any) => 
+            `Report: ${item.title}\nSummary: ${item.structuredAnalysis.substring(0, 400)}`
+          ).join('\n\n')
+        : 'No reports selected';
+
       const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
 
 TEMPLATE TO FOLLOW EXACTLY:
@@ -1678,14 +1685,12 @@ I am happy to send over older reports on topics of interest. Please let me know 
 Best,
 Spencer
 
-DATA TO USE FROM STRUCTURED ANALYSIS:
-${selectedReportSummaries.map((item: any) => 
-  `${item.title} (${item.reportType}): ${item.structuredAnalysis.substring(0, 500)}...`
-).join('\n\n')}
+DATA TO USE:
+${reportContext}
 
 CRITICAL: 
 - Use bullet points (•) NOT paragraphs
-- Make each bullet detailed with specific data/percentages/ratios from the structured analysis
+- Make each bullet detailed with specific data/percentages/ratios from reports
 - Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
 - After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
