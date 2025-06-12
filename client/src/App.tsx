@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Login } from "@/components/login";
-import PageHeader from "@/components/page-header";
 import Dashboard from "@/pages/dashboard";
 import InvoiceDetail from "@/pages/invoice-detail";
 import LeadDetail from "@/pages/lead-detail";
@@ -31,21 +30,16 @@ function Router() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <PageHeader />
-      <div className="pt-0">
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/invoice/:id" component={InvoiceDetail} />
-          <Route path="/leads/:id" component={LeadDetail} />
-          <Route path="/client/:id" component={ClientDetail} />
-          <Route path="/ai-analytics" component={AIAnalytics} />
-          <Route path="/ai-tools/unified-prospect-fund-matcher" component={UnifiedProspectFundMatcher} />
-          <Route path="/about" component={About} />
-          <Route component={NotFound} />
-        </Switch>
-      </div>
-    </div>
+    <Switch>
+      <Route path="/" component={Dashboard} />
+      <Route path="/invoice/:id" component={InvoiceDetail} />
+      <Route path="/leads/:id" component={LeadDetail} />
+      <Route path="/client/:id" component={ClientDetail} />
+      <Route path="/ai-analytics" component={AIAnalytics} />
+      <Route path="/ai-tools/unified-prospect-fund-matcher" component={UnifiedProspectFundMatcher} />
+      <Route path="/about" component={About} />
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 
