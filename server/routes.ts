@@ -486,34 +486,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Get recent reports for context
+      // Get authentic WILTW and WATMTU reports with their parsed summaries
       const allReports = await storage.getAllContentReports();
-      const recentReports = allReports
+      const wiltwardReports = allReports
+        .filter(report => report.type === 'WILTW Report' || report.type === 'WATMTU Report')
         .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
-        .slice(0, 10);
+        .slice(0, 8);
 
-      // Get report summaries for context
+      // Get detailed report summaries for authentic context
       const reportContext = [];
-      for (const report of recentReports) {
+      for (const report of wiltwardReports) {
         try {
           const summary = await storage.getReportSummary(report.id);
           if (summary && summary.parsed_summary) {
+            // Use the full parsed summary for comprehensive context
             reportContext.push({
               title: report.title,
               date: report.published_date,
-              summary: summary.parsed_summary.substring(0, 600),
-              type: report.type
+              summary: summary.parsed_summary,
+              type: report.type,
+              fullContent: report.full_content ? report.full_content.substring(0, 1000) : ''
             });
           } else if (report.content_summary) {
             reportContext.push({
               title: report.title,
               date: report.published_date,
-              summary: report.content_summary.substring(0, 500),
-              type: report.type
+              summary: report.content_summary,
+              type: report.type,
+              fullContent: report.full_content ? report.full_content.substring(0, 1000) : ''
             });
           }
         } catch (err) {
-          // Skip if no summary available
+          console.error(`Error getting summary for report ${report.id}:`, err);
         }
       }
 
@@ -561,10 +565,12 @@ Include WILTW or WATMTU dates used for the output.
 - **Audience**: ${targetAudience || "Portfolio Managers"}
 - **Key Focus Areas**: ${keyFocus || "Growth opportunities and risk assessment"}
 
-Recent 13D Report Context:
+AUTHENTIC 13D RESEARCH REPORTS (WILTW & WATMTU):
 ${contextText}
 
-Create a professional one-pager following the structured format exactly.`;
+CRITICAL: Base your entire response ONLY on the authentic 13D research content provided above. Extract specific insights, data points, investment themes, and recommendations directly from these actual WILTW and WATMTU reports. Do NOT use generic market commentary. Reference specific articles, dates, and findings from the provided reports.
+
+Create a professional one-pager following the structured format exactly, using only the authentic research content provided.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
