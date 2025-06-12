@@ -33,7 +33,7 @@ export default function Login() {
       const response = await apiRequest("/api/auth/login", "POST", data);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.authenticated) {
         // Invalidate auth status to trigger re-fetch
         queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
