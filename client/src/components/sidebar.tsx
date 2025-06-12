@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Link } from "wouter";
 import { 
   BarChart3, 
   FileText, 
@@ -44,11 +45,11 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   ];
 
   const aiTools = [
-    { id: "call-preparation", name: "Call Preparation", icon: Phone },
-    { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb },
-    { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target },
-    { id: "ai-qna", name: "AI Q&A", icon: MessageCircle },
-    { id: "one-pager", name: "One-Pager Gen", icon: FileEdit },
+    { id: "call-preparation", name: "Call Preparation", icon: Phone, path: "/ai-tools/call-preparation" },
+    { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb, path: "/ai-tools/campaign-suggestions" },
+    { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target, path: "/ai-tools/unified-prospect-fund-matcher" },
+    { id: "ai-qna", name: "AI Q&A", icon: MessageCircle, path: "/ai-tools/ai-qna" },
+    { id: "one-pager", name: "One-Pager Gen", icon: FileEdit, path: "/ai-tools/one-pager" },
   ];
 
   const SidebarContent = () => (
@@ -113,21 +114,19 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                   const isActive = activeSection === tool.id;
                   
                   return (
-                    <button
-                      key={tool.id}
-                      onClick={() => {
-                        onSectionChange(tool.id);
-                        setMobileOpen(false);
-                      }}
-                      className={`${
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ml-4`}
-                    >
-                      <Icon className="mr-3 flex-shrink-0 h-4 w-4" />
-                      {tool.name}
-                    </button>
+                    <Link key={tool.id} href={tool.path}>
+                      <button
+                        onClick={() => setMobileOpen(false)}
+                        className={`${
+                          isActive
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ml-4`}
+                      >
+                        <Icon className="mr-3 flex-shrink-0 h-4 w-4" />
+                        {tool.name}
+                      </button>
+                    </Link>
                   );
                 })}
               </div>
