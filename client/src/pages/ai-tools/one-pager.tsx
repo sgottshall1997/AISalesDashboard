@@ -200,46 +200,64 @@ ${onePager.conclusion}`;
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Executive Summary</h3>
-              <p className="text-gray-700 bg-gray-50 p-4 rounded-md leading-relaxed">
-                {onePager.executiveSummary}
-              </p>
-            </div>
+            {onePager.content ? (
+              <div className="prose max-w-none">
+                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+                  {onePager.content}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Executive Summary</h3>
+                  <p className="text-gray-700 bg-gray-50 p-4 rounded-md leading-relaxed">
+                    {onePager.executiveSummary}
+                  </p>
+                </div>
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Key Points</h3>
-              <ul className="list-disc list-inside space-y-2">
-                {onePager.keyPoints.map((point, idx) => (
-                  <li key={idx} className="text-gray-700">{point}</li>
-                ))}
-              </ul>
-            </div>
+                {onePager.keyPoints && onePager.keyPoints.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Key Points</h3>
+                    <ul className="list-disc list-inside space-y-2">
+                      {onePager.keyPoints.map((point, idx) => (
+                        <li key={idx} className="text-gray-700">{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Recommendations</h3>
-              <ul className="list-disc list-inside space-y-2">
-                {onePager.recommendations.map((rec, idx) => (
-                  <li key={idx} className="text-gray-700">{rec}</li>
-                ))}
-              </ul>
-            </div>
+                {onePager.recommendations && onePager.recommendations.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Recommendations</h3>
+                    <ul className="list-disc list-inside space-y-2">
+                      {onePager.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-gray-700">{rec}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Risk Factors</h3>
-              <ul className="list-disc list-inside space-y-2">
-                {onePager.riskFactors.map((risk, idx) => (
-                  <li key={idx} className="text-red-700">{risk}</li>
-                ))}
-              </ul>
-            </div>
+                {onePager.riskFactors && onePager.riskFactors.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Risk Factors</h3>
+                    <ul className="list-disc list-inside space-y-2">
+                      {onePager.riskFactors.map((risk, idx) => (
+                        <li key={idx} className="text-red-700">{risk}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Conclusion</h3>
-              <p className="text-gray-700 bg-gray-50 p-4 rounded-md leading-relaxed">
-                {onePager.conclusion}
-              </p>
-            </div>
+                {onePager.conclusion && (
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-2">Conclusion</h3>
+                    <p className="text-gray-700 bg-gray-50 p-4 rounded-md leading-relaxed">
+                      {onePager.conclusion}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
       )}
