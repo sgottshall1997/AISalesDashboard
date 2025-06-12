@@ -64,8 +64,8 @@ export default function UnifiedProspectFundMatcher() {
 
   const matchMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/unified-prospect-fund-match", data);
-      return response.json();
+      const response = await apiRequest("/api/unified-prospect-fund-match", "POST", data);
+      return response;
     },
     onSuccess: (data) => {
       setResults(data);

@@ -27,8 +27,8 @@ export default function ProspectMatchmaker() {
 
   const matchMutation = useMutation({
     mutationFn: async (data: { prospectName: string; interests: string; additionalContext?: string }) => {
-      const response = await apiRequest("POST", "/api/match-prospect-themes", data);
-      return response.json();
+      const response = await apiRequest("/api/match-prospect-themes", "POST", data);
+      return response;
     },
     onSuccess: (data) => {
       setMatches(data.matches || []);

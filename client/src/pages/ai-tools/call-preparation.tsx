@@ -40,8 +40,8 @@ export default function CallPreparation() {
 
   const callPrepMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("POST", "/api/ai/generate-call-prep", data);
-      return response.json();
+      const response = await apiRequest("/api/ai/generate-call-prep", "POST", data);
+      return response;
     },
     onSuccess: (data) => {
       setCallPrepResult(data);

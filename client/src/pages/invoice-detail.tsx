@@ -88,8 +88,8 @@ export default function InvoiceDetail() {
     queryFn: async () => {
       try {
         console.log('Fetching invoice with ID:', invoiceId);
-        const response = await apiRequest("GET", `/api/invoices/${invoiceId}`);
-        const data = await response.json();
+        const response = await apiRequest(`/api/invoices/${invoiceId}`, "GET");
+        const data = response;
         console.log('Invoice API response:', data);
         return data;
       } catch (err) {
@@ -118,8 +118,8 @@ export default function InvoiceDetail() {
 
   const updateInvoiceMutation = useMutation({
     mutationFn: async (updates: Partial<InvoiceWithClient>) => {
-      const response = await apiRequest("PATCH", `/api/invoices/${invoiceId}`, updates);
-      return response.json();
+      const response = await apiRequest(`/api/invoices/${invoiceId}`, "PATCH", updates);
+      return response;
     },
     onSuccess: () => {
       // Invalidate both the specific invoice and the invoice list
@@ -135,8 +135,8 @@ export default function InvoiceDetail() {
 
   const addEmailMutation = useMutation({
     mutationFn: async (emailData: any) => {
-      const response = await apiRequest("POST", `/api/invoices/${invoiceId}/emails`, emailData);
-      return response.json();
+      const response = await apiRequest(`/api/invoices/${invoiceId}/emails`, "POST", emailData);
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/invoices', invoiceId, 'emails'] });

@@ -23,8 +23,8 @@ export default function AIQnA() {
 
   const questionMutation = useMutation({
     mutationFn: async (question: string) => {
-      const response = await apiRequest("POST", "/api/ask-reports", { question });
-      return response.json();
+      const response = await apiRequest("/api/ask-reports", "POST", { question });
+      return response;
     },
     onSuccess: (data) => {
       setResponse(data);
