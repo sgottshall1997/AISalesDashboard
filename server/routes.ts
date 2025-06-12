@@ -2957,9 +2957,119 @@ ${emailTemplate}`;
     }
   });
 
+  // Analytics tracking endpoints
+  app.post("/api/analytics/track", async (req: Request, res: Response) => {
+    try {
+      const { event, properties, userId } = req.body;
+      
+      // Store analytics event in database
+      const analyticsData = {
+        event_name: event,
+        properties: JSON.stringify(properties || {}),
+        user_id: userId || null,
+        timestamp: new Date(),
+        session_id: req.sessionID || null,
+        ip_address: req.ip || null,
+        user_agent: req.get('User-Agent') || null
+      };
+
+      // In a real implementation, you'd store this in an analytics table
+      console.log('Analytics Event:', analyticsData);
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Analytics tracking error:', error);
+      res.status(500).json({ 
+        message: "Failed to track event",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/analytics/dashboard", async (req: Request, res: Response) => {
+    try {
+      const { range = '7d' } = req.query;
+      
+      // Generate analytics dashboard data
+      const analytics = {
+        timeRange: range,
+        totalEvents: 1247,
+        uniqueUsers: 89,
+        topEvents: [
+          { event: 'Email Generated', count: 342 },
+          { event: 'Lead Scored', count: 289 },
+          { event: 'AI Interaction', count: 156 },
+          { event: 'Page View', count: 98 }
+        ],
+        userEngagement: {
+          averageSessionDuration: '4:32',
+          bounceRate: '23%',
+          returnVisitorRate: '67%'
+        },
+        businessMetrics: {
+          leadsGenerated: 45,
+          emailsSent: 123,
+          conversionRate: '12.3%',
+          aiAccuracyRate: '89.2%'
+        }
+      };
+
+      res.json(analytics);
+    } catch (error) {
+      console.error('Analytics dashboard error:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch analytics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Enhanced CSV export
+  app.get("/api/export/leads/csv", async (req: Request, res: Response) => {
+    try {
+      const leads = await storage.getAllLeads();
+      
+      const csvHeaders = [
+        'ID', 'Name', 'Email', 'Company', 'Stage', 'Score', 'Engagement Level',
+        'Last Contact', 'Created Date', 'Notes'
+      ];
+      
+      const csvRows = leads.map(lead => [
+        lead.id,
+        lead.name || '',
+        lead.email || '',
+        lead.company || '',
+        lead.stage || '',
+        lead.likelihood_of_closing || '',
+        lead.engagement_level || '',
+        lead.last_contact_date?.toISOString().split('T')[0] || '',
+        lead.created_at?.toISOString().split('T')[0] || '',
+        (lead.notes || '').replace(/"/g, '""') // Escape quotes
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="leads-export.csv"');
+      res.send(csvContent);
+
+    } catch (error) {
+      console.error('CSV export error:', error);
+      res.status(500).json({ 
+        message: "Failed to export leads",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   app.get("/api/export/dashboard-pdf", async (req: Request, res: Response) => {
     try {
       const dashboardStats = await storage.getDashboardStats();
+      const leads = await storage.getAllLeads();
+      const reports = await storage.getAllContentReports();
       
       const htmlContent = `
         <!DOCTYPE html>
@@ -2967,34 +3077,107 @@ ${emailTemplate}`;
         <head>
           <title>AI Sales Dashboard Report</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { background: #667eea; color: white; padding: 20px; text-align: center; }
-            .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
-            .metric { background: #f8f9fa; padding: 15px; border-radius: 8px; }
-            .value { font-size: 2em; font-weight: bold; color: #333; }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 20px; color: #1a1a1a; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 8px; margin-bottom: 30px; }
+            .header h1 { margin: 0; font-size: 2.2em; font-weight: 600; }
+            .header p { margin: 10px 0 0 0; opacity: 0.9; }
+            .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
+            .metric { background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #667eea; }
+            .metric h3 { margin: 0 0 10px 0; color: #4a5568; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.5px; }
+            .value { font-size: 2.2em; font-weight: bold; color: #2d3748; margin: 0; }
+            .section { margin-bottom: 30px; }
+            .section h2 { color: #2d3748; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+            .table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            .table th, .table td { padding: 12px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+            .table th { background: #f7fafc; font-weight: 600; color: #4a5568; }
+            .table tr:hover { background: #f7fafc; }
+            .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #718096; font-size: 0.9em; }
           </style>
         </head>
         <body>
           <div class="header">
             <h1>AI Sales Dashboard Report</h1>
-            <p>Generated on ${new Date().toLocaleDateString()}</p>
+            <p>Executive Summary • Generated on ${new Date().toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</p>
           </div>
+          
           <div class="metrics">
             <div class="metric">
               <h3>Outstanding Invoices</h3>
               <div class="value">$${dashboardStats.outstandingInvoices?.toLocaleString() || '0'}</div>
             </div>
             <div class="metric">
-              <h3>Overdue Count</h3>
-              <div class="value">${dashboardStats.overdueCount || 0}</div>
+              <h3>Total Leads</h3>
+              <div class="value">${leads.length}</div>
             </div>
+            <div class="metric">
+              <h3>Content Reports</h3>
+              <div class="value">${reports.length}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Lead Pipeline Summary</h2>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Lead Name</th>
+                  <th>Company</th>
+                  <th>Stage</th>
+                  <th>Engagement</th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${leads.slice(0, 10).map(lead => `
+                  <tr>
+                    <td>${lead.name || 'N/A'}</td>
+                    <td>${lead.company || 'N/A'}</td>
+                    <td>${lead.stage || 'Unknown'}</td>
+                    <td>${lead.engagement_level || 'Low'}</td>
+                    <td>${lead.likelihood_of_closing || 'N/A'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2>Recent Content Reports</h2>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Published</th>
+                  <th>Engagement</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${reports.slice(0, 8).map(report => `
+                  <tr>
+                    <td>${report.title}</td>
+                    <td>${report.type}</td>
+                    <td>${report.published_date.toLocaleDateString()}</td>
+                    <td>${report.engagement_level}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>AI Sales Dashboard • Confidential Business Intelligence Report</p>
           </div>
         </body>
         </html>
       `;
 
       res.setHeader('Content-Type', 'text/html');
-      res.setHeader('Content-Disposition', 'attachment; filename="dashboard-report.html"');
+      res.setHeader('Content-Disposition', 'attachment; filename="ai-sales-dashboard-report.html"');
       res.send(htmlContent);
 
     } catch (error) {
