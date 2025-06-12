@@ -60,7 +60,7 @@ export default function AIQnA() {
   };
 
   const suggestedQuestions = [
-    "What's T3D's latest view on inflation?",
+    "What's 13D's latest view on inflation?",
     "What are the key risks in energy markets?",
     "Which sectors are showing the most promise?",
     "What's the outlook for precious metals?",
@@ -81,7 +81,7 @@ export default function AIQnA() {
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
             <p className="text-gray-700 text-sm">
               I can help you find insights from your WILTW and WATMTU report corpus. Ask me questions like "What's 
-              T3D's view on Chinese equities?" or "What are the latest thoughts on gold mining?"
+              13D's view on Chinese equities?" or "What are the latest thoughts on gold mining?"
             </p>
             <p className="text-gray-500 text-xs mt-2">4:41:56 PM</p>
           </div>
