@@ -311,6 +311,11 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(content_reports.published_date), desc(content_reports.created_at));
   }
 
+  async getContentReport(id: number): Promise<ContentReport | undefined> {
+    const [report] = await db.select().from(content_reports).where(eq(content_reports.id, id));
+    return report || undefined;
+  }
+
   async getRecentReports(limit = 5): Promise<ContentReport[]> {
     return await db
       .select()
