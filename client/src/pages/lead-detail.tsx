@@ -24,7 +24,10 @@ import {
   StickyNote,
   FileText,
   Lightbulb,
-  Copy
+  Copy,
+  Phone,
+  TrendingUp,
+  MessageCircle
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -98,6 +101,8 @@ export default function LeadDetail() {
   const [aiEmailSuggestion, setAiEmailSuggestion] = useState<string | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [selectedReportIds, setSelectedReportIds] = useState<number[]>([]);
+  const [callPrepResult, setCallPrepResult] = useState<any>(null);
+  const [showCallPrep, setShowCallPrep] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -247,6 +252,36 @@ export default function LeadDetail() {
       toast({
         title: "Conversation Parsed",
         description: `Added ${emails.length} emails to history.`,
+      });
+    },
+  });
+
+  const generateCallPrepMutation = useMutation({
+    mutationFn: async () => {
+      if (!lead) return null;
+      
+      const response = await apiRequest("POST", "/api/ai/generate-call-prep", {
+        prospectName: lead.name,
+        firmName: lead.company,
+        interests: lead.interest_tags?.join(', ') || '',
+        notes: lead.notes || ''
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data) {
+        setCallPrepResult(data);
+        toast({
+          title: "Call Preparation Generated",
+          description: "Comprehensive call prep notes created based on prospect information.",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Generation Failed",
+        description: "Unable to generate call preparation. Please try again.",
+        variant: "destructive",
       });
     },
   });
@@ -626,6 +661,210 @@ export default function LeadDetail() {
               ) : (
                 <div className="text-gray-700">
                   {notes || "No notes added yet."}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Call Preparation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Phone className="w-5 h-5 mr-2" />
+                  Call Preparation
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => generateCallPrepMutation.mutate()}
+                  disabled={generateCallPrepMutation.isPending}
+                >
+                  {generateCallPrepMutation.isPending ? (
+                    <>
+                      <Bot className="w-4 h-4 mr-1 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="w-4 h-4 mr-1" />
+                      Generate Call Prep
+                    </>
+                  )}
+                </Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {callPrepResult ? (
+                <div className="space-y-6">
+                  {/* Prospect Snapshot */}
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <Building className="w-4 h-4 mr-2 text-blue-600" />
+                      <h3 className="font-semibold">Prospect Snapshot</h3>
+                    </div>
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <p className="text-sm">{callPrepResult.prospectSnapshot}</p>
+                    </div>
+                  </div>
+
+                  {/* Personal Background */}
+                  {callPrepResult.personalBackground && (
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 mr-2 text-indigo-600" />
+                        <h3 className="font-semibold">Personal Background</h3>
+                      </div>
+                      <div className="bg-indigo-50 p-3 rounded-lg">
+                        <p className="text-sm">{callPrepResult.personalBackground}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Company Overview */}
+                  {callPrepResult.companyOverview && (
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <Building className="w-4 h-4 mr-2 text-cyan-600" />
+                        <h3 className="font-semibold">Company Overview</h3>
+                      </div>
+                      <div className="bg-cyan-50 p-3 rounded-lg">
+                        <p className="text-sm">{callPrepResult.companyOverview}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Top Interests */}
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2 text-purple-600" />
+                      <h3 className="font-semibold">Top Interests</h3>
+                    </div>
+                    <div className="bg-purple-50 p-3 rounded-lg">
+                      <p className="text-sm">{callPrepResult.topInterests}</p>
+                    </div>
+                  </div>
+
+                  {/* Portfolio Insights */}
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <TrendingUp className="w-4 h-4 mr-2 text-green-600" />
+                      <h3 className="font-semibold">Portfolio Insights</h3>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <p className="text-sm">{callPrepResult.portfolioInsights}</p>
+                    </div>
+                  </div>
+
+                  {/* Talking Points */}
+                  <div className="space-y-2">
+                    <div className="flex items-center">
+                      <MessageCircle className="w-4 h-4 mr-2 text-orange-600" />
+                      <h3 className="font-semibold">Talking Points for Call</h3>
+                    </div>
+                    <div className="bg-orange-50 p-3 rounded-lg">
+                      <div className="space-y-4">
+                        {callPrepResult.talkingPoints && callPrepResult.talkingPoints.map((point: any, index: number) => (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-start">
+                              <Badge variant="outline" className="mr-2 mt-0.5 text-xs">
+                                {index + 1}
+                              </Badge>
+                              <span className="text-sm font-medium">
+                                {typeof point === 'string' ? point : (point?.mainPoint || '')}
+                              </span>
+                            </div>
+                            {typeof point === 'object' && point.subBullets && Array.isArray(point.subBullets) && point.subBullets.length > 0 && (
+                              <ul className="ml-8 space-y-1">
+                                {point.subBullets.map((bullet: any, bulletIndex: number) => (
+                                  <li key={bulletIndex} className="text-sm text-gray-600 flex items-start">
+                                    <span className="mr-2">•</span>
+                                    <span>{typeof bullet === 'string' ? bullet : JSON.stringify(bullet)}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Smart Questions */}
+                  {callPrepResult.smartQuestions && callPrepResult.smartQuestions.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <MessageCircle className="w-4 h-4 mr-2 text-red-600" />
+                        <h3 className="font-semibold">Smart Questions to Ask</h3>
+                      </div>
+                      <div className="bg-red-50 p-3 rounded-lg">
+                        <div className="space-y-2">
+                          {callPrepResult.smartQuestions.map((question: string, index: number) => (
+                            <div key={index} className="flex items-start">
+                              <span className="text-xs font-medium text-red-600 mr-2 mt-1">Q{index + 1}.</span>
+                              <span className="text-sm">{question}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Copy All Button */}
+                  <div className="pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        let content = `CALL PREPARATION NOTES\n\n`;
+                        
+                        content += `PROSPECT SNAPSHOT\n${callPrepResult.prospectSnapshot}\n\n`;
+                        
+                        if (callPrepResult.personalBackground) {
+                          content += `PERSONAL BACKGROUND\n${callPrepResult.personalBackground}\n\n`;
+                        }
+                        
+                        if (callPrepResult.companyOverview) {
+                          content += `COMPANY OVERVIEW\n${callPrepResult.companyOverview}\n\n`;
+                        }
+                        
+                        content += `TOP INTERESTS\n${callPrepResult.topInterests}\n\n`;
+                        content += `PORTFOLIO INSIGHTS\n${callPrepResult.portfolioInsights}\n\n`;
+                        
+                        // Handle structured talking points
+                        content += `TALKING POINTS\n`;
+                        callPrepResult.talkingPoints.forEach((point: any, i: number) => {
+                          if (typeof point === 'string') {
+                            content += `${i + 1}. ${point}\n`;
+                          } else {
+                            content += `${i + 1}. ${point.mainPoint}\n`;
+                            if (point.subBullets && point.subBullets.length > 0) {
+                              point.subBullets.forEach((bullet: any) => {
+                                content += `   • ${bullet}\n`;
+                              });
+                            }
+                          }
+                        });
+                        content += '\n';
+                        
+                        if (callPrepResult.smartQuestions) {
+                          content += `SMART QUESTIONS\n${callPrepResult.smartQuestions.map((q: string, i: number) => `Q${i + 1}. ${q}`).join('\n')}`;
+                        }
+                        
+                        navigator.clipboard.writeText(content);
+                        toast({
+                          title: "Copied to Clipboard",
+                          description: "Call prep notes have been copied to your clipboard",
+                        });
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy All Notes
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Click "Generate Call Prep" to create comprehensive preparation notes for your call with {lead?.name}.
                 </div>
               )}
             </CardContent>
