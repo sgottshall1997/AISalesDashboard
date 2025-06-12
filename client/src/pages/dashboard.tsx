@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
+import { KPICard } from "@/components/dashboard/kpi-card";
+import { DataTable } from "@/components/compound/data-table";
 import InvoicingAssistant from "@/components/invoicing-assistant";
 import { ContentDistribution } from "@/components/dashboard/content-distribution-clean";
 import LeadPipeline from "@/components/lead-pipeline";

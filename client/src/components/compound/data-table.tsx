@@ -137,7 +137,7 @@ function DataTableContent() {
   const paginatedData = sortedData.slice(startIndex, startIndex + pageSize);
 
   const handleSort = (columnKey: string) => {
-    setSortConfig(current => {
+    setSortConfig((current: SortConfig | null) => {
       if (current?.key === columnKey) {
         return current.direction === 'asc' 
           ? { key: columnKey, direction: 'desc' }

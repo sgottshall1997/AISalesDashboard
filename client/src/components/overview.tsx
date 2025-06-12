@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Task } from "@shared/schema";
+import { KPICard } from "@/components/dashboard/kpi-card";
+import { DataTable } from "@/components/compound/data-table";
 
 interface DashboardStats {
   outstandingInvoices: number;
@@ -223,93 +225,39 @@ export default function Overview() {
   return (
     <div className="py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        {/* Stats Overview */}
+        {/* Enhanced KPI Dashboard */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <DollarSign className="h-6 w-6 text-primary" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Outstanding Invoices</dt>
-                    <dd className="text-2xl font-semibold text-gray-900">
-                      ${stats?.outstandingInvoices?.toLocaleString() || '0'}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-3 text-sm">
-                <span className="text-destructive font-medium">{stats?.overdueCount || 0} overdue</span>
-                <span className="text-gray-600"> invoices</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Users className="h-6 w-6 text-secondary" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Active Leads</dt>
-                    <dd className="text-2xl font-semibold text-gray-900">{stats?.activeLeads || 0}</dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-3 text-sm">
-                <span className="text-green-600 font-medium">5 hot</span>
-                <span className="text-gray-600"> prospects</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <CheckSquare className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Open Tasks</dt>
-                    <dd className="text-2xl font-semibold text-gray-900">
-                      {openTasks.length}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-3 text-sm">
-                <span className="text-blue-600 font-medium">
-                  {highPriorityTasks.length} high priority
-                </span>
-                <span className="text-gray-600"> tasks</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="h-6 w-6 text-amber-500" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">At-Risk Renewals</dt>
-                    <dd className="text-2xl font-semibold text-gray-900">{stats?.atRiskRenewals || 0}</dd>
-                  </dl>
-                </div>
-              </div>
-              <div className="mt-3 text-sm">
-                <span className="text-amber-600 font-medium">2 urgent</span>
-                <span className="text-gray-600"> actions needed</span>
-              </div>
-            </CardContent>
-          </Card>
+          <KPICard
+            title="Outstanding Invoices"
+            value={`$${stats?.outstandingInvoices?.toLocaleString() || '0'}`}
+            icon={DollarSign}
+            trend={{ value: stats?.overdueCount || 0, label: "overdue", type: "negative" }}
+            color="primary"
+          />
+          
+          <KPICard
+            title="Active Leads"
+            value={stats?.activeLeads?.toString() || '0'}
+            icon={Users}
+            trend={{ value: 5, label: "hot prospects", type: "positive" }}
+            color="secondary"
+          />
+          
+          <KPICard
+            title="Open Tasks"
+            value={openTasks.length.toString()}
+            icon={CheckSquare}
+            trend={{ value: highPriorityTasks.length, label: "high priority", type: "neutral" }}
+            color="blue"
+          />
+          
+          <KPICard
+            title="At-Risk Renewals"
+            value={stats?.atRiskRenewals?.toString() || '0'}
+            icon={AlertTriangle}
+            trend={{ value: 2, label: "urgent actions", type: "negative" }}
+            color="amber"
+          />
         </div>
 
         {/* Critical Business Actions */}

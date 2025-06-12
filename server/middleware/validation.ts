@@ -210,7 +210,7 @@ export function validationErrorHandler(
       errors: err.errors.map(error => ({
         field: error.path.join('.'),
         message: error.message,
-        received: error.received
+        code: error.code
       }))
     });
   }
