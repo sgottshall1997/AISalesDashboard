@@ -169,17 +169,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createClient(insertClient: InsertClient): Promise<Client> {
+    // Properly handle array fields for PostgreSQL
+    const sanitizedClient = { 
+      ...insertClient,
+      interest_tags: insertClient.interest_tags ? insertClient.interest_tags as string[] : null
+    };
+    
     const [client] = await db
       .insert(clients)
-      .values([insertClient])
+      .values([sanitizedClient])
       .returning();
     return client;
   }
 
   async updateClient(id: number, updates: Partial<InsertClient>): Promise<Client | undefined> {
+    // Handle array fields properly for Drizzle
+    const sanitizedUpdates = { ...updates };
+    if (sanitizedUpdates.interest_tags && Array.isArray(sanitizedUpdates.interest_tags)) {
+      sanitizedUpdates.interest_tags = sanitizedUpdates.interest_tags as string[];
+    }
+    
     const [client] = await db
       .update(clients)
-      .set(updates)
+      .set(sanitizedUpdates)
       .where(eq(clients.id, id))
       .returning();
     return client || undefined;
@@ -878,7 +890,7 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
   async createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent> {
     const [result] = await db
       .insert(ai_generated_content)
-      .values(content)
+      .values([content])
       .returning();
     return result;
   }
