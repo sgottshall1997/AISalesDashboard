@@ -9,6 +9,7 @@ import { Search, Target, Building2, Loader2, TrendingUp, FileText } from "lucide
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import Layout from "@/components/layout";
 
 interface MatchedReport {
   id: number;
@@ -132,8 +133,9 @@ export default function UnifiedProspectFundMatcher() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center mb-6">
+    <Layout>
+      <div className="space-y-6 p-6">
+        <div className="flex items-center mb-6">
         <Target className="w-6 h-6 mr-3 text-blue-600" />
         <h1 className="text-2xl font-bold text-gray-900">Prospect & Fund Research Matcher</h1>
       </div>
@@ -481,6 +483,7 @@ export default function UnifiedProspectFundMatcher() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }

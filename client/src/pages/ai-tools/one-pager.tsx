@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileEdit, Download, Copy, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import Layout from "@/components/layout";
 
 interface OnePagerResult {
   title: string;
@@ -122,8 +123,9 @@ ${onePager.conclusion}`;
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div>
+    <Layout>
+      <div className="space-y-6 p-6">
+        <div>
         <h1 className="text-3xl font-bold text-gray-900">One-Pager Generator</h1>
         <p className="text-gray-600 mt-2">
           Generate executive summaries and one-page reports from research content
@@ -278,6 +280,7 @@ ${onePager.conclusion}`;
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </Layout>
   );
 }
