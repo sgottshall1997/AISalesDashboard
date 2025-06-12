@@ -44,7 +44,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   ];
 
   const aiTools = [
-    { id: "content", name: "Content Summarizer", icon: TrendingUp, path: "/" },
+    { id: "content", name: "Content Summarizer", icon: TrendingUp, path: "/?section=content" },
     { id: "call-preparation", name: "Call Preparation", icon: Phone, path: "/ai-tools/call-preparation" },
     { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb, path: "/ai-tools/campaign-suggestions" },
     { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target, path: "/ai-tools/unified-prospect-fund-matcher" },

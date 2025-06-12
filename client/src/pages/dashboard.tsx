@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/sidebar";
 import Overview from "@/components/overview";
 import InvoicingAssistant from "@/components/invoicing-assistant";
@@ -20,6 +20,15 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState("overview");
+
+  useEffect(() => {
+    // Check for section parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section) {
+      setActiveSection(section);
+    }
+  }, []);
   const { logout, isLoggingOut } = useAuth();
   const { toast } = useToast();
 
