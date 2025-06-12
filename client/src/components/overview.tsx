@@ -202,10 +202,7 @@ export default function Overview() {
     queryKey: ["/api/tasks"],
   });
 
-  // Debug logging for dashboard stats
-  console.log("Dashboard stats received:", stats);
-  console.log("Outstanding invoices value:", stats?.outstandingInvoices);
-  console.log("Outstanding invoices type:", typeof stats?.outstandingInvoices);
+
 
   const openTasks = tasks?.filter(task => task.status !== "completed") || [];
   const highPriorityTasks = tasks?.filter(task => task.status !== "completed" && task.priority === "high") || [];
@@ -235,10 +232,11 @@ export default function Overview() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
           <KPICard
             title="Outstanding Invoices"
-            value={`$${(stats?.outstandingInvoices ?? 0).toLocaleString()}`}
+            value={stats?.outstandingInvoices ?? 0}
             icon={DollarSign}
             trend={{ value: stats?.overdueCount || 0, label: "overdue", type: "negative" }}
             color="primary"
+            format="currency"
           />
           
           <KPICard
