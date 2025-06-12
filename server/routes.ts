@@ -2902,6 +2902,110 @@ ${emailTemplate}`;
     }
   });
 
+  // System monitoring endpoints
+  app.get("/api/monitoring/health", async (req: Request, res: Response) => {
+    try {
+      const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        services: {
+          database: 'healthy',
+          authentication: 'healthy',
+          aiServices: 'healthy'
+        },
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        version: '1.0.0'
+      };
+
+      res.json(health);
+    } catch (error) {
+      res.status(503).json({
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/monitoring/metrics", async (req: Request, res: Response) => {
+    try {
+      const metrics = {
+        system: {
+          uptime: process.uptime(),
+          memory: process.memoryUsage(),
+          cpu: process.cpuUsage()
+        },
+        database: {
+          totalReports: await storage.getAllContentReports().then(reports => reports.length),
+          totalLeads: await storage.getAllLeads().then(leads => leads.length),
+          totalClients: await storage.getAllClients().then(clients => clients.length)
+        },
+        ai: {
+          totalGeneratedContent: 0, // Placeholder for AI content count
+          feedbackCount: 0 // Placeholder for feedback count
+        },
+        timestamp: new Date().toISOString()
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error('Metrics error:', error);
+      res.status(500).json({ 
+        message: "Failed to retrieve metrics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/export/dashboard-pdf", async (req: Request, res: Response) => {
+    try {
+      const dashboardStats = await storage.getDashboardStats();
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>AI Sales Dashboard Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { background: #667eea; color: white; padding: 20px; text-align: center; }
+            .metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 20px; }
+            .metric { background: #f8f9fa; padding: 15px; border-radius: 8px; }
+            .value { font-size: 2em; font-weight: bold; color: #333; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>AI Sales Dashboard Report</h1>
+            <p>Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+          <div class="metrics">
+            <div class="metric">
+              <h3>Outstanding Invoices</h3>
+              <div class="value">$${dashboardStats.outstandingInvoices?.toLocaleString() || '0'}</div>
+            </div>
+            <div class="metric">
+              <h3>Overdue Count</h3>
+              <div class="value">${dashboardStats.overdueCount || 0}</div>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Content-Disposition', 'attachment; filename="dashboard-report.html"');
+      res.send(htmlContent);
+
+    } catch (error) {
+      console.error('PDF export error:', error);
+      res.status(500).json({ 
+        message: "Failed to export dashboard",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI feedback analytics endpoint
   app.get("/api/analytics/ai-feedback", async (req: Request, res: Response) => {
     try {

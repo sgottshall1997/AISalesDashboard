@@ -97,22 +97,12 @@ export class JobQueueService {
         const aiContent = await this.storage.createAiGeneratedContent({
           content_type: 'email',
           original_prompt: `Generate email for ${recipientName} at ${recipientCompany}`,
-          generated_content: email.content,
-          metadata: {
-            subject: email.subject,
+          generated_content: typeof email === 'string' ? email : JSON.stringify(email),
+          context_data: {
             tone,
             templateType,
             leadId
           }
-        });
-
-        // Create email history record
-        await this.storage.createLeadEmailHistory({
-          lead_id: leadId,
-          subject: email.subject,
-          content: email.content,
-          sent_at: new Date(),
-          email_type: 'prospecting'
         });
 
         return { success: true, emailId: aiContent.id, email };
