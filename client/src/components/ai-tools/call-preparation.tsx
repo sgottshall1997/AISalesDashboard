@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { AiFeedback } from "@/components/ai-feedback";
 import { Phone, User, Building, Building2, TrendingUp, MessageCircle, HelpCircle, Loader2 } from "lucide-react";
 
 interface TalkingPoint {

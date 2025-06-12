@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { AiFeedback } from "@/components/ai-feedback";
 import { Lightbulb, TrendingUp, Users, RefreshCw, Mail, Copy, CheckCircle } from "lucide-react";
 
 interface ContentSuggestion {
@@ -24,6 +25,7 @@ export function CampaignSuggestions() {
   const [generatedEmail, setGeneratedEmail] = useState<string>("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [generatingFor, setGeneratingFor] = useState<string | null>(null);
+  const [emailContentId, setEmailContentId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const { data: suggestions, isLoading, refetch } = useQuery<ContentSuggestion[]>({
@@ -46,6 +48,7 @@ export function CampaignSuggestions() {
     },
     onSuccess: (data) => {
       setGeneratedEmail(data.email);
+      setEmailContentId(data.contentId || null);
       setEmailDialogOpen(true);
       setGeneratingFor(null);
       toast({
@@ -273,11 +276,13 @@ export function CampaignSuggestions() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
-                {generatedEmail}
-              </pre>
-            </div>
+            <AiFeedback contentId={emailContentId || undefined}>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono leading-relaxed">
+                  {generatedEmail}
+                </pre>
+              </div>
+            </AiFeedback>
             <div className="flex justify-end space-x-2">
               <Button
                 variant="outline"
