@@ -2734,59 +2734,27 @@ Provide a JSON response with actionable prospecting insights:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Use the provided 13D Research email template structure
-      const emailTemplate = `Hi ____________ – I hope you're doing well.
+      // Generate professional 13D Research style email
+      const keyPointsText = suggestion.keyPoints?.map((point: string) => `  - ${point}`).join('\n  ') || 
+        '  - Significant long-term growth potential\n  - Early-stage adoption creating competitive advantages\n  - Multiple expansion opportunity as theme gains recognition';
+
+      let generatedEmail = `Hi ____________ – I hope you're doing well.
  
 As the broader markets remain volatile and increasingly narrow in leadership, 13D Research continues to help investors navigate with clarity. Our highest-conviction themes - rooted in secular shifts we have been closely monitoring - are now outperforming dramatically. Our Highest Conviction Ideas portfolio is up 19.6% YTD, outpacing the S&P 500 by over 20%. We believe these shifts are still in the early innings.
  
 Below are some of the most compelling insights we've recently shared with clients, along with key investment implications:
 
-[CONTENT_SECTION]
+• **${suggestion.title}**: ${suggestion.description || 'A critical secular shift presenting significant opportunity'}
+  
+  ${suggestion.emailAngle || 'This theme represents a fundamental transformation in market dynamics'}
+  
+  Key investment implications:
+${keyPointsText}
 
 If you are interested in learning more about what we are closely monitoring and how we are allocating across these themes, I'd be happy to set up a call to discuss.
  
 Best,
 Spencer`;
-
-      const campaignPrompt = `You are generating a professional investment research email using the 13D Research style template. 
-
-CONTEXT:
-- Theme: ${suggestion.title}
-- Description: ${suggestion.description}
-- Email Angle: ${suggestion.emailAngle}
-- Key Points: ${suggestion.keyPoints?.join(', ') || 'N/A'}
-- Supporting Reports: ${suggestion.supportingReports?.join(', ') || 'N/A'}
-
-INSTRUCTIONS:
-1. Use the provided email template structure exactly
-2. Replace [CONTENT_SECTION] with a compelling section about the theme: "${suggestion.title}"
-3. Structure the content section like the examples (Gold's Historic Breakout, Grid Infrastructure, etc.)
-4. Include specific investment implications and performance metrics where relevant
-5. Keep the professional, confident tone consistent with 13D Research style
-6. Make it compelling for sophisticated investors
-7. Keep the opening and closing paragraphs exactly as provided in the template
-
-Generate the complete email following this structure:
-
-${emailTemplate}`;
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are a professional investment research writer for 13D Research, known for identifying secular market shifts and high-conviction investment themes."
-          },
-          {
-            role: "user",
-            content: campaignPrompt
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.3
-      });
-
-      let generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
 
       // Add report sources and article numbers at the bottom
       if (suggestion.supportingReports && suggestion.supportingReports.length > 0) {
