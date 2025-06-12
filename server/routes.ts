@@ -508,6 +508,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Export One-Pager as PDF
+  app.post("/api/export-one-pager-pdf", async (req: Request, res: Response) => {
+    try {
+      const { content, title } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: "Content is required for PDF export" });
+      }
+
+      const pdf = require('html-pdf-node');
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>${title || 'One-Pager Export'}</title>
+          <style>
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              margin: 40px; 
+              line-height: 1.6; 
+              color: #333; 
+            }
+            h1 { color: #1e40af; margin-bottom: 20px; }
+            h2 { color: #3b82f6; margin-top: 30px; margin-bottom: 15px; }
+            h3 { color: #6366f1; margin-top: 20px; margin-bottom: 10px; }
+            .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px; }
+            .section { margin-bottom: 25px; }
+            .highlight { background-color: #f0f9ff; padding: 15px; border-left: 4px solid #3b82f6; margin: 15px 0; }
+            ul { padding-left: 20px; }
+            li { margin-bottom: 5px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${title || 'Investment One-Pager'}</h1>
+            <p>Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+          <div class="content">
+            ${content}
+          </div>
+          <div class="footer">
+            <p>Confidential - For Investment Purposes Only</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      const options = {
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20mm', bottom: '20mm', left: '20mm', right: '20mm' }
+      };
+
+      const file = { content: htmlContent };
+      const pdfBuffer = await pdf.generatePdf(file, options);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${title || 'one-pager'}.pdf"`);
+      res.send(pdfBuffer);
+
+    } catch (error) {
+      console.error('PDF export error:', error);
+      res.status(500).json({ error: "Failed to generate PDF export" });
+    }
+  });
+
   // AI Q&A endpoint
   app.post("/api/ask-reports", async (req: Request, res: Response) => {
     try {
