@@ -116,6 +116,7 @@ export interface IStorage {
 
   // AI Feedback Loop
   createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent>;
+  saveAIContent(content: { type: string; content: string; metadata?: any }): Promise<AiGeneratedContent>;
   createAiContentFeedback(feedback: InsertAiContentFeedback): Promise<AiContentFeedback>;
   getAiGeneratedContentWithFeedback(contentId: number): Promise<(AiGeneratedContent & { feedback: AiContentFeedback[] }) | undefined>;
   getAiFeedbackAnalytics(): Promise<{

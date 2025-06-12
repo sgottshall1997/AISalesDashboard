@@ -1286,6 +1286,19 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         callPrepContent = callPrepContent.replace(/[\*#]+/g, '');
         
         const callPrepResult = JSON.parse(callPrepContent);
+        
+        // Save generated content to get contentId for feedback
+        try {
+          const savedContent = await storage.saveAIContent({
+            type: 'call_preparation',
+            content: JSON.stringify(callPrepResult),
+            metadata: { prospectName, firmName, title }
+          });
+          callPrepResult.contentId = savedContent.id;
+        } catch (saveError) {
+          console.warn("Failed to save call prep content for feedback:", saveError);
+        }
+        
         res.json(callPrepResult);
         
       } catch (apiError) {
@@ -1340,6 +1353,18 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
             `Given your focus on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'institutional investing'}, are there any specific ${firmName ? `${firmName}` : 'firm'} initiatives or portfolio themes you're exploring for the next 6-12 months?`
           ]
         };
+
+        // Save generated content to get contentId for feedback
+        try {
+          const savedContent = await storage.saveAIContent({
+            type: 'call_preparation',
+            content: JSON.stringify(callPrepResult),
+            metadata: { prospectName, firmName, title }
+          });
+          callPrepResult.contentId = savedContent.id;
+        } catch (saveError) {
+          console.warn("Failed to save call prep content for feedback:", saveError);
+        }
 
         res.json(callPrepResult);
       }
