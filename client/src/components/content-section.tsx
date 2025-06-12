@@ -47,30 +47,19 @@ export default function ContentSection() {
       }, 500);
 
       try {
-        const response = await fetch('/api/ai/generate-theme-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            theme: suggestion.title,
-            emailAngle: suggestion.emailAngle,
-            description: suggestion.description,
-            keyPoints: suggestion.keyPoints,
-            supportingReports: suggestion.supportingReports
-          })
+        const response = await apiRequest('/api/ai/generate-theme-email', 'POST', {
+          theme: suggestion.title,
+          emailAngle: suggestion.emailAngle,
+          description: suggestion.description,
+          keyPoints: suggestion.keyPoints,
+          supportingReports: suggestion.supportingReports
         });
         
         clearInterval(progressInterval);
         setLoadingProgress(100);
         setEstimatedTime(0);
         
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to generate email');
-        }
-        
-        return response.json();
+        return response;
       } catch (error) {
         clearInterval(progressInterval);
         setLoadingProgress(0);
