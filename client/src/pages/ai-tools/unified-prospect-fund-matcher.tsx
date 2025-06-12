@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/page-header";
 import { Search, Target, Building2, Loader2, TrendingUp, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -132,13 +133,13 @@ export default function UnifiedProspectFundMatcher() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center mb-6">
-        <Target className="w-6 h-6 mr-3 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Prospect & Fund Research Matcher</h1>
-      </div>
-
-      <Card className="max-w-6xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <PageHeader 
+        title="Prospect & Fund Research Matcher"
+        subtitle="Match prospects and funds against your research database"
+      />
+      <div className="space-y-6 p-6">
+        <Card className="max-w-6xl">
         <CardHeader>
           <CardTitle className="flex items-center">
             <Search className="w-5 h-5 mr-2" />
@@ -481,6 +482,7 @@ export default function UnifiedProspectFundMatcher() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
