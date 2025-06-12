@@ -6,6 +6,7 @@ import { MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { AiFeedback } from "@/components/ai-feedback";
 import Layout from "@/components/layout";
 
 interface QAResponse {
@@ -17,6 +18,7 @@ interface QAResponse {
 export default function AIQnA() {
   const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<QAResponse | null>(null);
+  const [qaContentId, setQaContentId] = useState<number | null>(null);
   const { toast } = useToast();
 
   const questionMutation = useMutation({
@@ -26,6 +28,7 @@ export default function AIQnA() {
     },
     onSuccess: (data) => {
       setResponse(data);
+      setQaContentId(data.contentId || null);
       toast({
         title: "Answer Generated",
         description: "AI has analyzed the report corpus and provided insights",
@@ -136,34 +139,36 @@ export default function AIQnA() {
           {/* Response Area */}
           {response ? (
             <div className="mt-8 space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h3 className="font-medium text-green-900 mb-3">AI Response:</h3>
-                <div className="text-gray-800 whitespace-pre-wrap leading-relaxed">
-                  {response.answer}
-                </div>
-                
-                {response.sourceReports && response.sourceReports.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <h4 className="font-medium text-green-900 mb-2">Source Reports:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {response.sourceReports.map((report, idx) => (
-                        <span
-                          key={idx}
-                          className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
-                        >
-                          {report}
-                        </span>
-                      ))}
+              <AiFeedback contentId={qaContentId || undefined}>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-medium text-green-900 mb-3">AI Response:</h3>
+                  <div className="text-gray-800 whitespace-pre-wrap leading-relaxed">
+                    {response.answer}
+                  </div>
+                  
+                  {response.sourceReports && response.sourceReports.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-green-200">
+                      <h4 className="font-medium text-green-900 mb-2">Source Reports:</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {response.sourceReports.map((report, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                          >
+                            {report}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {response.confidence && (
-                  <div className="mt-3 text-xs text-green-700">
-                    Confidence: {response.confidence}%
-                  </div>
-                )}
-              </div>
+                  {response.confidence && (
+                    <div className="mt-3 text-xs text-green-700">
+                      Confidence: {response.confidence}%
+                    </div>
+                  )}
+                </div>
+              </AiFeedback>
             </div>
           ) : (
             <div className="mt-8 min-h-[200px] border-2 border-dashed border-gray-200 rounded-lg flex items-center justify-center">

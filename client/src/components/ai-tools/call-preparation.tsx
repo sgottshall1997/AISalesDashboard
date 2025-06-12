@@ -228,15 +228,15 @@ export function CallPreparation() {
             <AiFeedback contentId={callPrepContentId || undefined}>
               <div className="space-y-6">
                 {/* Prospect Snapshot */}
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Building className="w-4 h-4 mr-2 text-blue-600" />
-                <h3 className="font-semibold">Prospect Snapshot</h3>
-              </div>
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm">{callPrepResult.prospectSnapshot}</p>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <Building className="w-4 h-4 mr-2 text-blue-600" />
+                    <h3 className="font-semibold">Prospect Snapshot</h3>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm">{callPrepResult.prospectSnapshot}</p>
+                  </div>
+                </div>
 
             {/* Personal Background */}
             {callPrepResult.personalBackground && (
