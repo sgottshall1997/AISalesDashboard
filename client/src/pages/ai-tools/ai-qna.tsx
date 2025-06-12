@@ -77,7 +77,7 @@ export default function AIQnA() {
       <div className="space-y-6">
         <div className="flex items-center mb-6">
           <MessageSquare className="w-6 h-6 mr-3 text-blue-600" />
-          <h1 className="text-2xl font-bold text-gray-900">AI Q&A on WILTW/WATMTU Corpus</h1>
+          <h1 className="text-2xl font-bold text-gray-900">13D AI Chatbot</h1>
         </div>
 
         <Card className="max-w-4xl">

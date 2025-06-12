@@ -70,7 +70,7 @@ export default function Layout({ children }: LayoutProps) {
     { id: "call-preparation", name: "Call Preparation", icon: Phone, path: "/ai-tools/call-preparation" },
     { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb, path: "/ai-tools/campaign-suggestions" },
     { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target, path: "/ai-tools/unified-prospect-fund-matcher" },
-    { id: "ai-qna", name: "AI Q&A", icon: MessageCircle, path: "/ai-tools/ai-qna" },
+    { id: "ai-qna", name: "13D AI Chatbot", icon: MessageCircle, path: "/ai-tools/ai-qna" },
     { id: "one-pager", name: "One-Pager Gen", icon: FileEdit, path: "/ai-tools/one-pager" },
   ];
 
