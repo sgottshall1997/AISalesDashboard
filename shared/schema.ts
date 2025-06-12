@@ -299,6 +299,35 @@ export type InsertReportSummary = z.infer<typeof insertReportSummarySchema>;
 
 export type User = typeof users.$inferSelect;
 
+// Analytics tables for comprehensive event tracking
+export const analyticsEvents = pgTable("analytics_events", {
+  id: serial("id").primaryKey(),
+  eventName: varchar("event_name", { length: 255 }).notNull(),
+  userId: varchar("user_id", { length: 255 }),
+  sessionId: varchar("session_id", { length: 255 }),
+  properties: jsonb("properties"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const emailReports = pgTable("email_reports", {
+  id: serial("id").primaryKey(),
+  recipient: varchar("recipient", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  status: varchar("status", { length: 50 }).default("pending"), // pending, sent, failed
+  sentAt: timestamp("sent_at"),
+  reportType: varchar("report_type", { length: 100 }).notNull(), // weekly, daily, custom
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type InsertAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+export type EmailReportRecord = typeof emailReports.$inferSelect;
+export type InsertEmailReportRecord = typeof emailReports.$inferInsert;
+
 // Insert schemas for authentication
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,

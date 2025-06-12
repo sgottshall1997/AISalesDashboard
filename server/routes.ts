@@ -3042,7 +3042,7 @@ ${emailTemplate}`;
         lead.stage || '',
         lead.likelihood_of_closing || '',
         lead.engagement_level || '',
-        lead.last_contact_date?.toISOString().split('T')[0] || '',
+        lead.last_contact?.toISOString().split('T')[0] || '',
         lead.created_at?.toISOString().split('T')[0] || '',
         (lead.notes || '').replace(/"/g, '""') // Escape quotes
       ]);

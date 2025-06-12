@@ -155,13 +155,46 @@ export class EmailService {
 
   // Schedule weekly reports
   async scheduleWeeklyReports(): Promise<void> {
-    // This would integrate with a cron job or scheduler
-    console.log('Weekly report scheduling configured');
+    const cron = await import('node-cron');
     
-    // Example implementation with node-cron:
-    // cron.schedule('0 9 * * 1', async () => {
-    //   const report = await this.generateWeeklySummary();
-    //   await this.sendEmail(report);
-    // });
+    // Schedule weekly reports for Monday at 9 AM
+    cron.schedule('0 9 * * 1', async () => {
+      try {
+        console.log('Generating weekly sales intelligence report...');
+        const report = await this.generateWeeklySummary();
+        const success = await this.sendEmail(report);
+        
+        if (success) {
+          console.log('Weekly report sent successfully');
+        } else {
+          console.error('Failed to send weekly report');
+        }
+      } catch (error) {
+        console.error('Weekly report generation failed:', error);
+      }
+    }, {
+      scheduled: true,
+      timezone: "America/New_York"
+    });
+
+    // Schedule daily digest for Monday-Friday at 8 AM
+    cron.schedule('0 8 * * 1-5', async () => {
+      try {
+        const dashboardStats = await this.storage.getDashboardStats();
+        const leads = await this.storage.getAllLeads();
+        
+        const highPriorityLeads = leads
+          .filter(lead => parseFloat(lead.likelihood_of_closing || '0') > 70)
+          .length;
+
+        if (highPriorityLeads > 0) {
+          console.log(`Daily digest: ${highPriorityLeads} high-priority leads require attention`);
+        }
+      } catch (error) {
+        console.error('Daily digest failed:', error);
+      }
+    });
+
+    console.log('Email scheduling configured: Weekly reports (Mon 9AM), Daily digest (Mon-Fri 8AM)');
   }
 }
