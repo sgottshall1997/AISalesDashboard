@@ -75,7 +75,7 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
       
       // Parse the AI response and structure it
       const structuredData = parseAIResponse(data.content);
-      setOnePagerData({
+      const newData: OnePagerData = {
         title: structuredData.title || "Investment One-Pager",
         executiveSummary: structuredData.executiveSummary || "",
         keyInsights: structuredData.keyInsights || [],
@@ -85,7 +85,8 @@ export function EnhancedOnePageTrader({ reports = [], prospectData, className = 
         recommendations: structuredData.recommendations || [],
         sourceReports: reports.slice(0, 5).map(r => r.title || "Research Report"),
         generatedDate: new Date()
-      });
+      };
+      setOnePagerData(newData);
       setOnePagerContentId(data.contentId || null);
 
       // Save to content library
