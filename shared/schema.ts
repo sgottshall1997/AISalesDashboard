@@ -1,12 +1,25 @@
-import { pgTable, text, serial, integer, boolean, timestamp, decimal, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, decimal, json, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { z } from "zod";
 
+// Session storage table for authentication
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// Simple user table for authentication
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
 });
 
 export const clients = pgTable("clients", {
@@ -285,6 +298,18 @@ export type ReportSummary = typeof report_summaries.$inferSelect;
 export type InsertReportSummary = z.infer<typeof insertReportSummarySchema>;
 
 export type User = typeof users.$inferSelect;
+
+// Insert schemas for authentication
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  created_at: true,
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "Username is required"),
+  password: z.string().min(1, "Password is required"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 
 // Relations
@@ -315,10 +340,7 @@ export const clientEngagementsRelations = relations(client_engagements, ({ one }
   }),
 }));
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+
 
 // AI Feedback Loop Tables
 export const ai_generated_content = pgTable("ai_generated_content", {
