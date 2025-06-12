@@ -1,11 +1,17 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
   title: string;
   value: string | number;
+  icon?: LucideIcon;
+  trend?: {
+    value: number;
+    label: string;
+    type: 'positive' | 'negative' | 'neutral';
+  };
   change?: {
     value: number;
     type: 'increase' | 'decrease' | 'neutral';
@@ -14,16 +20,20 @@ interface KPICardProps {
   format?: 'currency' | 'percentage' | 'number';
   subtitle?: string;
   status?: 'success' | 'warning' | 'danger' | 'neutral';
+  color?: string;
   className?: string;
 }
 
 export function KPICard({
   title,
   value,
+  icon: Icon,
+  trend,
   change,
   format = 'number',
   subtitle,
   status = 'neutral',
+  color = 'primary',
   className
 }: KPICardProps) {
   const formatValue = (val: string | number) => {
@@ -83,10 +93,31 @@ export function KPICard({
     }
   };
 
+  const getColorClasses = () => {
+    switch (color) {
+      case 'primary': return 'text-blue-600';
+      case 'secondary': return 'text-purple-600';
+      case 'blue': return 'text-blue-600';
+      case 'amber': return 'text-amber-600';
+      default: return 'text-blue-600';
+    }
+  };
+
+  const getTrendVariant = (type: string) => {
+    switch (type) {
+      case 'positive': return 'default';
+      case 'negative': return 'destructive';
+      default: return 'secondary';
+    }
+  };
+
   return (
     <Card className={cn("p-6 space-y-3", className)}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        <div className="flex items-center gap-2">
+          {Icon && <Icon className={cn("h-5 w-5", getColorClasses())} />}
+          <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        </div>
         {status !== 'neutral' && (
           <Badge 
             variant={
@@ -108,6 +139,16 @@ export function KPICard({
         )}
       </div>
 
+      {/* New trend prop support */}
+      {trend && (
+        <div className="flex items-center gap-2">
+          <Badge variant={getTrendVariant(trend.type)} className="text-xs">
+            {trend.value} {trend.label}
+          </Badge>
+        </div>
+      )}
+
+      {/* Legacy change prop support */}
       {change && (
         <div className="flex items-center gap-2">
           {getTrendIcon()}
