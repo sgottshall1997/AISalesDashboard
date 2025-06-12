@@ -130,6 +130,8 @@ Supporting Reports: ${(supportingReports || []).join(', ')}`;
         }
       ],
       temperature: 0.7,
+      max_tokens: 500,
+      timeout: 30000, // 30 second timeout
     });
 
     const rawContent = response.choices[0].message.content || "Failed to generate email";

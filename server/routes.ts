@@ -2316,12 +2316,17 @@ Focus on extracting actionable intelligence for investment decision-making.`;
     try {
       const { clientId } = req.body;
       
-      // Get all reports from database for comprehensive analysis
-      const allReports = await storage.getAllContentReports();
+      // Get parsed summaries instead of full reports to avoid timeout
+      const allSummaries = await storage.getAllReportSummaries();
+      const recentSummaries = allSummaries
+        .filter(summary => summary.parsed_summary && summary.report)
+        .sort((a, b) => new Date(b.report.published_date).getTime() - new Date(a.report.published_date).getTime())
+        .slice(0, 15); // Limit to 15 most recent with parsed summaries
+      
       const client = clientId ? await storage.getClient(clientId) : null;
       
-      if (allReports.length === 0) {
-        return res.status(400).json({ error: "No reports available for analysis" });
+      if (recentSummaries.length === 0) {
+        return res.status(400).json({ error: "No parsed report summaries available for analysis" });
       }
 
       // Check if OpenAI API key is available
@@ -2331,33 +2336,38 @@ Focus on extracting actionable intelligence for investment decision-making.`;
         });
       }
 
-      // Compile intelligence from reports
-      const reportIntelligence = allReports.map(report => ({
-        title: report.title,
-        summary: report.content_summary || 'Investment research report',
-        sectors: report.tags || [],
-        published: report.published_date
+      // Compile intelligence from parsed summaries (much more efficient)
+      const reportIntelligence = recentSummaries.map(summary => ({
+        title: summary.report.title,
+        summary: summary.parsed_summary.substring(0, 500), // Use parsed summary, limited length
+        sectors: (summary.report.tags || []).slice(0, 3),
+        published: summary.report.published_date,
+        type: summary.report.type
       }));
 
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const openai = new OpenAI({ 
+        apiKey: process.env.OPENAI_API_KEY
+      });
       
-      const prospectingPrompt = `You are an expert investment advisor. Generate prospecting insights based on ${reportIntelligence.length} research reports.
+      const prospectingPrompt = `You are an expert investment advisor analyzing 13D Research reports. Generate prospecting insights based on ${reportIntelligence.length} recent parsed report summaries.
 
-Reports available:
-${reportIntelligence.map((report, i) => `${i+1}. ${report.title} (${report.sectors.join(', ')})`).join('\n')}
+Recent Reports with Parsed Analysis:
+${reportIntelligence.slice(0, 8).map((report, i) => 
+  `${i+1}. ${report.title} (${report.type}) - ${report.sectors.join(', ')}\n   Summary: ${report.summary.substring(0, 150)}...`
+).join('\n\n')}
 
 ${client ? `
 Target Client: ${client.name} at ${client.company}
 Interest Areas: ${client.interest_tags?.join(', ') || 'General investing'}
 ` : ''}
 
-Provide a JSON response with actionable prospecting insights:
+Based on these 13D Research insights, provide a JSON response with actionable prospecting intelligence:
 {
-  "topOpportunities": ["3-4 specific market opportunities"],
-  "talkingPoints": ["4-5 conversation starters"],
-  "marketThemes": ["3-4 key investment themes"],
-  "nextSteps": ["2-3 recommended actions"],
-  "reportReferences": ["Key reports to mention"]
+  "topOpportunities": ["3-4 specific investment opportunities from the reports"],
+  "talkingPoints": ["4-5 conversation starters based on recent analysis"],
+  "marketThemes": ["3-4 key investment themes from reports"],
+  "nextSteps": ["2-3 recommended actions for client engagement"],
+  "reportReferences": ["Specific reports to mention in conversations"]
 }`;
 
       const analysisResponse = await openai.chat.completions.create({
@@ -2365,14 +2375,14 @@ Provide a JSON response with actionable prospecting insights:
         messages: [
           {
             role: "system",
-            content: "You are an expert investment advisor and client relationship manager."
+            content: "You are a 13D Research investment advisor specializing in extracting actionable insights from WILTW and WATMTU report analysis for client prospecting."
           },
           {
             role: "user",
             content: prospectingPrompt
           }
         ],
-        max_tokens: 1500,
+        max_tokens: 1200,
         temperature: 0.3,
         response_format: { type: "json_object" }
       });
