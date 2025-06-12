@@ -264,15 +264,15 @@ export default function Overview() {
           />
         </div>
 
+        {/* Critical Business Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <SeverelyOverdueInvoices />
+          <OpenTasks />
+        </div>
+
         {/* Analytics Insights Section */}
         <div className="mb-8">
           <AnalyticsInsights />
-        </div>
-
-        {/* Critical Business Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <SeverelyOverdueInvoices />
-          <OpenTasks />
         </div>
       </div>
     </div>
