@@ -1305,7 +1305,7 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         console.log("OpenAI API unavailable, falling back to structured response");
         
         // Generate structured response based on input data for demonstration
-        const callPrepResult = {
+        const callPrepResult: any = {
           prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} focused on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'diversified investment opportunities'}.`,
           
           personalBackground: `${prospectName} serves as ${title || 'investment professional'} at ${firmName || 'their firm'}. ${title && title.toLowerCase().includes('senior') ? 'Senior leadership role with' : 'Professional with'} extensive experience in institutional investment management. ${firmName ? `Current tenure at ${firmName} involves` : 'Background includes'} portfolio management, investment strategy, and client relationship oversight. Educational background likely includes finance, economics, or related field from top-tier institution.`,
@@ -2109,6 +2109,34 @@ Focus on extracting actionable intelligence for investment decision-making.`;
       console.error("Batch processing error:", error);
       res.status(500).json({
         message: "Failed to batch process reports",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // AI Content Feedback endpoint
+  app.post("/api/ai/content/:contentId/feedback", async (req: Request, res: Response) => {
+    try {
+      const { contentId } = req.params;
+      const { rating, improvement_suggestion, edited_version, feedback_type = 'rating' } = req.body;
+
+      if (!contentId || !rating) {
+        return res.status(400).json({ error: "Content ID and rating are required" });
+      }
+
+      const feedback = await storage.createAiContentFeedback({
+        content_id: parseInt(contentId),
+        rating,
+        improvement_suggestion: improvement_suggestion || null,
+        edited_version: edited_version || null,
+        feedback_type
+      });
+
+      res.json({ message: "Feedback submitted successfully", feedback });
+    } catch (error) {
+      console.error("Feedback submission error:", error);
+      res.status(500).json({ 
+        message: "Failed to submit feedback",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }

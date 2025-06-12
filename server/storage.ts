@@ -996,6 +996,20 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
       feedbackByType
     };
   }
+
+  async saveAIContent(content: { type: string; content: string; metadata?: any }): Promise<AiGeneratedContent> {
+    const [savedContent] = await db
+      .insert(ai_generated_content)
+      .values({
+        content_type: content.type,
+        original_prompt: content.metadata?.prompt || 'Call preparation request',
+        generated_content: content.content,
+        theme_id: content.metadata?.theme_id || null,
+        context_data: content.metadata || null
+      })
+      .returning();
+    return savedContent;
+  }
 }
 
 export const storage = new DatabaseStorage();
