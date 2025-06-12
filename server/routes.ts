@@ -580,27 +580,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Q&A endpoint
   app.post("/api/ask-reports", async (req: Request, res: Response) => {
     try {
-      const { question } = req.body;
+      const { question, selectedReportIds } = req.body;
       
       if (!question) {
         return res.status(400).json({ error: "Question is required" });
       }
 
-      const answer = `Based on our research analysis, here are the key insights regarding "${question}":
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI Q&A functionality." 
+        });
+      }
 
-Our latest reports indicate several important trends in this area. Market dynamics are evolving rapidly, with institutional investors showing increased interest in quality growth opportunities. 
+      console.log("Processing Q&A request with OpenAI integration...");
 
-Key considerations include:
-- Regulatory environment impacts on sector performance
-- Technology adoption driving operational efficiency
-- ESG factors influencing investment decisions
-- Geopolitical risks affecting global market exposure
+      // Get recent reports and summaries
+      const allReports = await storage.getAllContentReports();
+      const recentReports = allReports
+        .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
+        .slice(0, 10);
 
-The current market environment presents both challenges and opportunities for long-term investors focused on fundamental value creation.`;
+      // Get report summaries for context
+      const reportContext = [];
+      for (const report of recentReports) {
+        try {
+          const summary = await storage.getReportSummary(report.id);
+          if (summary && summary.parsed_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: summary.parsed_summary.substring(0, 800),
+              type: report.type
+            });
+          } else if (report.content_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: report.content_summary.substring(0, 600),
+              type: report.type
+            });
+          }
+        } catch (err) {
+          // Skip if no summary available
+        }
+      }
 
-      res.json({ answer });
+      const contextText = reportContext.map(r => 
+        `${r.title} (${r.type}, ${new Date(r.date).toLocaleDateString()}): ${r.summary}`
+      ).join('\n\n');
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const systemPrompt = `You are a senior investment analyst at 13D Research, responding to client questions about WILTW and WATMTU reports. 
+
+Follow this structure exactly:
+
+1. Start with a direct, insight-driven answer to the user's question. Don't repeat or restate the question.
+2. Draw on specific themes or report insights (use real facts, numbers, citations if available).
+3. Use a clear, professional tone that reflects strategic, long-term investment thinking.
+4. Format output cleanly: bold headers, bullet points, paragraph breaks, and avoid AI filler.
+5. If the topic was not covered in the reports, say: "This topic was not covered in the latest 13D reports."
+
+Structure your response like this:
+
+---
+
+**Key Insight:**  
+[Direct takeaway or signal in 1–2 sentences.]
+
+**Supporting Highlights:**  
+- [Point 1 from a recent report: trend, stat, development]  
+- [Point 2: company move, geopolitical factor, valuation shift]  
+- [Point 3: any forecast, breakout, or contrarian insight]
+
+**13D Context:**  
+At 13D, we've tracked this theme since [X date or cycle]. We believe [insight on where the trend is heading or why it's underpriced by the market].
+
+**Sources:**  
+- WILTW_2025-06-05: [Brief description]  
+- WATMTU_2025-06-08: [Brief description]
+
+---
+
+Keep answers under 250 words. Be precise, grounded in the reports, and ready for a client-facing email.`;
+
+      const userPrompt = `Question: ${question}
+
+Recent 13D Report Context:
+${contextText}
+
+Provide a professional, client-ready response following the structured format.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        max_tokens: 400,
+        temperature: 0.3
+      });
+
+      let answer = response.choices[0].message.content || "Unable to generate response";
+      
+      // Clean up formatting
+      answer = answer.replace(/[\*#]+/g, '');
+      answer = answer.replace(/\n{3,}/g, '\n\n');
+
+      // Extract source reports mentioned
+      const sourceReports = reportContext
+        .filter(r => answer.toLowerCase().includes(r.title.toLowerCase().substring(0, 20)))
+        .map(r => r.title)
+        .slice(0, 3);
+
+      res.json({ 
+        answer,
+        sourceReports,
+        confidence: 85
+      });
+
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate AI response" });
+      console.error("Ask reports error:", error);
+      res.status(500).json({ 
+        error: "Failed to generate AI response",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
