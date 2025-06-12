@@ -473,12 +473,19 @@ export class DatabaseStorage implements IStorage {
       .from(clients)
       .where(eq(clients.risk_level, "high"));
 
+    // Ensure proper number conversion with fallbacks
+    const outstandingAmount = parseFloat(String(outstandingResult.sum)) || 0;
+    const overdueCount = parseInt(String(overdueResult.count)) || 0;
+    const activeLeads = parseInt(String(activeLeadsResult.count)) || 0;
+    const avgEngagement = parseFloat(String(avgEngagementResult.avg)) || 0;
+    const atRiskRenewals = parseInt(String(atRiskResult.count)) || 0;
+
     return {
-      outstandingInvoices: Number(outstandingResult.sum) || 0,
-      overdueCount: Number(overdueResult.count) || 0,
-      activeLeads: Number(activeLeadsResult.count) || 0,
-      avgEngagement: Number(avgEngagementResult.avg) || 0,
-      atRiskRenewals: Number(atRiskResult.count) || 0
+      outstandingInvoices: outstandingAmount,
+      overdueCount: overdueCount,
+      activeLeads: activeLeads,
+      avgEngagement: Math.round(avgEngagement * 100) / 100,
+      atRiskRenewals: atRiskRenewals
     };
   }
 

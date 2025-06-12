@@ -202,6 +202,11 @@ export default function Overview() {
     queryKey: ["/api/tasks"],
   });
 
+  // Debug logging for dashboard stats
+  console.log("Dashboard stats received:", stats);
+  console.log("Outstanding invoices value:", stats?.outstandingInvoices);
+  console.log("Outstanding invoices type:", typeof stats?.outstandingInvoices);
+
   const openTasks = tasks?.filter(task => task.status !== "completed") || [];
   const highPriorityTasks = tasks?.filter(task => task.status !== "completed" && task.priority === "high") || [];
 
