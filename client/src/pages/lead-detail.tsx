@@ -208,7 +208,7 @@ export default function LeadDetail() {
         contentReports: contentReports.slice(0, 5),
         selectedReportIds,
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       if (data) {
