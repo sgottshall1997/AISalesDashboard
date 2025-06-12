@@ -1171,8 +1171,8 @@ Provide a professional, data-driven response using the authentic 13D research co
         prospectName, 
         title = "", 
         firmName = "", 
-        interests = [], 
-        portfolioHoldings = [], 
+        interests = "", 
+        portfolioHoldings = "", 
         investmentStyle = "",
         pastInteractions = "",
         notes = ""
@@ -1241,8 +1241,8 @@ Use the following data to generate your output:
 - Name: ${prospectName}
 - Title: ${title}
 - Firm: ${firmName}
-- Interests: ${interests.join(", ")}
-- Holdings: ${portfolioHoldings.join(", ")}
+- Interests: ${interests}
+- Holdings: ${portfolioHoldings}
 - Style: ${investmentStyle}
 - Notes: ${notes}
 - Past Interactions: ${pastInteractions}
