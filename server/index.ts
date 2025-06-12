@@ -6,7 +6,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool } from "./db";
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { securityHeaders, rateLimit } from './middleware/validation';
+import { securityHeaders, apiRateLimit, sanitizeInputs, limitRequestSize } from './middleware/validation';
 
 const app = express();
 
@@ -16,12 +16,10 @@ app.set('trust proxy', 1);
 // Apply security headers early
 app.use(securityHeaders);
 
-// Rate limiting for API routes
-app.use('/api/', rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many API requests from this IP, please try again later.'
-}));
+// Input sanitization and rate limiting
+app.use(sanitizeInputs);
+app.use(limitRequestSize('10mb'));
+app.use('/api/', apiRateLimit);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));

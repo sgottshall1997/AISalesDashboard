@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ErrorBoundary, DashboardErrorBoundary, AIContentErrorBoundary } from "@/components/error-boundary";
 import { PageLoadingFallback } from "@/components/loading-fallback";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NotificationCenter } from "@/components/notifications";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 
@@ -125,6 +126,7 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <Toaster />
+          <NotificationCenter />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
