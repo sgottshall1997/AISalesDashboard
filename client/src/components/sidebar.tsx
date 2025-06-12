@@ -37,7 +37,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
   const navigation = [
     { id: "overview", name: "Overview", icon: BarChart3 },
     { id: "invoicing", name: "Invoicing Assistant", icon: FileText },
-    { id: "content", name: "Content Distribution", icon: TrendingUp },
+    { id: "content", name: "Content Summarizer", icon: TrendingUp },
     { id: "pipeline", name: "Lead Pipeline", icon: Users },
     { id: "followup", name: "Task Tracker", icon: CheckSquare },
     { id: "upload", name: "CSV Upload", icon: Upload },
