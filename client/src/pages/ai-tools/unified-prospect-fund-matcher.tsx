@@ -136,9 +136,9 @@ export default function UnifiedProspectFundMatcher() {
     <Layout>
       <div className="space-y-6 p-6">
         <div className="flex items-center mb-6">
-        <Target className="w-6 h-6 mr-3 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">Prospect & Fund Research Matcher</h1>
-      </div>
+          <Target className="w-6 h-6 mr-3 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900">Prospect & Fund Research Matcher</h1>
+        </div>
 
       <Card className="max-w-6xl">
         <CardHeader>
