@@ -56,6 +56,7 @@ export function CallPreparation() {
     },
     onSuccess: (data) => {
       setCallPrepResult(data);
+      setCallPrepContentId(data.contentId || null);
       toast({
         title: "Call Prep Generated",
         description: "AI-powered call preparation notes ready for your meeting.",
@@ -224,7 +225,9 @@ export function CallPreparation() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Prospect Snapshot */}
+            <AiFeedback contentId={callPrepContentId || undefined}>
+              <div className="space-y-6">
+                {/* Prospect Snapshot */}
             <div className="space-y-2">
               <div className="flex items-center">
                 <Building className="w-4 h-4 mr-2 text-blue-600" />
@@ -384,6 +387,8 @@ export function CallPreparation() {
                 Copy All Notes
               </Button>
             </div>
+              </div>
+            </AiFeedback>
           </CardContent>
         </Card>
       )}
