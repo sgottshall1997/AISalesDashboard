@@ -44,7 +44,7 @@ export function CampaignSuggestions() {
         suggestion: suggestion,
         emailStyle: "13d_research_style" // Matches the provided example
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data) => {
       setGeneratedEmail(data.email);
@@ -57,10 +57,11 @@ export function CampaignSuggestions() {
       });
     },
     onError: (error) => {
+      console.error("Campaign email generation error:", error);
       setGeneratingFor(null);
       toast({
         title: "Error",
-        description: "Failed to generate email. Please try again.",
+        description: `Failed to generate email: ${error.message}`,
         variant: "destructive",
       });
     },
