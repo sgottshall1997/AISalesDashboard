@@ -159,7 +159,7 @@ export default function ProspectMatchmaker() {
                         </p>
                       </div>
 
-                      {match.relevantThemes.length > 0 && (
+                      {match.relevantThemes && match.relevantThemes.length > 0 && (
                         <div>
                           <h5 className="font-medium text-gray-900 mb-2">Relevant Themes</h5>
                           <div className="flex flex-wrap gap-2">
@@ -175,7 +175,7 @@ export default function ProspectMatchmaker() {
                         </div>
                       )}
 
-                      {match.suggestedTalkingPoints.length > 0 && (
+                      {match.suggestedTalkingPoints && match.suggestedTalkingPoints.length > 0 && (
                         <div>
                           <h5 className="font-medium text-gray-900 mb-2">Suggested Talking Points</h5>
                           <ul className="text-sm text-gray-700 space-y-1">
