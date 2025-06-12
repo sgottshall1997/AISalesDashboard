@@ -44,6 +44,7 @@ export interface IStorage {
 
   // Content Reports
   getAllContentReports(): Promise<ContentReport[]>;
+  getContentReport(id: number): Promise<ContentReport | undefined>;
   getRecentReports(limit?: number): Promise<ContentReport[]>;
   createContentReport(report: InsertContentReport): Promise<ContentReport>;
   deleteContentReport(id: number): Promise<boolean>;

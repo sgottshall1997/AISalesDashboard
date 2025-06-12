@@ -1623,8 +1623,36 @@ CRITICAL:
         });
       }
 
-      // Use provided reports or get recent ones
-      const reportsToUse = reports || contentReports || await storage.getRecentReports(5);
+      // Get structured analysis (parsed summaries) for selected reports
+      let selectedReportSummaries = [];
+      if (selectedReportIds && selectedReportIds.length > 0) {
+        for (const reportId of selectedReportIds) {
+          const summary = await storage.getReportSummary(reportId);
+          if (summary && summary.parsed_summary) {
+            const report = await storage.getContentReport(reportId);
+            selectedReportSummaries.push({
+              title: report?.title || 'Report',
+              structuredAnalysis: summary.parsed_summary,
+              reportType: report?.type || 'Research'
+            });
+          }
+        }
+      }
+
+      // If no reports selected, use recent reports with their summaries
+      if (selectedReportSummaries.length === 0) {
+        const recentReports = await storage.getRecentReports(3);
+        for (const report of recentReports) {
+          const summary = await storage.getReportSummary(report.id);
+          if (summary && summary.parsed_summary) {
+            selectedReportSummaries.push({
+              title: report.title,
+              structuredAnalysis: summary.parsed_summary.substring(0, 1000), // Truncate for context
+              reportType: report.type || 'Research'
+            });
+          }
+        }
+      }
       
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -1634,14 +1662,14 @@ Generate a professional but casual email based on:
 - Lead: ${leadData.name} at ${leadData.company || 'their organization'}
 - Interest Areas: ${leadData.interest_tags?.join(', ') || 'general investing'}
 
-Recent research context:
-${reportsToUse.slice(0, 3).map((report: any) => 
-  `- ${report.title}: ${report.content_summary || report.summary || 'Market analysis'}`
-).join('\n')}
+Research insights from structured analysis:
+${selectedReportSummaries.map((item: any) => 
+  `- ${item.title} (${item.reportType}): ${item.structuredAnalysis.substring(0, 300)}...`
+).join('\n\n')}
 
 Write a concise, personalized email (under 200 words) that:
 1. Opens with a friendly greeting
-2. References relevant research insights
+2. References specific insights from the structured analysis
 3. Connects to their potential interests
 4. Ends with a soft call to action
 
