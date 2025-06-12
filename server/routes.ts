@@ -1656,46 +1656,84 @@ CRITICAL:
       
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const emailPrompt = `You are an expert institutional sales professional writing personalized emails for 13D Research clients.
+      const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
 
-Generate a professional but casual email based on:
-- Lead: ${leadData.name} at ${leadData.company || 'their organization'}
-- Interest Areas: ${leadData.interest_tags?.join(', ') || 'general investing'}
+TEMPLATE TO FOLLOW EXACTLY:
+Hi ${leadData.name},
 
-Research insights from structured analysis:
+Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 1)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 2)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 3)
+
+These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
+
+On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
+
+I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
+
+Best,
+Spencer
+
+DATA TO USE FROM STRUCTURED ANALYSIS:
 ${selectedReportSummaries.map((item: any) => 
-  `- ${item.title} (${item.reportType}): ${item.structuredAnalysis.substring(0, 300)}...`
+  `${item.title} (${item.reportType}): ${item.structuredAnalysis.substring(0, 500)}...`
 ).join('\n\n')}
 
-Write a concise, personalized email (under 200 words) that:
-1. Opens with a friendly greeting
-2. References specific insights from the structured analysis
-3. Connects to their potential interests
-4. Ends with a soft call to action
-
-Keep the tone professional but approachable, similar to a colleague sharing insights.`;
+CRITICAL: 
+- Use bullet points (•) NOT paragraphs
+- Make each bullet detailed with specific data/percentages/ratios from the structured analysis
+- Include market implications and context in each bullet
+- Each bullet must reference (Article 1), (Article 2), (Article 3)
+- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
+- Keep conversational tone, avoid formal business language
+- Maximum 275 words`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are an expert investment professional writing personalized outreach emails."
+            content: "You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 300,
-        temperature: 0.7
+        max_tokens: 400,
+        temperature: 0.1
       });
 
       let emailSuggestion = response.choices[0].message.content || "";
       
-      // Clean up AI artifacts and formal language
-      emailSuggestion = emailSuggestion.replace(/As an AI[^.]*\./gi, '');
-      emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nTeam');
+      // Remove all * and # symbols from output
+      emailSuggestion = emailSuggestion.replace(/[\*#]+/g, '');
+      
+      // Aggressively strip any subject lines
+      emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*Subject:.*$/gm, '');
+      
+      // Strip formal opening paragraphs
+      emailSuggestion = emailSuggestion.replace(/^.*I hope this message finds you well\..*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*Given your.*interest.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/^.*I wanted to follow up.*$/gm, '');
+      
+      // Strip formal closing paragraphs
+      emailSuggestion = emailSuggestion.replace(/I would be delighted.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Looking forward.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Would you be available.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Please let me know.*convenient.*$/gm, '');
+      emailSuggestion = emailSuggestion.replace(/Could we schedule.*$/gm, '');
+      
+      // Strip formal signatures
+      emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
+      emailSuggestion = emailSuggestion.replace(/13D Research$/, '');
+      
+      // Clean up multiple newlines
       emailSuggestion = emailSuggestion.replace(/\n{3,}/g, '\n\n').trim();
 
       res.json({ 
