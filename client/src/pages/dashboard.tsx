@@ -9,8 +9,7 @@ import CsvUpload from "@/components/csv-upload";
 import About from "@/pages/about";
 import { CallPreparation } from "@/components/ai-tools/call-preparation";
 import CampaignSuggestions from "@/pages/ai-tools/campaign-suggestions";
-import ThemeTracker from "@/pages/ai-tools/theme-tracker";
-import PortfolioScorer from "@/pages/ai-tools/portfolio-scorer";
+
 import AIQnA from "@/pages/ai-tools/ai-qna";
 import OnePager from "@/pages/ai-tools/one-pager";
 import UnifiedProspectFundMatcher from "@/pages/ai-tools/unified-prospect-fund-matcher";
@@ -56,12 +55,10 @@ export default function Dashboard() {
         return <CallPreparation />;
       case "campaign-suggestions":
         return <CampaignSuggestions />;
-      case "theme-tracker":
-        return <ThemeTracker />;
+
       case "prospect-fund-matcher":
         return <UnifiedProspectFundMatcher />;
-      case "portfolio-scorer":
-        return <PortfolioScorer />;
+
       case "ai-qna":
         return <AIQnA />;
       case "one-pager":

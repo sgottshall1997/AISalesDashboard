@@ -68,20 +68,7 @@ export default function About() {
       benefit: "Increase meeting success rates by 60% with perfectly tailored presentations and talking points.",
       features: ["Interest-based matching", "Personalized recommendations", "Conversation starters", "Investment alignment scoring"]
     },
-    {
-      icon: <BarChart3 className="w-6 h-6 text-orange-600" />,
-      title: "Portfolio Relevance Scorer",
-      description: "Analyzes how research themes align with client portfolios and investment preferences. Provides relevance scores and actionable recommendations for client discussions.",
-      benefit: "Prioritize outreach efforts and focus on highest-potential opportunities first.",
-      features: ["Relevance scoring", "Portfolio analysis", "Priority rankings", "Opportunity identification"]
-    },
-    {
-      icon: <TrendingUp className="w-6 h-6 text-red-600" />,
-      title: "Theme Tracker",
-      description: "Monitors investment themes over time, tracking frequency, evolution, and market sentiment. Identifies when themes are gaining momentum or reaching peak interest.",
-      benefit: "Stay ahead of market trends and position clients before opportunities become mainstream.",
-      features: ["Trend analysis", "Timeline tracking", "Momentum indicators", "Historical comparisons"]
-    },
+
     {
       icon: <FileText className="w-6 h-6 text-indigo-600" />,
       title: "One-Pager Generator",
