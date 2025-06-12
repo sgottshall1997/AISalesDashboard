@@ -40,7 +40,7 @@ export function CampaignSuggestions() {
 
   const generateEmailMutation = useMutation({
     mutationFn: async (suggestion: ContentSuggestion) => {
-      const response = await apiRequest("POST", "/api/ai/generate-campaign-email", {
+      const response = await apiRequest("/api/ai/generate-campaign-email", "POST", {
         suggestion: suggestion,
         emailStyle: "13d_research_style" // Matches the provided example
       });
