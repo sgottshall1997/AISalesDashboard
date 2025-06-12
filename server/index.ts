@@ -7,6 +7,11 @@ import { setupVite, serveStatic, log } from "./vite";
 import { pool } from "./db";
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { securityHeaders, apiRateLimit, sanitizeInputs, limitRequestSize } from './middleware/validation';
+import { createWebSocketService } from "./services/websocket-service";
+import { JobQueueService } from "./services/job-queue";
+import { cacheService } from "./services/cache-service";
+import { monitoringService } from "./services/monitoring-service";
+import { DatabaseStorage } from "./storage";
 
 const app = express();
 
@@ -78,6 +83,19 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize enterprise services
+  const storage = new DatabaseStorage();
+  const websocketService = createWebSocketService(server, storage);
+  const jobQueueService = new JobQueueService(storage);
+  
+  // Warm cache on startup
+  try {
+    await cacheService.warmCache();
+    log("Enterprise services initialized: WebSocket, job queues, caching, monitoring");
+  } catch (error) {
+    log("Warning: Some enterprise services may be unavailable (Redis required)");
+  }
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
