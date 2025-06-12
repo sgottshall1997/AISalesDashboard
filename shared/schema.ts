@@ -141,6 +141,17 @@ export const tasks = pgTable("tasks", {
   completed_at: timestamp("completed_at"),
 });
 
+// AI Feedback Loop table for learning from user preferences
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id"), // Nullable since we don't have user auth yet
+  content_type: text("content_type").notNull(), // e.g. 'one_pager', 'qna', 'summary_email'
+  content_id: text("content_id"), // Optional reference to specific content
+  rating: boolean("rating").notNull(), // true for thumbs-up, false for thumbs-down
+  comment: text("comment"), // Optional user comment
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 // Insert schemas
 export const insertClientSchema = createInsertSchema(clients).omit({
   id: true,
@@ -211,6 +222,11 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   completed_at: true,
 });
 
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  created_at: true,
+});
+
 // Types
 export type Client = typeof clients.$inferSelect;
 export type InsertClient = z.infer<typeof insertClientSchema>;
@@ -238,6 +254,9 @@ export type InsertLeadEmailHistory = z.infer<typeof insertLeadEmailHistorySchema
 
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
+
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;
 
 export const report_summaries = pgTable("report_summaries", {
   id: serial("id").primaryKey(),
