@@ -113,6 +113,27 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
                   const Icon = tool.icon;
                   const isActive = activeSection === tool.id;
                   
+                  // Handle Content Summarizer specially - it should change section instead of navigate
+                  if (tool.id === "content") {
+                    return (
+                      <button
+                        key={tool.id}
+                        onClick={() => {
+                          onSectionChange("content");
+                          setMobileOpen(false);
+                        }}
+                        className={`${
+                          isActive
+                            ? 'bg-primary text-white'
+                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full ml-4`}
+                      >
+                        <Icon className="mr-3 flex-shrink-0 h-4 w-4" />
+                        {tool.name}
+                      </button>
+                    );
+                  }
+                  
                   return (
                     <Link key={tool.id} href={tool.path}>
                       <button

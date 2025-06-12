@@ -27,6 +27,8 @@ export default function Dashboard() {
     const section = urlParams.get('section');
     if (section) {
       setActiveSection(section);
+      // Clean up URL without causing reload
+      window.history.replaceState({}, '', '/');
     }
   }, []);
   const { logout, isLoggingOut } = useAuth();

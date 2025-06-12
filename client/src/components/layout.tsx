@@ -136,6 +136,29 @@ export default function Layout({ children }: LayoutProps) {
                   const Icon = tool.icon;
                   const isActive = location === tool.path;
                   
+                  // Handle Content Summarizer specially - navigate to dashboard with section parameter
+                  if (tool.id === "content") {
+                    return (
+                      <Link key={tool.id} href="/?section=content">
+                        <button
+                          className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full text-left ${
+                            location === "/" 
+                              ? "bg-primary text-white"
+                              : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                          }`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <Icon
+                            className={`mr-3 flex-shrink-0 h-4 w-4 ${
+                              location === "/" ? "text-white" : "text-gray-400 group-hover:text-gray-500"
+                            }`}
+                          />
+                          {tool.name}
+                        </button>
+                      </Link>
+                    );
+                  }
+                  
                   return (
                     <Link key={tool.id} href={tool.path}>
                       <button
