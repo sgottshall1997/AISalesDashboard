@@ -14,6 +14,7 @@ import PortfolioScorer from "@/pages/ai-tools/portfolio-scorer";
 import AIQnA from "@/pages/ai-tools/ai-qna";
 import OnePager from "@/pages/ai-tools/one-pager";
 import UnifiedProspectFundMatcher from "@/pages/ai-tools/unified-prospect-fund-matcher";
+import { PageHeader } from "@/components/page-header";
 import { Bell, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";

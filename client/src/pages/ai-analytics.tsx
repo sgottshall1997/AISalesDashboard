@@ -225,7 +225,6 @@ export function AIAnalytics() {
           </div>
         </CardContent>
       </Card>
-        </div>
       </div>
     </div>
   );
