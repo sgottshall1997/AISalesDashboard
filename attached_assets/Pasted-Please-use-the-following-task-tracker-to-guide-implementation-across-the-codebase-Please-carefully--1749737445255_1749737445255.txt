@@ -1,0 +1,49 @@
+Please use the following task tracker to guide implementation across the codebase. Please carefully read through the attached guide “Technical Audit & Enhancement Plan for AI”
+
+Important note: Do not modify or refactor the current authentication system.
+
+Your job is to use this checklist as a master task list to upgrade the app into a scalable, enterprise-ready financial SaaS platform. Please implement each item carefully, and report any blockers.
+________________________________________
+✅ Full Action Item List for Replit
+🧩 UI/UX
+1.	Install and configure shadcn/ui and Radix UI components.
+2.	Define design tokens in Tailwind theme for colors, spacing, and fonts.
+3.	Refactor existing UI components to use standardized shadcn/Radix counterparts.
+4.	Ensure responsive layout using Tailwind’s responsive utilities.
+5.	Perform accessibility audit and testing using tools like axe.
+6.	Review and standardize visual hierarchy and spacing across all screens.
+🛠️ Code Architecture & Modularity
+7.	Refactor shared UI logic using Compound Component pattern.
+8.	Migrate global state management to Zustand.
+9.	Introduce React error boundaries using react-error-boundary.
+10.	Implement route-based code splitting with React.lazy and Suspense.
+11.	Modularize Express backend into feature-specific routes and services.
+12.	Analyze and reduce frontend bundle size using vite-bundle-analyzer.
+🤖 AI Integration & UX
+13.	Label all AI-generated content clearly in the UI with a badge or disclaimer.
+14.	Add inline “Generate Summary” or “Key Takeaways” GPT-4 actions next to reports.
+15.	Implement thumbs up/down AI feedback system (optional text input).
+16.	Cache GPT-4 responses (e.g., summaries) in Redis with invalidation logic.
+17.	Gracefully handle timeouts, rate limits, and GPT-4 failures (use exponential backoff).
+18.	Enable history/version tracking for regenerated AI summaries.
+🗃️ Data Architecture & Performance
+19.	Add tsvector full-text search index to parsed report content.
+20.	Create GIN index and PostgreSQL trigger to keep search index updated.
+21.	Use Redis to cache AI outputs and frequently used endpoints.
+22.	Set up WebSockets (e.g., via Socket.IO) for real-time UI updates.
+23.	Implement background job handling (BullMQ or Trigger.dev) for heavy tasks.
+24.	Optimize SQL queries and apply proper pagination/indexes.
+📊 Analytics & Reporting
+25.	Redesign dashboard to focus on top 5–10 KPIs with clear visuals.
+26.	Use GPT-4 to provide contextual insights under key metrics.
+27.	Add AI-powered lead scoring model (start rule-based or GPT-generated).
+28.	Integrate product analytics (e.g., PostHog or Mixpanel).
+29.	Enable CSV and PDF export for tables and charts (consider Puppeteer).
+30.	Add scheduled report emails (weekly summary, PDF attachments).
+🧾 Documentation
+31.	Rewrite GitHub README/About section with clear, institutional-grade descriptions of features (no hype).
+🔐 Security
+32.	Sanitize inputs passed into AI prompts and query logic to prevent SQL and prompt injection.
+(⚠ Leave authentication system untouched.)
+📈 Monitoring
+33.	Log OpenAI API request status (success/failure/timeouts) and track cache hit/miss rates.
