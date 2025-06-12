@@ -700,36 +700,50 @@ Create a professional one-pager following the structured format exactly, using o
 
       console.log("Processing Q&A request with OpenAI integration...");
 
-      // Get recent reports and summaries
+      // Get ALL reports and their comprehensive summaries
       const allReports = await storage.getAllContentReports();
-      const recentReports = allReports
-        .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
-        .slice(0, 10);
+      console.log(`Found ${allReports.length} total reports for Q&A analysis`);
 
-      // Get report summaries for context
+      // Get comprehensive report summaries for context - prioritize WILTW and WATMTU
       const reportContext = [];
-      for (const report of recentReports) {
+      const priorityReports = allReports.filter(r => 
+        r.type === 'WILTW Report' || r.type === 'WATMTU Report'
+      ).sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime());
+
+      const otherReports = allReports.filter(r => 
+        r.type !== 'WILTW Report' && r.type !== 'WATMTU Report'
+      ).sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime());
+
+      // Process priority reports first, then others (up to 25 total for comprehensive coverage)
+      const reportsToProcess = [...priorityReports, ...otherReports].slice(0, 25);
+
+      for (const report of reportsToProcess) {
         try {
           const summary = await storage.getReportSummary(report.id);
           if (summary && summary.parsed_summary) {
+            // Use full parsed summary for comprehensive context
             reportContext.push({
               title: report.title,
               date: report.published_date,
-              summary: summary.parsed_summary.substring(0, 800),
-              type: report.type
+              summary: summary.parsed_summary,
+              type: report.type,
+              fullContent: report.full_content ? report.full_content.substring(0, 1500) : ''
             });
           } else if (report.content_summary) {
             reportContext.push({
               title: report.title,
               date: report.published_date,
-              summary: report.content_summary.substring(0, 600),
-              type: report.type
+              summary: report.content_summary,
+              type: report.type,
+              fullContent: report.full_content ? report.full_content.substring(0, 1200) : ''
             });
           }
         } catch (err) {
-          // Skip if no summary available
+          console.error(`Error getting summary for report ${report.id}:`, err);
         }
       }
+
+      console.log(`Processed ${reportContext.length} reports with summaries for Q&A context`);
 
       const contextText = reportContext.map(r => 
         `${r.title} (${r.type}, ${new Date(r.date).toLocaleDateString()}): ${r.summary}`
@@ -737,45 +751,46 @@ Create a professional one-pager following the structured format exactly, using o
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const systemPrompt = `You are a senior investment analyst at 13D Research, responding to client questions about WILTW and WATMTU reports. 
+      const systemPrompt = `You are a senior investment analyst at 13D Research with access to comprehensive WILTW and WATMTU report database. You MUST base responses ONLY on the provided report content.
 
-Follow this structure exactly:
+CRITICAL INSTRUCTIONS:
+1. You have access to ${reportContext.length} detailed report summaries with comprehensive investment analysis
+2. NEVER say "This topic was not covered" unless you have thoroughly searched through ALL provided content
+3. Extract specific insights, themes, and data points from the actual report summaries provided
+4. Reference specific reports by name and date when possible
+5. Focus on actionable investment insights from the authentic 13D research
 
-1. Start with a direct, insight-driven answer to the user's question. Don't repeat or restate the question.
-2. Draw on specific themes or report insights (use real facts, numbers, citations if available).
-3. Use a clear, professional tone that reflects strategic, long-term investment thinking.
-4. Format output cleanly: bold headers, bullet points, paragraph breaks, and avoid AI filler.
-5. If the topic was not covered in the reports, say: "This topic was not covered in the latest 13D reports."
-
-Structure your response like this:
-
----
+Structure your response:
 
 **Key Insight:**  
-[Direct takeaway or signal in 1–2 sentences.]
+[Direct answer based on the report content provided]
 
 **Supporting Highlights:**  
-- [Point 1 from a recent report: trend, stat, development]  
-- [Point 2: company move, geopolitical factor, valuation shift]  
-- [Point 3: any forecast, breakout, or contrarian insight]
+- [Specific point from report summaries with details]  
+- [Investment theme or trend from the data]  
+- [Market development or opportunity identified]
 
 **13D Context:**  
-At 13D, we've tracked this theme since [X date or cycle]. We believe [insight on where the trend is heading or why it's underpriced by the market].
+[Strategic perspective based on the report analysis patterns]
 
 **Sources:**  
-- WILTW_2025-06-05: [Brief description]  
-- WATMTU_2025-06-08: [Brief description]
+[List specific reports that informed this response]
 
----
-
-Keep answers under 250 words. Be precise, grounded in the reports, and ready for a client-facing email.`;
+You have access to detailed summaries from WILTW reports, WATMTU reports, and other research. Use this authentic content to provide substantive, data-driven responses. Keep under 300 words but ensure comprehensive coverage of relevant insights.`;
 
       const userPrompt = `Question: ${question}
 
-Recent 13D Report Context:
+COMPREHENSIVE 13D REPORT DATABASE (${reportContext.length} reports):
 ${contextText}
 
-Provide a professional, client-ready response following the structured format.`;
+INSTRUCTIONS: 
+- Search through ALL the provided report content above to find relevant insights
+- Use specific data points, themes, and analysis from the actual reports
+- Reference specific report names and dates when citing information
+- If the question relates to any investment theme covered in the reports, provide substantive analysis
+- Only say "not covered" if you genuinely cannot find ANY relevant information in the comprehensive database above
+
+Provide a professional, data-driven response using the authentic 13D research content provided.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
