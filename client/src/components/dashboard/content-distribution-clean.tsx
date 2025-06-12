@@ -78,7 +78,7 @@ export function ContentDistribution() {
 
   const { data: savedSummaries = [] } = useQuery({
     queryKey: ["/api/report-summaries"],
-    queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
+    queryFn: () => apiRequest("/api/report-summaries", "GET"),
   });
 
 
@@ -209,7 +209,7 @@ export function ContentDistribution() {
             const isWATMTU = report.title.includes("WATMTU") || reportType === "watmtu";
             const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
-            const parseResponse = await apiRequest("POST", "/api/ai/summarize-report", {
+            const parseResponse = await apiRequest("/api/ai/summarize-report", "POST", {
               reportId: report.id.toString(),
               title: report.title,
               promptType: promptType
@@ -281,7 +281,7 @@ export function ContentDistribution() {
         promptType: promptType
       });
 
-      const response = await apiRequest("POST", "/api/ai/summarize-report", {
+      const response = await apiRequest("/api/ai/summarize-report", "POST", {
         reportId: report.id.toString(),
         title: report.title,
         content: report.full_content || report.content_summary,
@@ -364,7 +364,7 @@ export function ContentDistribution() {
 
   const deleteReportMutation = useMutation({
     mutationFn: async (reportId: number) => {
-      const response = await apiRequest("DELETE", `/api/content-reports/${reportId}`);
+      const response = await apiRequest(`/api/content-reports/${reportId}`, "DELETE");
       return response.json();
     },
     onSuccess: () => {

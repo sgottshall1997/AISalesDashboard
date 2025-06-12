@@ -42,7 +42,7 @@ export function ContentDistribution() {
 
   const { data: reports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/content-reports"],
-    queryFn: () => apiRequest("GET", "/api/content-reports").then(res => res.json()),
+    queryFn: () => apiRequest("/api/content-reports", "GET"),
   });
 
   const { data: clients = [] } = useQuery({
@@ -54,7 +54,7 @@ export function ContentDistribution() {
 
   const { data: savedSummaries = [] } = useQuery({
     queryKey: ["/api/report-summaries"],
-    queryFn: () => apiRequest("GET", "/api/report-summaries").then(res => res.json()),
+    queryFn: () => apiRequest("/api/report-summaries", "GET"),
   });
 
 
@@ -196,7 +196,7 @@ export function ContentDistribution() {
         promptType: promptType
       });
 
-      const response = await apiRequest("POST", "/api/ai/summarize-report", {
+      const response = await apiRequest("/api/ai/summarize-report", "POST", {
         reportId: report.id.toString(),
         title: report.title,
         content: report.full_content || report.content_summary,
@@ -227,7 +227,7 @@ export function ContentDistribution() {
 
   const deleteReportMutation = useMutation({
     mutationFn: async (reportId: number) => {
-      const response = await apiRequest("DELETE", `/api/content-reports/${reportId}`);
+      const response = await apiRequest(`/api/content-reports/${reportId}`, "DELETE");
       return response.json();
     },
     onSuccess: () => {
