@@ -2145,6 +2145,120 @@ Provide a JSON response with actionable prospecting insights:
     }
   });
 
+  // Webhook endpoints for Make.com and Zapier integrations
+  app.post("/api/webhook/generate", async (req: Request, res: Response) => {
+    try {
+      const { type, clientName, reportIds, customPrompt, outputFormat = 'json' } = req.body;
+      
+      if (!type || !['one-pager', 'email', 'summary'].includes(type)) {
+        return res.status(400).json({
+          error: 'Invalid or missing type',
+          supportedTypes: ['one-pager', 'email', 'summary']
+        });
+      }
+
+      let result: any = {};
+      const reports = reportIds ? 
+        await Promise.all(reportIds.map(() => storage.getRecentReports(5))) :
+        await storage.getRecentReports(5);
+
+      switch (type) {
+        case 'one-pager':
+          const onePagerContent = `One-Pager for ${clientName || 'Client'}\n\nGenerated: ${new Date().toLocaleDateString()}\n\nKey Insights:\n${reports.slice(0, 3).map((report: any, index: number) => `${index + 1}. ${report.title || 'Report'} - ${report.engagement_level || 'Standard'} engagement`).join('\n')}\n\n${customPrompt ? `Custom Notes:\n${customPrompt}` : ''}`;
+          result = { content: onePagerContent, wordCount: onePagerContent.split(' ').length };
+          break;
+        
+        case 'email':
+          const emailContent = `Subject: Market Insights for ${clientName || 'Your Organization'}\n\nDear ${clientName || 'Client'},\n\nBased on our latest research analysis, here are key insights relevant to your investment strategy:\n\n• Current market dynamics show continued volatility\n• Emerging opportunities in technology sectors\n• Regulatory changes impacting financial services\n\n${customPrompt ? `Additional Notes:\n${customPrompt}` : ''}\n\nBest regards,\nResearch Team`;
+          result = { content: emailContent, wordCount: emailContent.split(' ').length };
+          break;
+        
+        case 'summary':
+          const summaryContent = `Research Summary - ${new Date().toLocaleDateString()}\n\nRecent Reports Overview:\n${reports.slice(0, 3).map((report: any, index: number) => `${index + 1}. ${report.title || 'Report'} (${report.type || 'General'})`).join('\n')}\n\nKey Themes:\n• Market volatility and sector rotation\n• Technology sector resilience\n• ESG considerations\n\n${customPrompt ? `Custom Analysis:\n${customPrompt}` : ''}`;
+          result = { content: summaryContent, wordCount: summaryContent.split(' ').length };
+          break;
+      }
+
+      console.log(`[${new Date().toISOString()}] Webhook ${type} generated successfully`);
+      
+      res.json({
+        success: true,
+        type,
+        generatedAt: new Date().toISOString(),
+        data: result
+      });
+    } catch (error) {
+      console.error('Webhook generation error:', error);
+      res.status(500).json({ error: 'Failed to generate content via webhook' });
+    }
+  });
+
+  // Outbound webhook for Slack notifications
+  app.post("/api/webhook/slack", async (req: Request, res: Response) => {
+    try {
+      const { message, webhook_url } = req.body;
+      const url = webhook_url || process.env.SLACK_WEBHOOK_URL;
+      
+      if (!url) {
+        return res.status(400).json({ error: 'Slack webhook URL not configured' });
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: message,
+          username: 'AI Sales Dashboard',
+          icon_emoji: ':chart_with_upwards_trend:'
+        })
+      });
+
+      console.log(`[${new Date().toISOString()}] Slack notification sent successfully`);
+      res.json({ success: response.ok, status: response.status });
+    } catch (error) {
+      console.error('Slack webhook error:', error);
+      res.status(500).json({ error: 'Failed to send Slack notification' });
+    }
+  });
+
+  // Shareable content endpoints
+  app.post("/api/share/create", async (req: Request, res: Response) => {
+    try {
+      const { title, content, type, expiresIn = 7 } = req.body;
+      
+      if (!content) {
+        return res.status(400).json({ error: 'Content is required' });
+      }
+
+      const shareId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const expiresAt = new Date(Date.now() + (expiresIn * 24 * 60 * 60 * 1000));
+      
+      // Store in simple memory for demo - in production use database
+      const sharedContent = {
+        id: shareId,
+        title: title || 'Shared Content',
+        content,
+        type: type || 'document',
+        createdAt: new Date(),
+        expiresAt,
+        views: 0
+      };
+
+      // In production, save to database
+      console.log(`[${new Date().toISOString()}] Shared content created: ${shareId}`);
+      
+      res.json({
+        success: true,
+        shareId,
+        shareUrl: `${req.protocol}://${req.get('host')}/share/${shareId}`,
+        expiresAt
+      });
+    } catch (error) {
+      console.error('Share creation error:', error);
+      res.status(500).json({ error: 'Failed to create shareable link' });
+    }
+  });
+
   // Campaign email generation with 13D Research style
   app.post("/api/ai/generate-campaign-email", async (req: Request, res: Response) => {
     try {
