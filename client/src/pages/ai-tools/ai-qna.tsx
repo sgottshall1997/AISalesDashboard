@@ -6,6 +6,7 @@ import { MessageSquare, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import Layout from "@/components/layout";
 
 interface QAResponse {
   answer: string;
@@ -69,13 +70,14 @@ export default function AIQnA() {
   ];
 
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center mb-6">
-        <MessageSquare className="w-6 h-6 mr-3 text-blue-600" />
-        <h1 className="text-2xl font-bold text-gray-900">AI Q&A on WILTW/WATMTU Corpus</h1>
-      </div>
+    <Layout>
+      <div className="space-y-6">
+        <div className="flex items-center mb-6">
+          <MessageSquare className="w-6 h-6 mr-3 text-blue-600" />
+          <h1 className="text-2xl font-bold text-gray-900">AI Q&A on WILTW/WATMTU Corpus</h1>
+        </div>
 
-      <Card className="max-w-4xl">
+        <Card className="max-w-4xl">
         <CardContent className="p-6">
           {/* Description */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
@@ -176,6 +178,7 @@ export default function AIQnA() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </Layout>
   );
 }
