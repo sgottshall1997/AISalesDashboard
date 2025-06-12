@@ -82,9 +82,21 @@ export default function InvoiceDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: invoice, isLoading } = useQuery<InvoiceWithClient>({
+  const { data: invoice, isLoading, error } = useQuery<InvoiceWithClient>({
     queryKey: [`/api/invoices/${invoiceId}`],
     enabled: !!invoiceId,
+    queryFn: async () => {
+      try {
+        console.log('Fetching invoice with ID:', invoiceId);
+        const response = await apiRequest("GET", `/api/invoices/${invoiceId}`);
+        const data = await response.json();
+        console.log('Invoice API response:', data);
+        return data;
+      } catch (err) {
+        console.error('Invoice fetch error:', err);
+        throw err;
+      }
+    },
   });
 
   const { data: emailHistory } = useQuery<EmailHistory[]>({
@@ -449,8 +461,16 @@ export default function InvoiceDetail() {
     return <div className="flex justify-center items-center h-64">Loading invoice details...</div>;
   }
 
-  if (!invoice || !invoice.client) {
+  // Debug logging
+  console.log('Invoice data:', invoice);
+  
+  if (!invoice) {
     return <div className="flex justify-center items-center h-64">Invoice not found</div>;
+  }
+  
+  if (!invoice.client) {
+    console.log('Invoice client missing:', invoice);
+    return <div className="flex justify-center items-center h-64">Client information not found</div>;
   }
 
   return (

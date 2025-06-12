@@ -331,6 +331,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const invoice = await storage.getInvoiceWithClient(id);
       
+      console.log('Invoice API response for ID', id, ':', JSON.stringify(invoice, null, 2));
+      
       if (invoice) {
         res.json(invoice);
       } else {
