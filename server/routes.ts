@@ -60,7 +60,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Dashboard stats
-  app.get("/api/dashboard/stats", async (req, res) => {
+  app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getDashboardStats();
       res.json(stats);
@@ -71,7 +71,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clients endpoints
-  app.get("/api/clients", async (req: Request, res: Response) => {
+  app.get("/api/clients", requireAuth, async (req: Request, res: Response) => {
     try {
       const allClients = await storage.getAllClients();
       res.json(allClients);
