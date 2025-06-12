@@ -22,7 +22,7 @@ export default function About() {
   const dashboardFeatures = [
     {
       icon: <Upload className="w-6 h-6" />,
-      title: "Content Distribution",
+      title: "Content Summarizer",
       description: "Upload and manage research reports (WILTW and WATMTU formats). Automatically parse PDF content and extract key insights for client engagement.",
       benefit: "Save 2-3 hours per week on manual report processing and content organization."
     },
@@ -48,40 +48,39 @@ export default function About() {
 
   const aiTools = [
     {
-      icon: <Lightbulb className="w-6 h-6 text-blue-600" />,
-      title: "Campaign Suggestions",
+      icon: <Users className="w-6 h-6 text-blue-600" />,
+      title: "Call Preparation",
+      description: "Generates comprehensive preparation materials for client calls including prospect analysis, talking points, and strategic conversation guides. Analyzes client background and interests to create personalized meeting agendas.",
+      benefit: "Reduce call preparation time from 45 minutes to 5 minutes while improving meeting outcomes and client satisfaction.",
+      features: ["Prospect analysis", "Talking points generation", "Background research", "Strategic conversation guides"]
+    },
+    {
+      icon: <Lightbulb className="w-6 h-6 text-green-600" />,
+      title: "Campaign Ideas",
       description: "AI analyzes your research reports to identify recurring themes, emerging trends, and cross-sector opportunities. Generates professional email campaigns matching 13D Research style with specific investment angles and supporting data.",
       benefit: "Create compelling client communications in minutes instead of hours. Increase email engagement rates by leveraging data-driven insights.",
       features: ["Theme identification", "Professional email generation", "Investment angle optimization", "Supporting report citations"]
     },
     {
-      icon: <MessageSquare className="w-6 h-6 text-green-600" />,
-      title: "Q&A Chatbot",
+      icon: <Target className="w-6 h-6 text-purple-600" />,
+      title: "Prospect & Fund Matcher",
+      description: "Matches prospects with relevant investment themes and fund strategies based on their profile and interests. Identifies the best talking points and investment opportunities for each client conversation.",
+      benefit: "Increase meeting success rates by 60% with perfectly tailored presentations and talking points.",
+      features: ["Interest-based matching", "Fund strategy alignment", "Personalized recommendations", "Investment scoring"]
+    },
+    {
+      icon: <MessageSquare className="w-6 h-6 text-indigo-600" />,
+      title: "AI Q&A",
       description: "Intelligent assistant that answers questions about your research content, client information, and market insights. Provides instant access to historical data and trends across all uploaded reports.",
       benefit: "Get immediate answers during client calls. Reduce research time from 20 minutes to 30 seconds per query.",
       features: ["Natural language queries", "Multi-document search", "Context-aware responses", "Real-time insights"]
     },
     {
-      icon: <Users className="w-6 h-6 text-purple-600" />,
-      title: "Prospect Matchmaker",
-      description: "Matches prospects with relevant investment themes based on their profile and interests. Identifies the best talking points and investment opportunities for each client conversation.",
-      benefit: "Increase meeting success rates by 60% with perfectly tailored presentations and talking points.",
-      features: ["Interest-based matching", "Personalized recommendations", "Conversation starters", "Investment alignment scoring"]
-    },
-
-    {
-      icon: <FileText className="w-6 h-6 text-indigo-600" />,
+      icon: <FileText className="w-6 h-6 text-pink-600" />,
       title: "One-Pager Generator",
       description: "Creates professional investment summaries and client-ready reports from research content. Automatically formats complex analysis into digestible, presentation-ready documents.",
       benefit: "Produce client presentations 10x faster while maintaining professional quality and consistency.",
       features: ["Automated formatting", "Executive summaries", "Key highlights extraction", "Professional templates"]
-    },
-    {
-      icon: <Target className="w-6 h-6 text-pink-600" />,
-      title: "Fund Mapping Tool",
-      description: "Maps investment themes to relevant fund strategies and portfolio allocations. Helps identify cross-selling opportunities and strategic investment recommendations.",
-      benefit: "Increase assets under management by identifying complementary investment opportunities.",
-      features: ["Strategy mapping", "Cross-selling identification", "Allocation recommendations", "Opportunity scoring"]
     }
   ];
 
