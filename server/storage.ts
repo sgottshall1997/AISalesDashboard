@@ -903,6 +903,130 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     return result;
   }
 
+  async getAiFeedbackStats(): Promise<{
+    total: number;
+    positive: number;
+    negative: number;
+    recent: AiContentFeedback[];
+  }> {
+    const all = await db.select().from(ai_content_feedback);
+    const positive = all.filter(f => f.rating === true).length;
+    const negative = all.filter(f => f.rating === false).length;
+    const recent = all
+      .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
+      .slice(0, 10);
+    
+    return {
+      total: all.length,
+      positive,
+      negative,
+      recent
+    };
+  }
+
+  async searchContentReports(params: {
+    query: string;
+    type?: string;
+    dateRange?: string;
+    engagementLevel?: string;
+    limit: number;
+  }): Promise<any[]> {
+    try {
+      let sqlQuery = `
+        SELECT 
+          cr.*,
+          ts_rank(search_vector, plainto_tsquery('english', $1)) as relevance_score,
+          ts_headline('english', 
+            COALESCE(cr.full_content, cr.summary, ''), 
+            plainto_tsquery('english', $1),
+            'MaxWords=20, MinWords=10'
+          ) as highlight
+        FROM content_reports cr
+        WHERE search_vector @@ plainto_tsquery('english', $1)
+      `;
+      
+      const queryParams: any[] = [params.query];
+      let paramIndex = 2;
+
+      if (params.type) {
+        sqlQuery += ` AND cr.type = $${paramIndex}`;
+        queryParams.push(params.type);
+        paramIndex++;
+      }
+
+      if (params.engagementLevel) {
+        sqlQuery += ` AND cr.engagement_level = $${paramIndex}`;
+        queryParams.push(params.engagementLevel);
+        paramIndex++;
+      }
+
+      if (params.dateRange) {
+        const days = parseInt(params.dateRange.replace('d', '')) || 30;
+        sqlQuery += ` AND cr.published_date >= NOW() - INTERVAL '${days} days'`;
+      }
+
+      sqlQuery += ` ORDER BY relevance_score DESC LIMIT $${paramIndex}`;
+      queryParams.push(params.limit);
+
+      const result = await this.pool.query(sqlQuery, queryParams);
+      
+      return result.rows.map(row => ({
+        ...row,
+        highlights: row.highlight ? [row.highlight] : [],
+        relevance_score: parseFloat(row.relevance_score || '0')
+      }));
+      
+    } catch (error) {
+      console.error('Full-text search error:', error);
+      return this.fallbackSearch(params);
+    }
+  }
+
+  private async fallbackSearch(params: {
+    query: string;
+    type?: string;
+    dateRange?: string;
+    engagementLevel?: string;
+    limit: number;
+  }): Promise<any[]> {
+    const searchTerm = `%${params.query.toLowerCase()}%`;
+    
+    let query = db.select().from(contentReports);
+    
+    query = query.where(
+      or(
+        ilike(contentReports.title, searchTerm),
+        ilike(contentReports.summary, searchTerm),
+        ilike(contentReports.fullContent, searchTerm)
+      )
+    );
+
+    if (params.type) {
+      query = query.where(eq(contentReports.type, params.type));
+    }
+
+    if (params.engagementLevel) {
+      query = query.where(eq(contentReports.engagementLevel, params.engagementLevel));
+    }
+
+    if (params.dateRange) {
+      const days = parseInt(params.dateRange.replace('d', '')) || 30;
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+      query = query.where(gte(contentReports.publishedDate, cutoffDate));
+    }
+
+    const results = await query
+      .orderBy(desc(contentReports.publishedDate))
+      .limit(params.limit);
+
+    return results.map(result => ({
+      ...result,
+      relevance_score: 0.5,
+      highlights: []
+    }));
+  }
+
   async getAiGeneratedContentWithFeedback(contentId: number): Promise<(AiGeneratedContent & { feedback: AiContentFeedback[] }) | undefined> {
     const content = await db
       .select()

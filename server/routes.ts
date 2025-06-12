@@ -2834,6 +2834,96 @@ ${emailTemplate}`;
     }
   });
 
+  // AI Feedback API endpoint
+  app.post("/api/feedback", async (req: Request, res: Response) => {
+    try {
+      const { content_type, content_id, rating, comment } = req.body;
+      
+      if (!content_type || !content_id || typeof rating !== 'boolean') {
+        return res.status(400).json({ 
+          message: "Missing required fields: content_type, content_id, rating" 
+        });
+      }
+
+      const feedback = await storage.createAiContentFeedback({
+        content_type,
+        content_id: content_id.toString(),
+        rating,
+        comment: comment || null,
+        user_id: "anonymous", // Could be enhanced with actual user tracking
+      });
+
+      res.json({ 
+        success: true, 
+        message: "Feedback recorded successfully",
+        feedback 
+      });
+      
+    } catch (error) {
+      console.error('AI feedback error:', error);
+      res.status(500).json({ 
+        message: "Failed to record feedback",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Advanced search endpoint with full-text search
+  app.get("/api/search/content", async (req: Request, res: Response) => {
+    try {
+      const { query, type, dateRange, engagementLevel, limit = 20 } = req.query;
+      
+      if (!query || (query as string).length < 3) {
+        return res.status(400).json({ 
+          message: "Search query must be at least 3 characters long" 
+        });
+      }
+
+      const searchResults = await storage.searchContentReports({
+        query: query as string,
+        type: type as string,
+        dateRange: dateRange as string,
+        engagementLevel: engagementLevel as string,
+        limit: parseInt(limit as string)
+      });
+
+      res.json({
+        results: searchResults,
+        query: query,
+        total: searchResults.length
+      });
+      
+    } catch (error) {
+      console.error('Search error:', error);
+      res.status(500).json({ 
+        message: "Search failed",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // AI feedback analytics endpoint
+  app.get("/api/analytics/ai-feedback", async (req: Request, res: Response) => {
+    try {
+      const feedbackStats = await storage.getAiFeedbackStats();
+      
+      res.json({
+        totalFeedback: feedbackStats.total,
+        positiveRating: feedbackStats.positive,
+        negativeRating: feedbackStats.negative,
+        positivePercentage: feedbackStats.total > 0 ? (feedbackStats.positive / feedbackStats.total) * 100 : 0,
+        recentFeedback: feedbackStats.recent || []
+      });
+      
+    } catch (error) {
+      console.error('AI feedback analytics error:', error);
+      res.status(500).json({ 
+        message: "Failed to get feedback analytics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
