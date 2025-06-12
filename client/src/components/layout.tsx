@@ -59,7 +59,6 @@ export default function Layout({ children }: LayoutProps) {
   const navigation = [
     { id: "/", name: "Overview", icon: BarChart3, path: "/" },
     { id: "invoicing", name: "Invoicing Assistant", icon: FileText, path: "/" },
-    { id: "content", name: "Content Distribution", icon: TrendingUp, path: "/" },
     { id: "pipeline", name: "Lead Pipeline", icon: Users, path: "/" },
     { id: "followup", name: "Task Tracker", icon: CheckSquare, path: "/" },
     { id: "upload", name: "CSV Upload", icon: Upload, path: "/" },
