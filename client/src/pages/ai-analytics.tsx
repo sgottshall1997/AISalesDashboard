@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { PageHeader } from "@/components/page-header";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   ThumbsUp, 
@@ -22,13 +21,9 @@ export function AIAnalytics() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <PageHeader 
-          title="AI Content Analytics"
-          subtitle="Monitor AI-generated content performance and quality metrics"
-        />
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-6">AI Content Analytics</h1>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
@@ -39,7 +34,6 @@ export function AIAnalytics() {
               </CardContent>
             </Card>
           ))}
-          </div>
         </div>
       </div>
     );
@@ -51,32 +45,28 @@ export function AIAnalytics() {
   const thumbsDownCount = analytics?.thumbsDownCount || 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <PageHeader 
-        title="AI Content Analytics"
-        subtitle="Monitor AI-generated content performance and quality metrics"
-      />
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-end">
-          <Badge variant="outline" className="text-sm">
-            Live Feedback Data
-          </Badge>
-        </div>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">AI Content Analytics</h1>
+        <Badge variant="outline" className="text-sm">
+          Live Feedback Data
+        </Badge>
+      </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Content Generated</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{analytics?.totalContent || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                AI-generated emails and content
-              </p>
-            </CardContent>
-          </Card>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Content Generated</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analytics?.totalContent || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              AI-generated emails and content
+            </p>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -225,7 +215,6 @@ export function AIAnalytics() {
           </div>
         </CardContent>
       </Card>
-      </div>
     </div>
   );
 }
