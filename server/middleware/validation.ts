@@ -53,7 +53,8 @@ export const rateLimit = (options: {
     const windowStart = now - options.windowMs;
     
     // Clean up old entries
-    for (const [k, v] of rateLimitStore.entries()) {
+    const entries = Array.from(rateLimitStore.entries());
+    for (const [k, v] of entries) {
       if (v.resetTime < now) {
         rateLimitStore.delete(k);
       }

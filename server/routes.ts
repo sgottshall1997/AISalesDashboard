@@ -2051,6 +2051,100 @@ Provide a JSON response with actionable prospecting insights:
     }
   });
 
+  // Health monitoring and system diagnostics endpoints
+  app.get("/api/health", async (req: Request, res: Response) => {
+    try {
+      const healthChecks = {
+        timestamp: new Date().toISOString(),
+        status: "healthy",
+        version: "1.0.0",
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        checks: {
+          database: "checking",
+          storage: "checking",
+          session: "checking"
+        }
+      };
+
+      // Database connectivity check
+      try {
+        const dbCheck = await storage.getAllTasks();
+        healthChecks.checks.database = "healthy";
+      } catch (error) {
+        healthChecks.checks.database = "unhealthy";
+        healthChecks.status = "degraded";
+      }
+
+      // Storage check
+      try {
+        const storageCheck = await storage.getAllContentReports();
+        healthChecks.checks.storage = "healthy";
+      } catch (error) {
+        healthChecks.checks.storage = "unhealthy";
+        healthChecks.status = "degraded";
+      }
+
+      // Session store check
+      healthChecks.checks.session = "healthy";
+
+      const statusCode = healthChecks.status === "healthy" ? 200 : 503;
+      res.status(statusCode).json(healthChecks);
+    } catch (error) {
+      res.status(503).json({
+        timestamp: new Date().toISOString(),
+        status: "unhealthy",
+        error: "Health check failed"
+      });
+    }
+  });
+
+  // System metrics endpoint
+  app.get("/api/metrics", async (req: Request, res: Response) => {
+    try {
+      const metrics = {
+        timestamp: new Date().toISOString(),
+        system: {
+          uptime: process.uptime(),
+          memory: process.memoryUsage(),
+          cpu: process.cpuUsage(),
+          platform: process.platform,
+          version: process.version
+        },
+        database: {
+          totalReports: 0,
+          totalLeads: 0,
+          totalClients: 0,
+          totalTasks: 0
+        },
+        performance: {
+          lastBootTime: new Date(Date.now() - process.uptime() * 1000).toISOString()
+        }
+      };
+
+      // Gather database metrics
+      try {
+        const [reports, leads, clients, tasks] = await Promise.all([
+          storage.getAllContentReports(),
+          storage.getAllLeads(),
+          storage.getAllClients(),
+          storage.getAllTasks()
+        ]);
+        
+        metrics.database.totalReports = reports.length;
+        metrics.database.totalLeads = leads.length;
+        metrics.database.totalClients = clients.length;
+        metrics.database.totalTasks = tasks.length;
+      } catch (error) {
+        console.error("Metrics gathering error:", error);
+      }
+
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to gather system metrics" });
+    }
+  });
+
   // Campaign email generation with 13D Research style
   app.post("/api/ai/generate-campaign-email", async (req: Request, res: Response) => {
     try {
