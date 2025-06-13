@@ -2085,8 +2085,8 @@ CRITICAL:
           })
         : extractedArticles;
 
-      // Select diverse articles (max 3) for the email
-      const selectedArticles = relevantArticles.length > 0 ? relevantArticles.slice(0, 3) : extractedArticles.slice(0, 3);
+      // Select diverse articles (3-4) for the email
+      const selectedArticles = relevantArticles.length > 0 ? relevantArticles.slice(0, 4) : extractedArticles.slice(0, 4);
 
       // Build report context with individual articles
       const reportContext = selectedArticles.length > 0 
@@ -2094,6 +2094,19 @@ CRITICAL:
             `Article ${index + 1} (from ${article.reportTitle}):\n${article.content.substring(0, 500)}`
           ).join('\n\n')
         : 'No reports available';
+
+      // Find personal/lifestyle articles for the lighter note section
+      const personalArticles = extractedArticles.filter((article: any) => {
+        const content = article.content.toLowerCase();
+        return content.includes('travel') || content.includes('culture') || content.includes('lifestyle') || 
+               content.includes('personal') || content.includes('art') || content.includes('food') ||
+               content.includes('sports') || content.includes('entertainment') || content.includes('social') ||
+               content.includes('family') || content.includes('vacation') || content.includes('hobby');
+      });
+
+      const personalNote = personalArticles.length > 0 
+        ? `I came across an interesting piece on ${personalArticles[0].content.substring(0, 100)}... (Article ${personalArticles[0].articleNumber})`
+        : 'I came across an interesting piece on the cultural impact of global economic shifts.';
 
       const emailPrompt = `Generate a casual email using ONLY the research content provided. DO NOT include template placeholders or bracket text.
 
@@ -2112,9 +2125,11 @@ Hope you're doing well. I wanted to share a few quick insights from our latest r
 
 • **[Create actual headline from Article 3 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 3]. (Article 3)
 
+• **[Create actual headline from Article 4 content if available]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 4 if there are 4 articles]. (Article 4)
+
 These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top US holdings: ${topUsHoldings.length > 0 ? topUsHoldings.join(', ') : 'GLD, SPY, QQQ'}).
 
-On a lighter note, [mention actual personal/non-market content from the reports].
+On a lighter note, ${personalNote}
 
 I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
 
@@ -2122,10 +2137,12 @@ Best,
 Spencer
 
 CRITICAL REQUIREMENTS: 
+- Generate 3-4 bullets based on available articles (use 4th bullet only if 4 articles exist)
 - NO placeholder text like [Bold headline] - write actual content
 - Each bullet from different article with real data from that article
 - Use actual numbers/percentages from the research data
 - Reference US market holdings only, no Chinese tickers
+- Include the personal note exactly as provided: ${personalNote}
 - Keep conversational tone
 - Maximum 275 words`;
 
