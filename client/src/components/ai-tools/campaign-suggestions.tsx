@@ -14,6 +14,7 @@ interface ContentSuggestion {
   title: string;
   description: string;
   emailAngle: string;
+  emailContent?: string;
   supportingReports: string[];
   keyPoints: string[];
   insights: string[];
@@ -70,6 +71,14 @@ export function CampaignSuggestions() {
   const handleGenerateEmail = (suggestion: ContentSuggestion) => {
     setGeneratingFor(suggestion.title);
     generateEmailMutation.mutate(suggestion);
+  };
+
+  const handleViewEmail = (suggestion: ContentSuggestion) => {
+    if (suggestion.emailContent) {
+      setGeneratedEmail(suggestion.emailContent);
+      setEmailDialogOpen(true);
+      setEmailContentId(null);
+    }
   };
 
   const copyToClipboard = async (text: string) => {
@@ -242,18 +251,30 @@ export function CampaignSuggestions() {
                     </div>
                   )}
                   
-                  {/* Generate Email Button */}
-                  <Button
-                    onClick={() => handleGenerateEmail(suggestion)}
-                    disabled={generatingFor === suggestion.title}
-                    className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm font-medium"
-                  >
-                    <Mail className="w-4 h-4" />
-                    {generatingFor === suggestion.title ? "Generating Email..." : "Generate Professional Email"}
-                  </Button>
-                  <p className="text-xs text-gray-500 mt-2 text-center">
-                    Generates email matching 13D Research professional style
-                  </p>
+                  {/* Action Buttons */}
+                  <div className="space-y-2">
+                    {suggestion.emailContent ? (
+                      <Button
+                        onClick={() => handleViewEmail(suggestion)}
+                        className="w-full flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 text-sm font-medium"
+                      >
+                        <Mail className="w-4 h-4" />
+                        View Complete Email
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => handleGenerateEmail(suggestion)}
+                        disabled={generatingFor === suggestion.title}
+                        className="w-full flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 text-sm font-medium"
+                      >
+                        <Mail className="w-4 h-4" />
+                        {generatingFor === suggestion.title ? "Generating Email..." : "Generate Professional Email"}
+                      </Button>
+                    )}
+                    <p className="text-xs text-gray-500 text-center">
+                      {suggestion.emailContent ? "Complete email with 13D Research format ready" : "Generates email matching 13D Research professional style"}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
