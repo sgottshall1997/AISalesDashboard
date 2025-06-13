@@ -24,6 +24,26 @@ export async function generateThemeBasedEmailSuggestions(
       return [];
     }
 
+    // Get High Conviction portfolio data for context
+    const { db } = await import("./db");
+    const { portfolio_constituents } = await import("@shared/schema");
+    const { desc, eq } = await import("drizzle-orm");
+    
+    const hcHoldings = await db.select()
+      .from(portfolio_constituents)
+      .where(eq(portfolio_constituents.isHighConviction, true))
+      .orderBy(desc(portfolio_constituents.weightInHighConviction))
+      .limit(30);
+
+    // Group holdings by index for thematic reference
+    const indexHoldings = hcHoldings.reduce((acc: Record<string, any[]>, holding: any) => {
+      if (holding.index) {
+        if (!acc[holding.index]) acc[holding.index] = [];
+        acc[holding.index].push(holding);
+      }
+      return acc;
+    }, {} as Record<string, any[]>);
+
     const reportData = reports.map(report => ({
       title: report.title,
       tags: report.tags || [],
@@ -32,31 +52,47 @@ export async function generateThemeBasedEmailSuggestions(
       publishedDate: report.published_date
     }));
 
-    const prompt = `You are analyzing 13D Research reports to create INVESTMENT-FOCUSED email suggestions. 
+    const portfolioContext = `
+13D HIGH CONVICTION PORTFOLIO HOLDINGS (165 securities, 85.84% total weight):
+- Gold/Mining Sector (35.5%): ${Object.keys(indexHoldings).filter(idx => idx.includes('Gold') || idx.includes('Miners')).slice(0, 3).join(', ')}
+- Commodities Sector (23.0%): ${Object.keys(indexHoldings).filter(idx => idx.includes('Commodity') || idx.includes('Energy')).slice(0, 3).join(', ')}
+- China Markets (15.0%): ${Object.keys(indexHoldings).filter(idx => idx.includes('China')).slice(0, 3).join(', ')}
+
+Top HC Index Holdings:
+${Object.entries(indexHoldings).slice(0, 8).map(([index, holdings]) => 
+  `- ${index}: ${holdings.slice(0, 2).map(h => `${h.ticker} (${h.weightInHcPortfolio}%)`).join(', ')}`
+).join('\n')}
+`;
+
+    const prompt = `You are analyzing 13D Research reports to create INVESTMENT-FOCUSED email suggestions that connect to actual 13D High Conviction portfolio holdings.
+
+${portfolioContext}
 
 STRICT REQUIREMENTS:
 - Do NOT mention client engagement, clicks, or user behavior
 - Focus ONLY on investment themes from the actual report content
 - Create suggestions based on market insights, not marketing metrics
+- CONNECT themes to actual 13D HC portfolio holdings when relevant
+- Reference specific portfolio positions that align with report themes
 
 Report Data: ${JSON.stringify(reportData)}
 
-From these WILTW and WATMTU reports, identify 3-4 investment themes:
+From these WILTW and WATMTU reports, identify 3-4 investment themes that connect to HC portfolio holdings:
 
-1. COMMODITIES & INFLATION - Analysis of precious metals, commodities markets, inflation hedges
-2. MARKET PARADIGM SHIFTS - Discussion of new market leaders, sector rotations, asset allocation changes  
-3. GEOPOLITICAL INVESTMENTS - China markets, contrarian opportunities, global economic themes
-4. DEEP INVESTMENT ANALYSIS - Complex financial strategies, portfolio allocation insights
+1. COMMODITIES & INFLATION - Analysis of precious metals, commodities markets, inflation hedges (reference HC gold/commodity positions)
+2. MARKET PARADIGM SHIFTS - Discussion of new market leaders, sector rotations, asset allocation changes (reference relevant HC indexes)
+3. GEOPOLITICAL INVESTMENTS - China markets, contrarian opportunities, global economic themes (reference HC China positions)
+4. DEEP INVESTMENT ANALYSIS - Complex financial strategies, portfolio allocation insights (reference specific HC holdings)
 
 For each theme found in the reports, create:
 - type: "frequent_theme", "emerging_trend", "cross_sector", or "deep_dive"
 - title: Professional email subject focused on investment opportunity
-- description: Investment angle based on actual report content
-- emailAngle: Specific market perspective from the reports
+- description: Investment angle based on actual report content AND relevant HC portfolio positions
+- emailAngle: Specific market perspective from the reports connecting to portfolio holdings
 - supportingReports: Array of report titles that contain this theme
-- keyPoints: 3-4 actual insights from the report content
-- insights: Array of 2-3 specific, traceable facts from the source reports (quotable data points)
-- priority: "high", "medium", or "low"
+- keyPoints: 3-4 actual insights from the report content plus relevant HC portfolio connections
+- insights: Array of 2-3 specific, traceable facts from source reports PLUS mention of relevant HC holdings
+- priority: "high", "medium", or "low" (prioritize themes with strong HC portfolio alignment)
 
 Return only JSON: {"suggestions": [...]}`;
 
@@ -100,20 +136,53 @@ export async function generateThemeBasedEmail(
       publishedDate: report.published_date
     }));
 
+    // Get High Conviction portfolio data to enhance the email
+    const { db } = await import("./db");
+    const { portfolio_constituents } = await import("@shared/schema");
+    const { desc, and, eq } = await import("drizzle-orm");
+    
+    const hcHoldings = await db.select()
+      .from(portfolioConstituents)
+      .where(eq(portfolioConstituents.isHighConviction, true))
+      .orderBy(desc(portfolioConstituents.weightInHcPortfolio))
+      .limit(20);
+
+    // Group HC holdings by theme for context
+    const goldMiners = hcHoldings.filter(h => h.index?.includes('Gold') || h.index?.includes('Miners')).slice(0, 3);
+    const chinaHoldings = hcHoldings.filter(h => h.index?.includes('China')).slice(0, 3);
+    const commodityHoldings = hcHoldings.filter(h => h.index?.includes('Commodity') || h.index?.includes('Energy')).slice(0, 3);
+
     // Using Enhancement Plan's exact prompt template specification
     const insightsText = insights && insights.length > 0 ? insights : keyPoints || [];
     
-    const userPrompt = `You are a senior sales rep writing an email to an institutional client.
-The email should reference recent research findings and sound professional and helpful.
+    const portfolioContext = `
+13D HIGH CONVICTION PORTFOLIO CONTEXT:
+- Total HC Holdings: 165 securities (85.84% portfolio weight)
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key Gold Holdings: ${goldMiners.map(h => `${h.ticker} (${h.weightInHcPortfolio}%)`).join(', ')}
+- Key China Holdings: ${chinaHoldings.map(h => `${h.ticker} (${h.weightInHcPortfolio}%)`).join(', ')}
+- Key Commodity Holdings: ${commodityHoldings.map(h => `${h.ticker} (${h.weightInHcPortfolio}%)`).join(', ')}
+`;
+
+    const userPrompt = `You are a senior sales rep at 13D Research writing an email to an institutional client about portfolio-relevant themes.
+The email should reference recent research findings AND connect them to actual 13D High Conviction portfolio holdings.
+
+${portfolioContext}
 
 Theme: ${theme}
 Key Insights:
 ${insightsText.slice(0, 2).map(insight => `- ${insight}`).join('\n')}
 
-Please write a concise email (under 180 words) to a client about this theme.
-Use a confident, professional tone and mention the above insights in plain language.
-Start with a greeting, and end with an offer to discuss further or assist.
-Do not exceed the word limit.
+IMPORTANT: When relevant, mention specific portfolio holdings that align with this theme. For example:
+- If discussing gold/mining: Reference actual HC gold mining positions
+- If discussing China: Reference actual HC China equity positions  
+- If discussing commodities: Reference actual HC commodity-related holdings
+
+Please write a concise email (under 200 words) that:
+1. References the research insights
+2. Connects to relevant 13D HC portfolio positions when applicable
+3. Maintains a confident, professional tone
+4. Ends with an offer to discuss portfolio implications
 
 Provide a brief subject line for the email as well.
 
