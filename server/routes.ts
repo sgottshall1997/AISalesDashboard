@@ -1154,38 +1154,91 @@ Create a professional one-pager following the structured format exactly, incorpo
 
       console.log(`Processed ${reportContext.length} reports with summaries for Q&A context`);
 
+      // Check if question relates to portfolio constituents/indexes and add that data
+      let portfolioContext = '';
+      const lowerQuestion = question.toLowerCase();
+      const portfolioKeywords = ['constituents', 'holdings', 'portfolio', 'index', 'gold miners', 'high conviction', 'stocks', 'positions'];
+      
+      if (portfolioKeywords.some(keyword => lowerQuestion.includes(keyword))) {
+        try {
+          // Get high conviction portfolio data
+          const hcHoldings = await db.select()
+            .from(portfolio_constituents)
+            .where(eq(portfolio_constituents.isHighConviction, true))
+            .orderBy(desc(portfolio_constituents.weightInHighConviction))
+            .limit(20);
+
+          // Get all unique indexes
+          const allIndexes = await db.selectDistinct({ index: portfolio_constituents.index })
+            .from(portfolio_constituents)
+            .orderBy(portfolio_constituents.index);
+
+          // Check for specific index mentions
+          const specificIndexes = [];
+          for (const idx of allIndexes) {
+            if (lowerQuestion.includes(idx.index.toLowerCase())) {
+              const constituents = await db.select()
+                .from(portfolio_constituents)
+                .where(eq(portfolio_constituents.index, idx.index))
+                .orderBy(desc(portfolio_constituents.weightInIndex))
+                .limit(15);
+              
+              specificIndexes.push({
+                name: idx.index,
+                constituents: constituents
+              });
+            }
+          }
+
+          if (specificIndexes.length > 0) {
+            portfolioContext = `\n\nPORTFOLIO INDEX CONSTITUENTS DATA:\n`;
+            specificIndexes.forEach(idx => {
+              portfolioContext += `\n${idx.name} Index Holdings:\n`;
+              idx.constituents.forEach(holding => {
+                portfolioContext += `- ${holding.name} (${holding.ticker}) - ${holding.weightInIndex}% weight\n`;
+              });
+            });
+          } else if (hcHoldings.length > 0) {
+            portfolioContext = `\n\n13D HIGH CONVICTION PORTFOLIO DATA:\n`;
+            hcHoldings.forEach(holding => {
+              portfolioContext += `- ${holding.name} (${holding.ticker}) - ${holding.weightInHighConviction}% HC weight, Index: ${holding.index}\n`;
+            });
+          }
+        } catch (portfolioError) {
+          console.error('Error fetching portfolio data:', portfolioError);
+        }
+      }
+
       const contextText = reportContext.map(r => 
         `${r.title} (${r.type}, ${new Date(r.date).toLocaleDateString()}): ${r.summary}`
-      ).join('\n\n');
+      ).join('\n\n') + portfolioContext;
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const systemPrompt = `You are a senior investment analyst at 13D Research with access to comprehensive WILTW and WATMTU report database. You MUST base responses ONLY on the provided report content.
+      const systemPrompt = `You are a senior investment analyst at 13D Research with access to comprehensive WILTW and WATMTU report database AND portfolio constituents data. You MUST base responses ONLY on the provided content.
 
 CRITICAL INSTRUCTIONS:
 1. You have access to ${reportContext.length} detailed report summaries with comprehensive investment analysis
-2. NEVER say "This topic was not covered" unless you have thoroughly searched through ALL provided content
-3. Extract specific insights, themes, and data points from the actual report summaries provided
-4. Reference specific reports by name and date when possible
-5. Focus on actionable investment insights from the authentic 13D research
+2. When portfolio/index data is provided, combine it with report insights for complete answers
+3. NEVER say "This topic was not covered" unless you have thoroughly searched through ALL provided content
+4. Extract specific insights, themes, and data points from both report summaries AND portfolio holdings data
+5. Reference specific reports by name and actual portfolio holdings when available
+6. Focus on actionable investment insights from the authentic 13D research and actual portfolio positions
 
 Structure your response:
 
 **Key Insight:**  
-[Direct answer based on the report content provided]
+[Direct answer based on report content AND portfolio data when available]
 
 **Supporting Highlights:**  
-- [Specific point from report summaries with details]  
-- [Investment theme or trend from the data]  
-- [Market development or opportunity identified]
+- [Specific holdings/constituents with actual weights when provided]
+- [Investment themes from report analysis]  
+- [Market developments or opportunities identified]
 
 **13D Context:**  
-[Strategic perspective based on the report analysis patterns]
+[Strategic perspective combining report analysis with actual portfolio positioning]
 
-**Sources:**  
-[List specific reports that informed this response]
-
-You have access to detailed summaries from WILTW reports, WATMTU reports, and other research. Use this authentic content to provide substantive, data-driven responses. Keep under 300 words but ensure comprehensive coverage of relevant insights.`;
+You have access to detailed summaries from WILTW reports, WATMTU reports, other research, AND actual portfolio constituents data including specific holdings, weights, and index compositions. Use this authentic content to provide substantive, data-driven responses. Keep under 350 words but ensure comprehensive coverage of relevant insights.`;
 
       const userPrompt = `Question: ${question}
 
