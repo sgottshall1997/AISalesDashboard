@@ -1898,7 +1898,28 @@ CRITICAL:
         });
       }
 
+      // Get recent reports for context
+      const recentReports = await storage.getRecentWILTWReports(3);
+      
+      // Get portfolio constituents for sector-specific insights
+      const highConvictionStocks = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .limit(8);
+
+      const allConstituents = await db.select()
+        .from(portfolio_constituents)
+        .limit(15);
+
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const reportContext = recentReports.length > 0 
+        ? recentReports.map(r => `${r.title}: ${r.summary}`).join('\n') 
+        : 'Recent market developments and geopolitical shifts';
+
+      const portfolioContext = `
+HIGH CONVICTION HOLDINGS: ${highConvictionStocks.map(s => `${s.ticker} (${s.name})`).join(', ')}
+OTHER HOLDINGS: ${allConstituents.map(s => `${s.ticker}`).join(', ')}`;
 
       const emailPrompt = `You are an expert institutional sales professional writing personalized emails for 13D Research clients.
 
@@ -1906,6 +1927,12 @@ Generate a professional email based on the following:
 - Theme: ${theme}
 - Client: ${clientName || 'Valued Client'}
 - Customization: ${customization || 'Standard professional approach'}
+
+CONTEXT FROM RECENT RESEARCH:
+${reportContext}
+
+PORTFOLIO HOLDINGS CONTEXT:
+${portfolioContext}
 
 Generate a JSON response with exactly this structure:
 {
@@ -1920,7 +1947,8 @@ Generate a JSON response with exactly this structure:
 }
 
 Make it professional, actionable, and aligned with institutional investment communication standards.
-Focus on value proposition and concrete insights rather than generic market commentary.`;
+Focus on value proposition and concrete insights rather than generic market commentary.
+When relevant to the theme, reference specific sectors or companies from our portfolio holdings.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
