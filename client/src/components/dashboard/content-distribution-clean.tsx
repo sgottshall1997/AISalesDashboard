@@ -291,13 +291,31 @@ export function ContentDistribution() {
         promptType: promptType
       });
 
-      const response = await apiRequest("/api/ai/summarize-report", "POST", {
-        reportId: report.id.toString(),
-        title: report.title,
-        content: report.full_content || report.content_summary,
-        promptType: promptType
+      // Use direct fetch with extended timeout for AI summarization
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes timeout
+      
+      const response = await fetch("/api/ai/summarize-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: report.id.toString(),
+          title: report.title,
+          content: report.full_content || report.content_summary,
+          promptType: promptType
+        }),
+        credentials: "include",
+        signal: controller.signal
       });
-      return response.json();
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`${response.status}: ${text}`);
+      }
+      
+      return await response.json();
     },
     onSuccess: (data) => {
       setReportSummary(data.summary);
