@@ -1201,7 +1201,7 @@ export function ContentDistribution() {
 
       {/* Generated Email Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <Mail className="w-5 h-5 mr-2" />
@@ -1211,34 +1211,36 @@ export function ContentDistribution() {
               Personalized prospecting email following the 13D format
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg border">
-              <div className="whitespace-pre-wrap text-sm font-mono">
-                {generatedEmail}
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg border">
+                <div className="whitespace-pre-wrap text-sm font-mono">
+                  {generatedEmail}
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedEmail);
-                  toast({
-                    title: "Copied to Clipboard",
-                    description: "Email content has been copied to your clipboard",
-                  });
-                }}
-                variant="outline"
-                className="flex-1"
-              >
-                <Copy className="w-4 h-4 mr-2" />
-                Copy Email
-              </Button>
-              <Button
-                onClick={() => setShowEmailDialog(false)}
-                className="flex-1"
-              >
-                Close
-              </Button>
-            </div>
+          </ScrollArea>
+          <div className="flex gap-2 pt-4 border-t">
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(generatedEmail);
+                toast({
+                  title: "Copied to Clipboard",
+                  description: "Email content has been copied to your clipboard",
+                });
+              }}
+              variant="outline"
+              className="flex-1"
+            >
+              <Copy className="w-4 h-4 mr-2" />
+              Copy Email
+            </Button>
+            <Button
+              onClick={() => setShowEmailDialog(false)}
+              className="flex-1"
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
