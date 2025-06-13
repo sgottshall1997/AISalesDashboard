@@ -1090,10 +1090,10 @@ export function ContentDistribution() {
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
-              Matched Prospects for Report
+              Top 15 Prioritized Prospects
             </DialogTitle>
             <DialogDescription>
-              Prospects whose investment interests align with this report's content
+              High-likelihood and high-engagement prospects ranked by content relevance
             </DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
@@ -1106,6 +1106,17 @@ export function ContentDistribution() {
                         <div>
                           <CardTitle className="text-lg">{match.name}</CardTitle>
                           <p className="text-sm text-gray-600">{match.company}</p>
+                          <div className="flex gap-2 mt-2">
+                            <Badge variant="outline" className="text-xs">
+                              {match.likelihoodOfClosing} likelihood
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {match.engagementLevel} engagement
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {match.stage}
+                            </Badge>
+                          </div>
                         </div>
                         <Badge variant={match.relevanceScore >= 80 ? "default" : match.relevanceScore >= 60 ? "secondary" : "outline"}>
                           {match.relevanceScore}% Match
@@ -1115,21 +1126,33 @@ export function ContentDistribution() {
                     <CardContent>
                       <div className="space-y-3">
                         <div>
-                          <h4 className="font-semibold text-sm mb-1">Investment Interests:</h4>
-                          <div className="flex flex-wrap gap-1">
-                            {match.interests?.map((interest: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {interest}
-                              </Badge>
-                            ))}
-                          </div>
+                          <h4 className="font-semibold text-sm mb-1">Why This Prospect Matches:</h4>
+                          <p className="text-sm text-gray-700 mb-3">{match.reasoning}</p>
+                          
+                          {match.interestTags && match.interestTags.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-sm mb-1">Interest Tags:</h4>
+                              <div className="flex flex-wrap gap-1">
+                                {match.interestTags.map((interest: string, i: number) => (
+                                  <Badge key={i} variant="outline" className="text-xs">
+                                    {interest}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        
                         <div>
-                          <h4 className="font-semibold text-sm mb-1">Why This Match:</h4>
-                          <p className="text-sm text-gray-700">{match.reasoning}</p>
+                          <h4 className="font-semibold text-sm mb-1">Suggested Approach:</h4>
+                          <p className="text-sm text-gray-700">{match.suggestedApproach}</p>
                         </div>
-                        {match.keyTalkingPoints && (
+                        {match.notes && (
                           <div>
+                            <h4 className="font-semibold text-sm mb-1">Notes:</h4>
+                            <p className="text-sm text-gray-600">{match.notes}</p>
+                          </div>
+                        )}
                             <h4 className="font-semibold text-sm mb-1">Key Talking Points:</h4>
                             <div className="flex flex-wrap gap-1">
                               {match.keyTalkingPoints.map((point: string, i: number) => (
