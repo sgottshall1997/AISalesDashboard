@@ -1435,9 +1435,9 @@ Provide a professional, data-driven response using the authentic 13D research co
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Create timeout wrapper for OpenAI API call
+      // Create timeout wrapper for OpenAI API call - increased timeout for HC portfolio context
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OpenAI API timeout')), 8000)
+        setTimeout(() => reject(new Error('OpenAI API timeout')), 15000)
       );
 
       // Get High Conviction portfolio data for call preparation
