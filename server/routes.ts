@@ -2012,19 +2012,85 @@ CRITICAL:
           if (summary && summary.parsed_summary) {
             selectedReportSummaries.push({
               title: report.title,
-              structuredAnalysis: summary.parsed_summary.substring(0, 1000), // Truncate for context
+              structuredAnalysis: summary.parsed_summary,
               reportType: report.type || 'Research'
             });
           }
         }
       }
 
-      // Build report context from structured analysis
-      const reportContext = selectedReportSummaries.length > 0 
-        ? selectedReportSummaries.map((item: any) => 
-            `Report: ${item.title}\nSummary: ${item.structuredAnalysis.substring(0, 400)}`
+      // Parse articles from summaries to extract individual article content
+      interface ArticleData {
+        articleNumber: number;
+        content: string;
+        reportTitle: string;
+      }
+      
+      const extractedArticles: ArticleData[] = [];
+      selectedReportSummaries.forEach((reportSummary: any) => {
+        const content = reportSummary.structuredAnalysis;
+        
+        // Extract individual articles using simple string matching
+        const articlePattern = /Article \d+:/g;
+        const matches: RegExpExecArray[] = [];
+        let match;
+        while ((match = articlePattern.exec(content)) !== null) {
+          matches.push(match);
+        }
+        
+        if (matches.length > 0) {
+          for (let i = 0; i < matches.length; i++) {
+            const currentMatch = matches[i];
+            const nextMatch = matches[i + 1];
+            const startIndex = currentMatch.index || 0;
+            const endIndex = nextMatch ? nextMatch.index : content.length;
+            
+            const articleText = content.substring(startIndex, endIndex);
+            const cleanText = articleText.replace(/Article \d+:\s*/, '').trim();
+            
+            if (cleanText.length > 50) {
+              extractedArticles.push({
+                articleNumber: i + 1,
+                content: cleanText,
+                reportTitle: reportSummary.title
+              });
+            }
+          }
+        } else {
+          // If no article patterns found, split by paragraphs
+          const sections = content.split(/\n\s*\n/).filter((section: string) => section.trim().length > 100);
+          sections.forEach((section: string, index: number) => {
+            extractedArticles.push({
+              articleNumber: index + 1,
+              content: section.trim(),
+              reportTitle: reportSummary.title
+            });
+          });
+        }
+      });
+
+      // Filter articles based on lead interests if available
+      const relevantArticles = leadData.interest_tags && leadData.interest_tags.length > 0
+        ? extractedArticles.filter((article: ArticleData) => {
+            const articleLower = article.content.toLowerCase();
+            return leadData.interest_tags.some((tag: string) => 
+              articleLower.includes(tag.toLowerCase()) ||
+              (articleLower.includes('china') && tag.toLowerCase().includes('china')) ||
+              (articleLower.includes('gold') && tag.toLowerCase().includes('commodity')) ||
+              (articleLower.includes('mining') && tag.toLowerCase().includes('commodity'))
+            );
+          })
+        : extractedArticles;
+
+      // Select diverse articles (max 3) for the email
+      const selectedArticles = relevantArticles.length > 0 ? relevantArticles.slice(0, 3) : extractedArticles.slice(0, 3);
+
+      // Build report context with individual articles
+      const reportContext = selectedArticles.length > 0 
+        ? selectedArticles.map((article: any, index: number) => 
+            `Article ${index + 1} (from ${article.reportTitle}):\n${article.content.substring(0, 500)}`
           ).join('\n\n')
-        : 'No reports selected';
+        : 'No reports available';
 
       const emailPrompt = `You must generate an email in this EXACT casual format based primarily on the research analysis and insights. Focus on the report content with minimal portfolio references.
 
@@ -2036,11 +2102,11 @@ Hi ${leadData.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest research that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Focus on the research findings and market data.
+• **[Bold headline from Article 1]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 1]. Focus on research findings and market data. (Article 1)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Emphasize analytical conclusions and investment themes.
+• **[Bold headline from Article 2]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 2]. Emphasize analytical conclusions and investment themes. (Article 2)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Highlight key research discoveries and market perspectives.
+• **[Bold headline from Article 3]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 3]. Highlight key research discoveries and market perspectives. (Article 3)
 
 These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top holdings: ${topHoldings.slice(0, 3).join(', ')}).
 
@@ -2054,13 +2120,15 @@ Spencer
 DATA TO USE:
 ${reportContext}
 
-CRITICAL: 
+CRITICAL REQUIREMENTS: 
 - Use bullet points (•) NOT paragraphs
-- Make each bullet detailed with specific data/percentages/ratios from reports
+- Each bullet MUST come from a DIFFERENT article (Article 1, Article 2, Article 3)
+- Make each bullet detailed with specific data/percentages/ratios from the specific article
 - Include market implications and context in each bullet
-- Each bullet must reference (Article 1), (Article 2), (Article 3)
-- When thematically relevant, reference actual HC portfolio holdings
-- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
+- Each bullet must reference the correct article number: (Article 1), (Article 2), (Article 3)
+- NEVER use the same article for multiple bullets
+- When thematically relevant, briefly reference actual HC portfolio holdings
+- After the consensus line, add a personal note about non-market content from the reports
 - Keep conversational tone, avoid formal business language
 - Maximum 275 words`;
 
