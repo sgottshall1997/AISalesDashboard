@@ -125,8 +125,9 @@ export default function LeadPipeline() {
       const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", { likelihood_of_closing: likelihood });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      console.log('Likelihood updated successfully:', data);
       toast({
         title: "Likelihood Updated",
         description: "Lead likelihood has been updated successfully.",
@@ -139,8 +140,9 @@ export default function LeadPipeline() {
       const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", { engagement_level: engagement });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      console.log('Engagement updated successfully:', data);
       toast({
         title: "Engagement Updated",
         description: "Lead engagement has been updated successfully.",
@@ -165,15 +167,24 @@ export default function LeadPipeline() {
   const generateProspectEmailMutation = useMutation({
     mutationFn: async ({ leadId, reportTitle }: { leadId: number; reportTitle: string }) => {
       const lead = leads?.find(l => l.id === leadId);
+      console.log('Generating email for lead:', lead);
       const response = await apiRequest("/api/generate-prospect-email", "POST", {
         prospectName: lead?.name,
         reportTitle,
         keyTalkingPoints: Array.isArray(lead?.interest_tags) ? lead.interest_tags.join(', ') : '',
         matchReason: lead?.notes || ''
       });
-      return response.json();
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Email response data:', data);
+      return data;
     },
     onSuccess: (data, variables) => {
+      console.log('Email generation successful:', data);
       setEmailDialogs(prev => ({
         ...prev,
         [variables.leadId]: { open: true, email: data }
