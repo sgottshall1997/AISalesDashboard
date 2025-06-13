@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -215,6 +215,7 @@ interface ContentReport {
 
 export default function LeadDetail() {
   const [, params] = useRoute("/leads/:id");
+  const [, setLocation] = useLocation();
   const leadId = parseInt(params?.id || "0");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
@@ -525,7 +526,7 @@ export default function LeadDetail() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="mb-6">
-        <Button variant="ghost" onClick={() => window.history.back()} className="mb-4">
+        <Button variant="ghost" onClick={() => setLocation('/lead-pipeline')} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Lead Pipeline
         </Button>
