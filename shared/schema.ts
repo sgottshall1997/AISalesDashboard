@@ -308,6 +308,8 @@ export const portfolio_constituents = pgTable("portfolio_constituents", {
   isHighConviction: boolean("is_high_conviction").default(false),
   weightInIndex: decimal("weight_in_index", { precision: 5, scale: 2 }),
   weightInHighConviction: decimal("weight_in_high_conviction", { precision: 5, scale: 2 }),
+  indexWeightInHc: decimal("index_weight_in_hc", { precision: 5, scale: 2 }),
+  weightInHcPortfolio: decimal("weight_in_hc_portfolio", { precision: 5, scale: 2 }),
   rebalanceDate: timestamp("rebalance_date"),
   created_at: timestamp("created_at").defaultNow(),
 });

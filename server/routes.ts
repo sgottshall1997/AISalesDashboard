@@ -1901,14 +1901,17 @@ CRITICAL:
       // Get recent reports for context
       const recentReports = await storage.getRecentReports(3);
       
-      // Get portfolio constituents for sector-specific insights
+      // Get high conviction portfolio holdings with detailed weights
       const highConvictionStocks = await db.select()
         .from(portfolio_constituents)
         .where(eq(portfolio_constituents.isHighConviction, true))
-        .limit(8);
+        .orderBy(desc(portfolio_constituents.weightInHcPortfolio))
+        .limit(10);
 
-      const allConstituents = await db.select()
+      // Get top portfolio holdings by weight
+      const topHoldings = await db.select()
         .from(portfolio_constituents)
+        .orderBy(desc(portfolio_constituents.weightInIndex))
         .limit(15);
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
