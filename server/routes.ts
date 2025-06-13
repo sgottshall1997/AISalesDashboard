@@ -3669,7 +3669,7 @@ Prioritize the research content and analytical insights over portfolio reference
     }
   });
 
-  // Prospect email generation with 13D Research style
+  // Prospect email generation with 13D Research style - matching lead pipeline format
   app.post("/api/generate-prospect-email", async (req: Request, res: Response) => {
     try {
       // Check if OpenAI API key is available
@@ -3685,12 +3685,18 @@ Prioritize the research content and analytical insights over portfolio reference
         return res.status(400).json({ error: "Prospect name is required" });
       }
 
-      // Get High Conviction portfolio data for prospect emails
+      // Get recent reports for context - same as lead pipeline
+      const contentReports = await storage.getRecentReports(10);
+      const reportContext = contentReports.slice(0, 3).map((report: any) => 
+        `Report: ${report.title}\nSummary: ${report.content_summary || report.summary || 'No summary available'}`
+      ).join('\n\n');
+
+      // Get High Conviction portfolio data - same as lead pipeline
       const hcHoldings = await db.select()
         .from(portfolio_constituents)
         .where(eq(portfolio_constituents.isHighConviction, true))
         .orderBy(desc(portfolio_constituents.weightInHighConviction))
-        .limit(12);
+        .limit(15);
 
       const portfolioIndexes = [];
       const uniqueIndexes = new Set<string>();
@@ -3701,59 +3707,87 @@ Prioritize the research content and analytical insights over portfolio reference
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const prospectEmailPrompt = `Generate a professional 13D Research prospect email focused primarily on the insights and analysis from our research reports.
+      // Use exact same template as lead pipeline
+      const prospectEmailPrompt = `You must generate an email in this EXACT casual format connecting insights to actual 13D High Conviction portfolio holdings when relevant.
 
-CORE RESEARCH INSIGHTS:
-Prospect: ${prospectName}
-Report: ${reportTitle || 'Recent Research'}
-Match Reason: ${matchReason || 'Investment opportunity alignment'}
-Key Talking Points: ${keyTalkingPoints?.join(', ') || 'Research insights'}
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
 
-Generate a professional email following this structure:
-- Personal greeting to ${prospectName}
-- Brief market context from the report analysis
-- Detailed discussion of the key research insights and findings
-- Specific investment themes and implications from our analysis
-- Brief mention of relevant portfolio positioning only where it directly supports the research themes (top holdings: ${topHoldings.slice(0, 3).join(', ')})
-- Call to action for further discussion
+TEMPLATE TO FOLLOW EXACTLY:
+Hi ${prospectName},
 
-Focus primarily on the research content and analytical insights. Only reference portfolio holdings when they directly validate or support the core research themes.`;
+Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${keyTalkingPoints?.join(', ') || 'market dynamics'}.
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Reference specific HC holdings if they connect to this insight. (Article 2)
+
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Include HC portfolio connections when applicable. (Article 3)
+
+These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus. Our High Conviction portfolio reflects these themes with actual positions in relevant sectors.
+
+On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
+
+I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
+
+Best,
+Spencer
+
+DATA TO USE:
+${reportContext || 'No reports selected'}
+
+CRITICAL: 
+- Use bullet points (•) NOT paragraphs
+- Make each bullet detailed with specific data/percentages/ratios from reports
+- Include market implications and context in each bullet
+- Each bullet must reference (Article 1), (Article 2), (Article 3)
+- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
+- Keep conversational tone, avoid formal business language
+- Maximum 275 words`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research writing professional prospect emails that reference actual portfolio holdings when relevant to investment insights."
+            content: "You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided."
           },
           {
             role: "user",
             content: prospectEmailPrompt
           }
         ],
-        max_tokens: 600,
-        temperature: 0.2
+        max_tokens: 400,
+        temperature: 0.1
       });
 
-      let generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+      let emailContent = response.choices[0].message.content || "Unable to generate email";
+      
+      // Apply same cleaning logic as lead pipeline
+      emailContent = emailContent.replace(/[\*#]+/g, '');
+      emailContent = emailContent.replace(/^Subject:.*$/gm, '');
+      emailContent = emailContent.replace(/^.*Subject:.*$/gm, '');
+      emailContent = emailContent.replace(/^.*I hope this message finds you well\..*$/gm, '');
+      emailContent = emailContent.replace(/^.*Given your.*interest.*$/gm, '');
+      emailContent = emailContent.replace(/^.*I wanted to follow up.*$/gm, '');
+      emailContent = emailContent.replace(/^(Our recent report highlights.*?)\./gm, '• **Market Shift**: $1. (Article 1)');
+      emailContent = emailContent.replace(/^(Moreover.*?)\./gm, '• **Strategic Opportunity**: $1. (Article 2)');
+      emailContent = emailContent.replace(/^(Additionally.*?)\./gm, '• **Key Development**: $1. (Article 3)');
+      emailContent = emailContent.replace(/I would be delighted.*$/gm, '');
+      emailContent = emailContent.replace(/Looking forward.*$/gm, '');
+      emailContent = emailContent.replace(/Would you be available.*$/gm, '');
+      emailContent = emailContent.replace(/Please let me know.*convenient.*$/gm, '');
+      emailContent = emailContent.replace(/Could we schedule.*$/gm, '');
+      emailContent = emailContent.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
+      emailContent = emailContent.replace(/13D Research$/, '');
+      emailContent = emailContent.replace(/\n{3,}/g, '\n\n').trim();
 
-      // Clean formatting
-      generatedEmail = generatedEmail.replace(/[\*#]+/g, '');
-      generatedEmail = generatedEmail.replace(/\n{3,}/g, '\n\n');
-
-      // Add source report reference
-      if (reportTitle) {
-        const reportMatch = reportTitle.match(/(WILTW|WATMTU)[_-]?(\d{4}-\d{2}-\d{2})/);
-        if (reportMatch) {
-          const reportType = reportMatch[1];
-          const reportDate = reportMatch[2];
-          generatedEmail += `\n\n---\n\nSource: ${reportType} Report (${reportDate})`;
-        }
-      }
-
-      res.json({ 
-        email: generatedEmail,
-        prospectName: prospectName
+      // Return in exact same format as lead pipeline
+      res.json({
+        subject: `Quick insights for ${prospectName}`,
+        body: emailContent
       });
 
     } catch (error) {
