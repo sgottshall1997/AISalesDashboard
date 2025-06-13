@@ -786,17 +786,36 @@ Include WILTW or WATMTU dates used for the output.
 - Keep under 350 words
 - Base all insights on provided report content only`;
 
+      // Get High Conviction portfolio data for one-pager context
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(20);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 8));
+
+      const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
       const userPrompt = `Generate a one-pager with these inputs:
 - **Title**: ${reportTitle || "Market Overview"}
 - **Audience**: ${targetAudience || "Portfolio Managers"}
 - **Key Focus Areas**: ${keyFocus || "Growth opportunities and risk assessment"}
 
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
+
 AUTHENTIC 13D RESEARCH REPORTS (WILTW & WATMTU):
 ${contextText}
 
-CRITICAL: Base your entire response ONLY on the authentic 13D research content provided above. Extract specific insights, data points, investment themes, and recommendations directly from these actual WILTW and WATMTU reports. Do NOT use generic market commentary. Reference specific articles, dates, and findings from the provided reports.
+CRITICAL: Base your entire response ONLY on the authentic 13D research content provided above. Extract specific insights, data points, investment themes, and recommendations directly from these actual WILTW and WATMTU reports. When relevant, connect themes to actual 13D High Conviction portfolio positions mentioned above. Reference specific articles, dates, and findings from the provided reports.
 
-Create a professional one-pager following the structured format exactly, using only the authentic research content provided.`;
+Create a professional one-pager following the structured format exactly, incorporating HC portfolio connections where applicable.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -1421,15 +1440,34 @@ Provide a professional, data-driven response using the authentic 13D research co
         setTimeout(() => reject(new Error('OpenAI API timeout')), 8000)
       );
 
-      const callPreparationPrompt = `You are an expert institutional sales assistant. Generate professional call preparation notes for a sales conversation.
+      // Get High Conviction portfolio data for call preparation
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(15);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 8));
+
+      const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      const callPreparationPrompt = `You are an expert institutional sales assistant at 13D Research. Generate professional call preparation notes connecting prospect analysis to actual 13D High Conviction portfolio holdings.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
 
 Generate a JSON response with exactly this structure:
 {
-  "prospectSnapshot": "Name, title, firm, investment style summary",
-  "personalBackground": "Professional background, career highlights, education, previous roles, tenure at current firm, and any notable achievements or expertise areas",
-  "companyOverview": "Company description, AUM, investment focus, notable positions, recent performance, and key facts relevant for introductory calls",
-  "topInterests": "Summarize the person's known interests (sectors, macro themes, geos)",
-  "portfolioInsights": "Mention notable holdings and how they connect to current themes from past 13D reports",
+  "prospectSnapshot": "Name, title, firm, investment style summary with potential HC portfolio alignment",
+  "personalBackground": "Professional background connecting to HC portfolio sectors when relevant",
+  "companyOverview": "Company description highlighting potential interest in HC portfolio themes",
+  "topInterests": "Summarize known interests, highlighting connections to HC portfolio sectors",
+  "portfolioInsights": "Connect their holdings/interests to actual 13D HC portfolio positions and themes",
   "talkingPoints": [
     {
       "mainPoint": "Point 1 title",
