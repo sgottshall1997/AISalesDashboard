@@ -172,27 +172,47 @@ export default function LeadPipeline() {
     mutationFn: async ({ leadId, reportTitle }: { leadId: number; reportTitle: string }) => {
       const lead = leads?.find(l => l.id === leadId);
       console.log('Generating email for lead:', lead);
-      const response = await apiRequest("/api/generate-prospect-email", "POST", {
-        prospectName: lead?.name,
-        reportTitle,
-        keyTalkingPoints: Array.isArray(lead?.interest_tags) ? lead.interest_tags.join(', ') : '',
-        matchReason: lead?.notes || ''
-      });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      try {
+        // Use fetch directly to get proper Response object
+        const response = await fetch("/api/generate-prospect-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            prospectName: lead?.name,
+            reportTitle,
+            keyTalkingPoints: Array.isArray(lead?.interest_tags) ? lead.interest_tags.join(', ') : '',
+            matchReason: lead?.notes || ''
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Email response data:', data);
+        return data;
+      } catch (error) {
+        console.error('Email generation error:', error);
+        throw error;
       }
-      
-      const data = await response.json();
-      console.log('Email response data:', data);
-      return data;
     },
     onSuccess: (data, variables) => {
       console.log('Email generation successful:', data);
-      setEmailDialogs(prev => ({
-        ...prev,
-        [variables.leadId]: { open: true, email: data }
-      }));
+      console.log('Variables:', variables);
+      console.log('Setting email dialog for leadId:', variables.leadId);
+      
+      setEmailDialogs(prev => {
+        const newDialogs = {
+          ...prev,
+          [variables.leadId]: { open: true, email: data }
+        };
+        console.log('New email dialogs state:', newDialogs);
+        return newDialogs;
+      });
+      
       setGeneratingEmailFor(null);
       toast({
         title: "Email Generated",
@@ -201,6 +221,7 @@ export default function LeadPipeline() {
     },
     onError: (error) => {
       console.error('Email generation error:', error);
+      console.error('Error details:', error);
       setGeneratingEmailFor(null);
       toast({
         title: "Error",
