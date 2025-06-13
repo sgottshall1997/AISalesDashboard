@@ -692,9 +692,14 @@ export function ContentDistribution() {
                           (report.title.includes('WILTW') || !report.title.includes('WATMTU'))
                         )
                         .sort((a: any, b: any) => {
-                          // Sort by newest first
-                          const dateA = new Date(a.published_date || a.created_at || 0);
-                          const dateB = new Date(b.published_date || b.created_at || 0);
+                          // Extract date from title (e.g., "WILTW_2025-06-05" -> "2025-06-05")
+                          const extractDate = (title: string) => {
+                            const match = title.match(/(\d{4}-\d{2}-\d{2})/);
+                            return match ? new Date(match[1]) : new Date(0);
+                          };
+                          
+                          const dateA = extractDate(a.title);
+                          const dateB = extractDate(b.title);
                           return dateB.getTime() - dateA.getTime();
                         })
                         .map((report: any) => (
@@ -805,9 +810,14 @@ export function ContentDistribution() {
                           report.title.includes('WATMTU')
                         )
                         .sort((a: any, b: any) => {
-                          // Sort by newest first
-                          const dateA = new Date(a.published_date || a.created_at || 0);
-                          const dateB = new Date(b.published_date || b.created_at || 0);
+                          // Extract date from title (e.g., "WATMTU_2025-06-08" -> "2025-06-08")
+                          const extractDate = (title: string) => {
+                            const match = title.match(/(\d{4}-\d{2}-\d{2})/);
+                            return match ? new Date(match[1]) : new Date(0);
+                          };
+                          
+                          const dateA = extractDate(a.title);
+                          const dateB = extractDate(b.title);
                           return dateB.getTime() - dateA.getTime();
                         })
                         .map((report: any) => (
