@@ -2094,22 +2094,25 @@ CRITICAL:
         const content = article.content.toLowerCase();
         
         // Look for human interest, social issues, environmental, and personal development topics
-        const isPersonalTopic = content.includes('teen') || content.includes('love') || content.includes('people-pleasing') ||
+        const isPersonalTopic = content.includes('teen love') || content.includes('people-pleasing') ||
                content.includes('wildfire') || content.includes('deforestation') || content.includes('forest') ||
                content.includes('travel') || content.includes('learned') || content.includes('experience') ||
-               content.includes('social') || content.includes('relationship') || content.includes('psychology') ||
-               content.includes('behavior') || content.includes('culture') || content.includes('society') ||
-               content.includes('environment') || content.includes('climate') || content.includes('personal growth') ||
-               content.includes('lifestyle') || content.includes('well-being') || content.includes('mental health') ||
-               content.includes('education') || content.includes('learning') || content.includes('development') ||
-               content.includes('art') || content.includes('music') || content.includes('book') || content.includes('story');
+               content.includes('culture') || content.includes('lifestyle') || content.includes('personal') ||
+               content.includes('psychology') || content.includes('behavior') || content.includes('society') ||
+               content.includes('environment') || content.includes('climate') || content.includes('well-being') ||
+               content.includes('education') || content.includes('learning') || content.includes('art') ||
+               content.includes('music') || content.includes('book') || content.includes('story') ||
+               content.includes('importance of') || content.includes('cost of');
         
-        // Exclude market/financial content
+        // Exclude market/financial content and risk factors
         const isMarketRelated = content.includes('portfolio') || content.includes('trading') || 
                                content.includes('investment') || content.includes('stocks') ||
                                content.includes('financial') || content.includes('market') ||
                                content.includes('economic') || content.includes('fund') ||
-                               content.includes('capital') || content.includes('asset');
+                               content.includes('capital') || content.includes('asset') ||
+                               content.includes('risk factors') || content.includes('geopolitical') ||
+                               content.includes('export') || content.includes('commodity') ||
+                               content.includes('equity') || content.includes('mining');
         
         // Exclude China-specific content  
         const isChinaRelated = content.includes('china') || content.includes('chinese') || 
@@ -2154,6 +2157,8 @@ REQUIREMENTS:
 - Generate ${selectedArticles.length >= 3 ? '3-4' : selectedArticles.length} bullets using different content sections
 - Use actual data from each content section provided
 - Write substantive bullets with real numbers and percentages
+- EXCLUDE all references to Chinese equities, China markets, Chinese companies
+- Focus on US markets, commodities, and non-China content only
 - MUST include the personal note line exactly as written: "${personalNote}"
 - No placeholder text - write actual headlines and insights
 - Maximum 275 words`;
@@ -2178,6 +2183,15 @@ REQUIREMENTS:
       
       // Remove all * and # symbols from output
       emailSuggestion = emailSuggestion.replace(/[\*#]+/g, '');
+      
+      // Remove any Chinese equity references that slipped through
+      emailSuggestion = emailSuggestion.replace(/Chinese equities?/gi, 'commodities');
+      emailSuggestion = emailSuggestion.replace(/China markets?/gi, 'US markets');
+      emailSuggestion = emailSuggestion.replace(/Chinese companies?/gi, 'US companies');
+      emailSuggestion = emailSuggestion.replace(/and Chinese equities/gi, 'and energy sectors');
+      
+      // Fix lead name - replace "Prospect" with actual lead name
+      emailSuggestion = emailSuggestion.replace(/Hi Prospect,/g, `Hi ${leadData.name},`);
       
       // Aggressively strip any subject lines
       emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
