@@ -1605,25 +1605,31 @@ Provide a professional, data-driven response using the authentic 13D research co
       );
 
       // Get High Conviction portfolio data for call preparation
-      const hcHoldings = await db.select()
-        .from(portfolio_constituents)
-        .where(eq(portfolio_constituents.isHighConviction, true))
-        .orderBy(desc(portfolio_constituents.weightInHighConviction))
-        .limit(15);
-
+      const hcHoldings = await storage.getHighConvictionPortfolio();
+      
       const portfolioIndexes = [];
       const uniqueIndexes = new Set<string>();
       hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
       portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 8));
 
-      const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+      const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHcPortfolio || h.weightInHighConviction}%)`);
 
-      const callPreparationPrompt = `You are an expert institutional sales assistant at 13D Research. Generate professional call preparation notes connecting prospect analysis to actual 13D High Conviction portfolio holdings.
+      // Get recent report summaries for call preparation context
+      const reportSummaries = await storage.getAllReportSummaries();
+      const recentSummaries = reportSummaries
+        .slice(0, 5)
+        .map(summary => `Report: ${summary.report?.title || 'Unknown'}\nSummary: ${summary.parsed_summary}`)
+        .join('\n\n');
+
+      const callPreparationPrompt = `You are an expert institutional sales assistant at 13D Research. Generate professional call preparation notes connecting prospect analysis to actual 13D High Conviction portfolio holdings and recent parsed report summaries.
 
 13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
 - Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
 - Key HC Indexes: ${portfolioIndexes.join(', ')}
 - Top HC Holdings: ${topHoldings.join(', ')}
+
+RECENT 13D REPORT SUMMARIES:
+${recentSummaries}
 
 Generate a JSON response with exactly this structure:
 {
@@ -1730,27 +1736,39 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         res.json(callPrepResult);
         
       } catch (apiError) {
-        console.log("OpenAI API unavailable, falling back to structured response");
+        console.log("OpenAI API unavailable, falling back to structured response with real data");
         
-        // Generate structured response based on input data for demonstration
+        // Generate structured response using actual HC portfolio and parsed summaries
+        const topIndexes = portfolioIndexes.slice(0, 4);
+        const keyHoldings = topHoldings.slice(0, 6);
+        const latestReports = reportSummaries.slice(0, 3);
+        
         const callPrepResult: any = {
-          prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} focused on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'diversified investment opportunities'}.`,
+          prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} with potential alignment to 13D's high conviction themes including ${topIndexes.slice(0, 2).join(' and ')}.`,
           
-          personalBackground: `${prospectName} serves as ${title || 'investment professional'} at ${firmName || 'their firm'}. ${title && title.toLowerCase().includes('senior') ? 'Senior leadership role with' : 'Professional with'} extensive experience in institutional investment management. ${firmName ? `Current tenure at ${firmName} involves` : 'Background includes'} portfolio management, investment strategy, and client relationship oversight. Educational background likely includes finance, economics, or related field from top-tier institution.`,
+          personalBackground: `${prospectName} serves as ${title || 'investment professional'} at ${firmName || 'their firm'}. ${title && title.toLowerCase().includes('senior') ? 'Senior leadership role' : 'Professional role'} with institutional investment focus. Given interest in ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'market opportunities'}, likely aligned with 13D's research on ${topIndexes[0] || 'commodities and geopolitical themes'}.`,
           
-          companyOverview: `${firmName || 'The firm'} is an institutional investment management company ${firmName ? `specializing in ${investmentStyle || 'diversified strategies'}` : 'focused on institutional clients'}. ${Array.isArray(portfolioHoldings) && portfolioHoldings.length > 0 ? `Notable holdings include ${portfolioHoldings.slice(0, 3).join(', ')}.` : 'Portfolio focuses on high-conviction positions across multiple asset classes.'} The firm manages significant assets for institutional clients including pension funds, endowments, and foundations. Strong track record in ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'equity markets'} with emphasis on research-driven investment approach.`,
+          companyOverview: `${firmName || 'The firm'} manages institutional capital with focus on ${investmentStyle || 'diversified strategies'}. ${Array.isArray(portfolioHoldings) && portfolioHoldings.length > 0 ? `Current holdings include ${portfolioHoldings.slice(0, 2).join(', ')}.` : `Potential interest in 13D's high conviction sectors: ${topIndexes.slice(0, 3).join(', ')}.`} Institution likely evaluates thematic opportunities similar to 13D's research coverage.`,
           
-          topInterests: `Primary focus areas include ${Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : 'equity markets, macro themes, and sector rotation opportunities'}. ${Array.isArray(portfolioHoldings) && portfolioHoldings.length > 0 ? `Current portfolio exposure to ${portfolioHoldings.slice(0, 2).join(' and ')}.` : ''} Interest in emerging market trends, geopolitical developments, and sector-specific opportunities that align with institutional mandates.`,
+          topInterests: `Primary focus: ${Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : 'institutional themes'}. ${latestReports.length > 0 ? `Recent 13D analysis covers ${latestReports[0].report?.title || 'market themes'} which aligns with their mandate.` : `Potential synergy with 13D's coverage of ${topIndexes.slice(0, 2).join(' and ')}.`}`,
           
-          portfolioInsights: `${Array.isArray(portfolioHoldings) && portfolioHoldings.length > 0 ? `Current holdings in ${portfolioHoldings.join(', ')} suggest focus on ${interests && interests.length > 0 ? interests[0] : 'growth themes'}.` : 'Portfolio likely structured around core institutional themes.'} Recent 13D Research reports on ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'technology and healthcare'} sectors align with their investment mandate. Positioning suggests interest in companies with strong competitive moats and sustainable growth profiles.`,
+          portfolioInsights: `13D's high conviction portfolio (${keyHoldings.length > 0 ? keyHoldings.slice(0, 3).join(', ') : 'diversified holdings'}) demonstrates our conviction in ${topIndexes.slice(0, 2).join(' and ')} themes. ${latestReports.length > 0 && latestReports[0].parsed_summary ? `Latest research: ${latestReports[0].parsed_summary.substring(0, 150)}...` : 'Our research provides institutional-grade analysis on these themes.'} This positioning offers compelling discussion points for their investment committee.`,
           
           talkingPoints: [
             {
-              mainPoint: `${Array.isArray(interests) && interests.length > 0 ? interests[0].charAt(0).toUpperCase() + interests[0].slice(1) : 'Technology'} Sector Opportunities`,
+              mainPoint: `13D High Conviction Portfolio Alignment`,
               subBullets: [
-                `Recent earnings growth of 15-20% across leading ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'technology'} companies`,
-                `Regulatory environment stabilizing with clearer policy framework emerging`,
-                `Valuation multiples compressed 25% from peaks, creating entry opportunities`
+                `Our ${keyHoldings.length > 0 ? keyHoldings.length : '10+'} high conviction holdings include ${keyHoldings.slice(0, 2).join(', ')}`,
+                `Portfolio concentrated in ${topIndexes.slice(0, 3).join(', ')} with 85.84% total weight`,
+                `Themes align with institutional focus on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'diversified opportunities'}`
+              ]
+            },
+            {
+              mainPoint: `Recent Research Insights`,
+              subBullets: [
+                `${latestReports.length > 0 && latestReports[0].report?.title ? `Latest report: ${latestReports[0].report.title}` : 'Recent analysis on market dynamics'}`,
+                `${latestReports.length > 0 && latestReports[0].parsed_summary ? latestReports[0].parsed_summary.substring(0, 100) + '...' : 'Focus on institutional-grade investment themes'}`,
+                `Research supports ${topIndexes[0] || 'commodities'} allocation with compelling risk/reward profile`
               ]
             },
             {
