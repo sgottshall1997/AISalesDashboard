@@ -2089,7 +2089,7 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports available';
 
-      // Find personal/lifestyle articles for the lighter note section (exclude China-related content)
+      // Find personal/non-market articles from the reports (exclude China-related content)
       const personalArticles = extractedArticles.filter((article: any) => {
         const content = article.content.toLowerCase();
         const isPersonal = content.includes('travel') || content.includes('culture') || content.includes('lifestyle') || 
@@ -2097,17 +2097,23 @@ CRITICAL:
                content.includes('sports') || content.includes('entertainment') || content.includes('social') ||
                content.includes('family') || content.includes('vacation') || content.includes('hobby') ||
                content.includes('restaurant') || content.includes('music') || content.includes('book') ||
-               content.includes('wellness') || content.includes('technology trends');
+               content.includes('wellness') || content.includes('technology trends') || content.includes('health') ||
+               content.includes('education') || content.includes('innovation') || content.includes('science') ||
+               content.includes('research') || content.includes('development');
         
         const isChinaRelated = content.includes('china') || content.includes('chinese') || 
                               content.includes('beijing') || content.includes('shanghai');
         
-        return isPersonal && !isChinaRelated;
+        const isNonMarket = !content.includes('portfolio') && !content.includes('trading') && 
+                           !content.includes('investment') && !content.includes('stocks') &&
+                           !content.includes('market') && !content.includes('financial');
+        
+        return (isPersonal || isNonMarket) && !isChinaRelated;
       });
 
       const personalNote = personalArticles.length > 0 
-        ? `I came across an interesting piece on ${personalArticles[0].content.substring(0, 100)}... (Article ${personalArticles[0].articleNumber})`
-        : 'I came across an interesting piece on the cultural impact of global economic shifts.';
+        ? `I came across an interesting piece on ${personalArticles[0].content.substring(0, 120).replace(/[^\w\s]/gi, '').trim()}... (Article ${personalArticles[0].articleNumber})`
+        : 'I noticed an interesting development in our broader research on technological innovation patterns.';
 
       const emailPrompt = `You are Spencer from 13D Research writing a casual email to ${leadData.name}. Generate an email with exactly 3-4 bullets using different content sections provided.
 
@@ -2130,7 +2136,7 @@ ${selectedArticles.length > 3 ? '• **Market Dynamics Analysis**: Additional in
 
 These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top US holdings: ${topUsHoldings.length > 0 ? topUsHoldings.join(', ') : 'GLD, SPY, QQQ'}).
 
-On a lighter note, ${personalNote}
+${personalNote}
 
 I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
 
