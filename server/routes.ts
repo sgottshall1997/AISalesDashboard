@@ -3691,6 +3691,28 @@ Prioritize the research content and analytical insights over portfolio reference
         `Report: ${report.title}\nSummary: ${report.content_summary || report.summary || 'No summary available'}`
       ).join('\n\n');
 
+      // Get specific report content and summaries if reportTitle is provided
+      let specificReportContent = '';
+      if (reportTitle && reportTitle !== 'Recent Report') {
+        try {
+          const specificReport = contentReports.find((r: any) => r.title === reportTitle);
+          if (specificReport) {
+            // Get report summaries for this specific report
+            const reportSummaries = await storage.getReportSummariesByReportId(specificReport.id);
+            let fullReportContent = specificReport.full_content || specificReport.content_summary || '';
+            
+            if (reportSummaries && reportSummaries.length > 0) {
+              const latestSummary = reportSummaries[0];
+              fullReportContent = latestSummary.parsed_summary || fullReportContent;
+            }
+            
+            specificReportContent = `\n\nSPECIFIC REPORT CONTENT FOR PERSONAL NOTE:\nReport: ${specificReport.title}\nDetailed Content: ${fullReportContent}`;
+          }
+        } catch (error) {
+          console.warn("Could not retrieve specific report content:", error);
+        }
+      }
+
       // Get High Conviction portfolio data - same as lead pipeline
       const hcHoldings = await db.select()
         .from(portfolio_constituents)
@@ -3736,14 +3758,15 @@ Best,
 Spencer
 
 DATA TO USE:
-${reportContext || 'No reports selected'}
+${reportContext || 'No reports selected'}${specificReportContent}
 
 CRITICAL: 
 - Use bullet points (•) NOT paragraphs
 - Make each bullet detailed with specific data/percentages/ratios from reports
 - Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
-- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
+- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the actual reports provided above
+- If specific report content is provided, use actual personal/lifestyle content from that report for the personal note
 - Keep conversational tone, avoid formal business language
 - Maximum 275 words`;
 
