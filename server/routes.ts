@@ -1766,9 +1766,9 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
             {
               mainPoint: `Recent Research Insights`,
               subBullets: [
-                `${latestReports.length > 0 && latestReports[0].report?.title ? `Latest report: ${latestReports[0].report.title}` : 'Recent analysis on market dynamics'}`,
-                `${latestReports.length > 0 && latestReports[0].parsed_summary ? latestReports[0].parsed_summary.substring(0, 100) + '...' : 'Focus on institutional-grade investment themes'}`,
-                `Research supports ${topIndexes[0] || 'commodities'} allocation with compelling risk/reward profile`
+                `Latest analysis covers ${Array.isArray(interests) && interests.length > 0 ? interests.slice(0, 2).join(' and ') : 'commodities and geopolitical themes'} with institutional-grade research`,
+                `${topIndexes.includes('13D Critical Minerals Index') ? 'Critical minerals positioning aligns with uranium and gold exposure themes' : 'Commodities research supports precious metals and energy positioning'}`,
+                `Research supports ${Array.isArray(interests) && interests.length > 0 && interests.some(i => ['gold', 'commodities', 'mining'].includes(i.toLowerCase())) ? 'precious metals' : topIndexes[0] || 'commodities'} allocation with compelling risk/reward profile`
               ]
             },
             {
