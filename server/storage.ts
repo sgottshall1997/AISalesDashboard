@@ -1140,6 +1140,19 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     const result = await db.delete(report_summaries).where(eq(report_summaries.content_report_id, contentReportId));
     return (result.rowCount ?? 0) > 0;
   }
+
+  async getHighConvictionPortfolio(): Promise<PortfolioConstituent[]> {
+    try {
+      return await db
+        .select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHcPortfolio));
+    } catch (error) {
+      console.error('Error fetching high conviction portfolio:', error);
+      return [];
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

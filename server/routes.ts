@@ -2174,6 +2174,7 @@ HARD RULES:
 • DO NOT use phrases like "Article 1," "titled," or "the report outlines"
 • MANDATORY: Every bullet point MUST end with (Article X) where X is a different number (2, 3, 4, etc.)
 • Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
+${highConvictionPortfolio ? `• When relevant, naturally reference our high conviction portfolio holdings: ${highConvictionPortfolio}` : ''}
 
 STRUCTURE TO FOLLOW:
 
