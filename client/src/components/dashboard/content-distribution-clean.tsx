@@ -220,13 +220,12 @@ export function ContentDistribution() {
             const isWATMTU = report.title.includes("WATMTU") || reportType === "watmtu";
             const promptType = isWATMTU ? "watmtu_parser" : "wiltw_parser";
 
-            const parseResponse = await apiRequest("/api/ai/summarize-report", "POST", {
+            const parseResult = await apiRequest("/api/ai/summarize-report", "POST", {
               reportId: report.id.toString(),
               title: report.title,
               promptType: promptType
             });
             
-            const parseResult = await parseResponse.json();
             console.log(`AI parsing completed for ${report.title}, summary length: ${parseResult.summary?.length || 0}`);
           }
         }
