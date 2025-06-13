@@ -1994,6 +1994,30 @@ CRITICAL:
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+      // Fetch high conviction portfolio data
+      let highConvictionPortfolio = '';
+      try {
+        const portfolioData = await storage.getHighConvictionPortfolio();
+        if (portfolioData && portfolioData.length > 0) {
+          // Group by index and get top holdings
+          const indexGroups = portfolioData.reduce((acc: any, item: any) => {
+            if (!acc[item.index]) acc[item.index] = [];
+            acc[item.index].push(item);
+            return acc;
+          }, {});
+          
+          // Build portfolio reference with top 3 indexes
+          const topIndexes = Object.keys(indexGroups).slice(0, 3);
+          highConvictionPortfolio = topIndexes.map(index => {
+            const holdings = indexGroups[index].slice(0, 3); // Top 3 holdings per index
+            const holdingNames = holdings.map((h: any) => h.ticker).join(', ');
+            return `${index} (${holdingNames})`;
+          }).join('; ');
+        }
+      } catch (error) {
+        console.log('High conviction portfolio fetch failed:', error);
+      }
+
       // Prepare report content for the prompt - combine all selected reports
       let combinedReportContent = '';
       let reportTitles = [];

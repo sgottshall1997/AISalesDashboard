@@ -1,6 +1,6 @@
 import { 
   clients, invoices, leads, content_reports, client_engagements, ai_suggestions, email_history, reading_history, lead_email_history, report_summaries, tasks,
-  ai_generated_content, ai_content_feedback, feedback,
+  ai_generated_content, ai_content_feedback, feedback, portfolio_constituents,
   type Client, type InsertClient, type Invoice, type InsertInvoice,
   type Lead, type InsertLead, type ContentReport, type InsertContentReport,
   type ClientEngagement, type InsertClientEngagement,
@@ -8,7 +8,7 @@ import {
   type ReadingHistory, type InsertReadingHistory, type LeadEmailHistory, type InsertLeadEmailHistory,
   type ReportSummary, type InsertReportSummary, type Task, type InsertTask,
   type AiGeneratedContent, type InsertAiGeneratedContent, type AiContentFeedback, type InsertAiContentFeedback,
-  type Feedback, type InsertFeedback,
+  type Feedback, type InsertFeedback, type PortfolioConstituent,
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
@@ -115,6 +115,9 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, updates: Partial<InsertTask>): Promise<Task | undefined>;
   deleteTask(id: number): Promise<boolean>;
+
+  // Portfolio data
+  getHighConvictionPortfolio(): Promise<any[]>;
 
   // AI Feedback Loop
   createAiGeneratedContent(content: InsertAiGeneratedContent): Promise<AiGeneratedContent>;
