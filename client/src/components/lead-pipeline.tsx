@@ -248,10 +248,17 @@ export default function LeadPipeline() {
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
       const response = await apiRequest(`/api/leads/${leadId}`, "DELETE");
-      return response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      // Check if response has content before parsing JSON
+      const text = await response.text();
+      return text ? JSON.parse(text) : {};
     },
     onSuccess: () => {
+      // Force refetch of leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.refetchQueries({ queryKey: ["/api/leads"] });
       toast({
         title: "Lead deleted",
         description: "Lead has been removed successfully.",
