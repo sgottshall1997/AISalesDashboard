@@ -18,7 +18,7 @@ async function updatePortfolioConstituents() {
     console.log('Cleared existing portfolio constituents');
 
     // Process 13D Index Constituents CSV
-    const allConstituentsPath = '../attached_assets/20250514_All 13D Index Constituents.xlsx - Sheet1_1749785607919.csv';
+    const allConstituentsPath = '../attached_assets/20250514_All 13D Index Constituents.xlsx - Sheet1_1749786057214.csv';
     const hcIdeasPath = '../attached_assets/20250519_HC Ideas Constituents.xlsx - Components_1749785613691.csv';
 
     const constituents = new Map(); // Use Map to avoid duplicates
