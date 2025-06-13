@@ -583,34 +583,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
         .slice(0, 8);
 
-      // Get report summaries for context
-      const reportContext = [];
-      for (const report of recentReports) {
-        try {
-          const summary = await storage.getReportSummary(report.id);
-          if (summary && summary.parsed_summary) {
-            reportContext.push({
-              title: report.title,
-              date: report.published_date,
-              summary: summary.parsed_summary.substring(0, 500),
-              type: report.type
-            });
-          } else if (report.content_summary) {
-            reportContext.push({
-              title: report.title,
-              date: report.published_date,
-              summary: report.content_summary.substring(0, 500),
-              type: report.type
-            });
-          }
-        } catch (err) {
-          console.error(`Error getting summary for report ${report.id}:`, err);
-        }
-      }
-
-      const contextText = reportContext.map(r => 
-        `${r.title} (${r.date}): ${r.summary}`
-      ).join('\n\n');
+      // Get simplified report context for faster processing
+      const reportTitles = recentReports.slice(0, 4).map(r => r.title);
+      const reportTypes = recentReports.slice(0, 4).map(r => r.type);
+      
+      // Use basic report info instead of full summaries to avoid timeout
+      const contextSummary = `Recent reports: ${reportTitles.join(', ')}. Types: ${reportTypes.join(', ')}.`;
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -622,43 +600,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 - Top HC Holdings: ${topHoldings.join(', ')}
 
 RECENT REPORTS:
-${contextText}
+${contextSummary}
 
-Generate a JSON array of exactly 4 content suggestions with this structure:
-[
-  {
-    "type": "frequent_theme",
-    "title": "Theme title connecting to HC portfolio when relevant",
-    "description": "Description highlighting investment opportunities",
-    "emailAngle": "Why this matters now for institutional investors",
-    "supportingReports": ["Report title 1", "Report title 2"],
-    "keyPoints": ["Specific insight 1", "Specific insight 2", "HC portfolio connection when relevant"],
-    "insights": ["Data point from reports", "Market implication"],
-    "priority": "high"
-  }
-]
+Generate a JSON object with "suggestions" array containing exactly 4 content suggestions:
+{
+  "suggestions": [
+    {
+      "type": "frequent_theme",
+      "title": "Theme title connecting to HC portfolio when relevant",
+      "description": "Description highlighting investment opportunities",
+      "emailAngle": "Why this matters now for institutional investors",
+      "supportingReports": ["Report title 1", "Report title 2"],
+      "keyPoints": ["Specific insight 1", "Specific insight 2", "HC portfolio connection when relevant"],
+      "insights": ["Data point from reports", "Market implication"],
+      "priority": "high"
+    }
+  ]
+}
 
-Types should be: "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
+Types: "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
 Priorities: "high", "medium", "low"
-
 Base suggestions ONLY on actual report content provided. Connect themes to HC portfolio holdings when thematically relevant.`;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert investment analyst generating campaign suggestions based on actual 13D Research reports and portfolio holdings. Return valid JSON only."
-          },
-          {
-            role: "user",
-            content: suggestionsPrompt
-          }
-        ],
-        max_tokens: 1200,
-        temperature: 0.3,
-        response_format: { type: "json_object" }
-      });
+      const response = await Promise.race([
+        openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert investment analyst generating campaign suggestions based on actual 13D Research reports and portfolio holdings. Return valid JSON only."
+            },
+            {
+              role: "user",
+              content: suggestionsPrompt
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.3,
+          response_format: { type: "json_object" }
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('OpenAI timeout')), 8000)
+        )
+      ]);
 
       let suggestionsContent = response.choices[0].message.content || '{"suggestions": []}';
       
