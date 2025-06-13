@@ -759,6 +759,21 @@ export function ContentDistribution() {
                   <FileText className="w-4 h-4" />
                   Load Saved
                 </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    if (selectedReport && confirm("Are you sure you want to delete this report? This action cannot be undone.")) {
+                      deleteReportMutation.mutate(parseInt(selectedReport));
+                      setSelectedReport("");
+                    }
+                  }}
+                  disabled={!selectedReport || deleteReportMutation.isPending}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteReportMutation.isPending ? "Deleting..." : "Delete"}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -856,6 +871,21 @@ export function ContentDistribution() {
                 >
                   <FileText className="w-4 h-4" />
                   Load Saved
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={() => {
+                    if (selectedReport && confirm("Are you sure you want to delete this report? This action cannot be undone.")) {
+                      deleteReportMutation.mutate(parseInt(selectedReport));
+                      setSelectedReport("");
+                    }
+                  }}
+                  disabled={!selectedReport || deleteReportMutation.isPending}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {deleteReportMutation.isPending ? "Deleting..." : "Delete"}
                 </Button>
               </div>
             </div>

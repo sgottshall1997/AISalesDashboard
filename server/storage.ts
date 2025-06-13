@@ -939,55 +939,8 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
     engagementLevel?: string;
     limit: number;
   }): Promise<any[]> {
-    try {
-      let sqlQuery = `
-        SELECT 
-          cr.*,
-          ts_rank(search_vector, plainto_tsquery('english', $1)) as relevance_score,
-          ts_headline('english', 
-            COALESCE(cr.full_content, cr.summary, ''), 
-            plainto_tsquery('english', $1),
-            'MaxWords=20, MinWords=10'
-          ) as highlight
-        FROM content_reports cr
-        WHERE search_vector @@ plainto_tsquery('english', $1)
-      `;
-      
-      const queryParams: any[] = [params.query];
-      let paramIndex = 2;
-
-      if (params.type) {
-        sqlQuery += ` AND cr.type = $${paramIndex}`;
-        queryParams.push(params.type);
-        paramIndex++;
-      }
-
-      if (params.engagementLevel) {
-        sqlQuery += ` AND cr.engagement_level = $${paramIndex}`;
-        queryParams.push(params.engagementLevel);
-        paramIndex++;
-      }
-
-      if (params.dateRange) {
-        const days = parseInt(params.dateRange.replace('d', '')) || 30;
-        sqlQuery += ` AND cr.published_date >= NOW() - INTERVAL '${days} days'`;
-      }
-
-      sqlQuery += ` ORDER BY relevance_score DESC LIMIT $${paramIndex}`;
-      queryParams.push(params.limit);
-
-      const result = await this.pool.query(sqlQuery, queryParams);
-      
-      return result.rows.map(row => ({
-        ...row,
-        highlights: row.highlight ? [row.highlight] : [],
-        relevance_score: parseFloat(row.relevance_score || '0')
-      }));
-      
-    } catch (error) {
-      console.error('Full-text search error:', error);
-      return this.fallbackSearch(params);
-    }
+    // Fallback to basic search since we don't have full-text search setup
+    return this.fallbackSearch(params);
   }
 
   private async fallbackSearch(params: {
@@ -999,32 +952,32 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
   }): Promise<any[]> {
     const searchTerm = `%${params.query.toLowerCase()}%`;
     
-    let query = db.select().from(content_reports);
+    let baseQuery = db.select().from(content_reports);
     
-    query = query.where(
-      or(
-        ilike(content_reports.title, searchTerm),
-        ilike(content_reports.summary, searchTerm),
-        ilike(content_reports.full_content, searchTerm)
-      )
-    );
+    const conditions = [
+      ilike(content_reports.title, searchTerm),
+      ilike(content_reports.content_summary, searchTerm),
+      ilike(content_reports.full_content, searchTerm)
+    ];
+
+    let finalQuery = baseQuery.where(or(...conditions));
 
     if (params.type) {
-      query = query.where(eq(content_reports.type, params.type));
+      finalQuery = finalQuery.where(eq(content_reports.type, params.type));
     }
 
     if (params.engagementLevel) {
-      query = query.where(eq(content_reports.engagement_level, params.engagementLevel));
+      finalQuery = finalQuery.where(eq(content_reports.engagement_level, params.engagementLevel));
     }
 
     if (params.dateRange) {
       const days = parseInt(params.dateRange.replace('d', '')) || 30;
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
-      query = query.where(gte(content_reports.published_date, cutoffDate));
+      finalQuery = finalQuery.where(gte(content_reports.published_date, cutoffDate));
     }
 
-    const results = await query
+    const results = await finalQuery
       .orderBy(desc(content_reports.published_date))
       .limit(params.limit);
 
