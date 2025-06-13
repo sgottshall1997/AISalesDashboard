@@ -1618,40 +1618,42 @@ Provide a professional, data-driven response using the authentic 13D research co
 
       const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
 
-      const callPreparationPrompt = `You are an expert institutional sales assistant at 13D Research. Generate professional call preparation notes connecting prospect analysis to actual 13D High Conviction portfolio holdings.
+      const callPreparationPrompt = `Generate professional call preparation notes based primarily on prospect information and market research insights.
 
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
-- Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
+PROSPECT ANALYSIS FOCUS:
+Prospect: ${prospectName} ${title ? `(${title})` : ''} ${firmName ? `at ${firmName}` : ''}
+Interests: ${interests || 'Investment research'}
+Investment Style: ${investmentStyle || 'Not specified'}
+Portfolio Holdings: ${portfolioHoldings || 'Not specified'}
+Past Interactions: ${pastInteractions || 'First interaction'}
+Notes: ${notes || 'No additional notes'}
 
-Generate a JSON response with exactly this structure:
+SECONDARY CONTEXT (reference only where relevant):
+HC Portfolio: ${topHoldings.slice(0, 4).join(', ')} (top sectors: Gold/Mining 35.5%, Commodities 23.0%)
+
+Generate a JSON response with 4 structured talking points focused primarily on prospect analysis:
 {
-  "prospectSnapshot": "Name, title, firm, investment style summary with potential HC portfolio alignment",
-  "personalBackground": "Professional background connecting to HC portfolio sectors when relevant",
-  "companyOverview": "Company description highlighting potential interest in HC portfolio themes",
-  "topInterests": "Summarize known interests, highlighting connections to HC portfolio sectors",
-  "portfolioInsights": "Connect their holdings/interests to actual 13D HC portfolio positions and themes",
+  "prospectSnapshot": "Name, title, firm overview based on provided information",
+  "personalBackground": "Professional background and investment focus areas",
+  "companyOverview": "Firm description and investment approach where available",
+  "topInterests": "Known interests and investment preferences",
+  "portfolioInsights": "Analysis of their stated holdings/interests",
   "talkingPoints": [
     {
-      "mainPoint": "Point 1 title",
-      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+      "mainPoint": "Prospect Background Analysis",
+      "subBullets": ["Professional experience insights", "Investment style alignment", "Key areas of expertise"]
     },
     {
-      "mainPoint": "Point 2 title", 
-      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+      "mainPoint": "Market Opportunity Discussion", 
+      "subBullets": ["Relevant market trends", "Investment themes of interest", "Strategic considerations"]
     },
     {
-      "mainPoint": "Point 3 title",
-      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+      "mainPoint": "Research Alignment Points",
+      "subBullets": ["13D research areas matching interests", "Relevant analytical insights", "Value proposition"]
     },
     {
-      "mainPoint": "Point 4 title",
-      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
-    },
-    {
-      "mainPoint": "Point 5 title",
-      "subBullets": ["Specific detail to mention", "Supporting data or insight", "How this connects to their interests"]
+      "mainPoint": "Portfolio Context",
+      "subBullets": ["HC portfolio themes where relevant", "Strategic positioning", "Next steps for engagement"]
     }
   ],
   "smartQuestions": [
@@ -1675,7 +1677,7 @@ Use the following data to generate your output:
 - Notes: ${notes}
 - Past Interactions: ${pastInteractions}
 
-For talkingPoints, create 5 strategic talking points with detailed sub-bullets that include:
+For talkingPoints, create 4 strategic talking points with detailed sub-bullets that include:
 - Specific data points, statistics, or market insights that demonstrate deep knowledge
 - References to recent market developments or macro trends
 - Connection to their known interests/holdings
@@ -2265,38 +2267,24 @@ When relevant to the theme, reference specific sectors or companies from our por
         // WATMTU parser - focus on market analysis and technical indicators
         const systemPrompt = `You are an expert financial analyst specializing in WATMTU (What Are The Markets Telling Us) reports. Your task is to create comprehensive market analysis summaries that extract key insights, technical indicators, and investment themes.`;
 
-        const userPrompt = `Analyze this ${reportTypeLabel} report and create a structured comprehensive analysis:
+        const userPrompt = `Analyze this ${reportTypeLabel} report and create a structured analysis with exactly 4 bullet points:
 
 **Report Title:** ${title}
 **Content:** ${content}
 
-Please provide a detailed analysis in this format:
+Generate analysis with this exact structure:
 
 **${reportTypeLabel} Report Analysis: ${title}**
 
-- **Core Investment Thesis:** [Main investment themes and market outlook]
+• **Core Investment Thesis**: Main investment themes, market outlook, and strategic positioning insights from the report
 
-- **Key Market Developments:**
-  - *Technical breakouts and pattern analysis:* [Chart patterns, breakouts, technical levels]
-  - *Sector performance and relative strength:* [Sector rotation, outperformers/underperformers]
-  - *Macro economic indicators:* [Economic data, policy impacts, global trends]
+• **Key Market Developments**: Technical analysis, sector performance, chart patterns, and economic indicators discussed in the report
 
-- **Investment Opportunities:**
-  - *High conviction themes:* [Top investment themes with rationale]
-  - *Tactical allocations:* [Short to medium term positioning]
-  - *Contrarian plays:* [Counter-trend opportunities]
+• **Investment Opportunities**: High conviction themes, tactical allocations, and contrarian plays identified in the analysis
 
-- **Risk Considerations:**
-  - *Market risks:* [Volatility, correlation, liquidity concerns]
-  - *Geopolitical factors:* [Policy risks, international tensions]
-  - *Technical warnings:* [Chart patterns suggesting caution]
+• **Risk Assessment**: Market risks, geopolitical factors, technical warnings, and recommended portfolio positioning strategies
 
-- **Portfolio Positioning:**
-  - *Recommended actions:* [Specific buy/sell/hold recommendations]
-  - *Asset allocation guidance:* [Sector weights, geographic exposure]
-  - *Hedging strategies:* [Risk management approaches]
-
-Focus on actionable insights and specific investment implications.`;
+Focus 100% on actual report content and actionable investment insights.`;
 
         const response = await openai.chat.completions.create({
           model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
