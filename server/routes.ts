@@ -1954,22 +1954,25 @@ CRITICAL:
     }
   });
 
-  // Lead-specific email generation endpoint
+  // AI email generation for leads
   app.post("/api/ai/generate-lead-email", async (req: Request, res: Response) => {
     try {
-      const { lead, emailHistory, contentReports, selectedReportIds, leadName, leadCompany, reports } = req.body;
+      const { lead, emailHistory, contentReports, selectedReportIds } = req.body;
       
-      // Build lead data from any available parameters
-      const leadData = {
-        name: (lead && lead.name) || leadName || "Prospect",
-        company: (lead && lead.company) || leadCompany || "Organization",
-        interest_tags: (lead && lead.interest_tags) || []
-      };
+      if (!lead) {
+        return res.status(400).json({ error: "Lead data is required" });
+      }
 
       if (!process.env.OPENAI_API_KEY) {
         return res.status(400).json({ 
           error: "OpenAI API key not configured. Please provide your API key to enable AI-powered email generation." 
         });
+      }
+
+      // Get lead's email history from database if not provided
+      let leadEmailHistory = emailHistory;
+      if (!leadEmailHistory) {
+        leadEmailHistory = await storage.getLeadEmailHistory(lead.id);
       }
 
       // Get High Conviction portfolio data for lead email context, filtering for US-relevant holdings
