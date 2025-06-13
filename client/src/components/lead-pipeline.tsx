@@ -53,8 +53,11 @@ export default function LeadPipeline() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>({});
-  const [sortBy, setSortBy] = useState<"created_at" | "name" | "company">("created_at");
+  const [sortBy, setSortBy] = useState<"created_at" | "name" | "company" | "likelihood_of_closing" | "engagement_level">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [filterByStage, setFilterByStage] = useState<string[]>([]);
+  const [filterByLikelihood, setFilterByLikelihood] = useState<string[]>([]);
+  const [filterByEngagement, setFilterByEngagement] = useState<string[]>([]);
   const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
   const [generatingEmailFor, setGeneratingEmailFor] = useState<number | null>(null);
   const [emailDialogs, setEmailDialogs] = useState<Record<number, { open: boolean; email: AIEmailResponse | null }>>({});
