@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { generateAIEmail } from "./openai";
+import { generateThemeBasedEmailSuggestions, generateThemeBasedEmail } from "./ai";
 import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
@@ -9,9 +9,11 @@ import csv from "csv-parser";
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history
+  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history,
+  portfolio_constituents
 } from "@shared/schema";
 import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -211,7 +213,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       
-      const prospectingPrompt = `You are an expert investment advisor. Generate prospecting insights based on ${reportIntelligence.length} research reports.
+      // Get High Conviction portfolio data for context
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(15);
+
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      const topHCIndexes = Array.from(uniqueIndexes).slice(0, 8);
+      const topHCTickers = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      const prospectingPrompt = `You are an expert investment advisor at 13D Research. Generate prospecting insights based on ${reportIntelligence.length} research reports, connecting them to actual 13D High Conviction portfolio holdings.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT:
+- Total HC Holdings: 165 securities (85.84% portfolio weight)
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${topHCIndexes.join(', ')}
+- Top HC Holdings: ${topHCTickers.join(', ')}
 
 Reports available:
 ${reportIntelligence.map((report, i) => `${i+1}. ${report.title} (${report.sectors.join(', ')})`).join('\n')}
@@ -221,13 +241,14 @@ Target Client: ${client.name} at ${client.company}
 Interest Areas: ${client.interest_tags?.join(', ') || 'General investing'}
 ` : ''}
 
-Provide a JSON response with actionable prospecting insights:
+Provide a JSON response with actionable prospecting insights that connect report themes to HC portfolio positions:
 {
-  "topOpportunities": ["3-4 specific market opportunities"],
-  "talkingPoints": ["4-5 conversation starters"],
-  "marketThemes": ["3-4 key investment themes"],
-  "nextSteps": ["2-3 recommended actions"],
-  "reportReferences": ["Key reports to mention"]
+  "topOpportunities": ["3-4 specific market opportunities with HC portfolio connections"],
+  "talkingPoints": ["4-5 conversation starters referencing actual HC holdings when relevant"],
+  "marketThemes": ["3-4 key investment themes aligned with HC portfolio sectors"],
+  "nextSteps": ["2-3 recommended actions including portfolio implications"],
+  "reportReferences": ["Key reports to mention"],
+  "portfolioConnections": ["Specific HC holdings that align with report themes"]
 }`;
 
       const analysisResponse = await openai.chat.completions.create({

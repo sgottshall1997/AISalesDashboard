@@ -142,15 +142,15 @@ export async function generateThemeBasedEmail(
     const { desc, and, eq } = await import("drizzle-orm");
     
     const hcHoldings = await db.select()
-      .from(portfolioConstituents)
-      .where(eq(portfolioConstituents.isHighConviction, true))
-      .orderBy(desc(portfolioConstituents.weightInHcPortfolio))
+      .from(portfolio_constituents)
+      .where(eq(portfolio_constituents.isHighConviction, true))
+      .orderBy(desc(portfolio_constituents.weightInHighConviction))
       .limit(20);
 
     // Group HC holdings by theme for context
-    const goldMiners = hcHoldings.filter(h => h.index?.includes('Gold') || h.index?.includes('Miners')).slice(0, 3);
-    const chinaHoldings = hcHoldings.filter(h => h.index?.includes('China')).slice(0, 3);
-    const commodityHoldings = hcHoldings.filter(h => h.index?.includes('Commodity') || h.index?.includes('Energy')).slice(0, 3);
+    const goldMiners = hcHoldings.filter((h: any) => h.index?.includes('Gold') || h.index?.includes('Miners')).slice(0, 3);
+    const chinaHoldings = hcHoldings.filter((h: any) => h.index?.includes('China')).slice(0, 3);
+    const commodityHoldings = hcHoldings.filter((h: any) => h.index?.includes('Commodity') || h.index?.includes('Energy')).slice(0, 3);
 
     // Using Enhancement Plan's exact prompt template specification
     const insightsText = insights && insights.length > 0 ? insights : keyPoints || [];
