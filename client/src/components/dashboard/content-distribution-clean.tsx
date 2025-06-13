@@ -423,7 +423,7 @@ export function ContentDistribution() {
       const response = await apiRequest("/api/match-prospect-themes", "POST", {
         reportContent: reportSummary
       });
-      return response.json();
+      return response;
     },
     onMutate: () => {
       setIsMatchingProspects(true);
