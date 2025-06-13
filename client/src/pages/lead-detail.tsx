@@ -50,6 +50,16 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
     return title;
   };
 
+  const handleCheckboxChange = (contentReportId: number, checked: boolean) => {
+    startTransition(() => {
+      if (checked) {
+        setSelectedReportIds([...selectedReportIds, contentReportId]);
+      } else {
+        setSelectedReportIds(selectedReportIds.filter(id => id !== contentReportId));
+      }
+    });
+  };
+
   // Deduplicate reports by title, keeping the most recent one
   const deduplicateReports = (reports: any[]) => {
     try {
