@@ -67,6 +67,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const aiTools = [
     { id: "content", name: "Content Summarizer", icon: TrendingUp, path: "/?section=content" },
+    { id: "hc-portfolio", name: "HC Portfolio", icon: Building2, path: "/portfolio-constituents" },
     { id: "call-preparation", name: "Call Preparation", icon: Phone, path: "/ai-tools/call-preparation" },
     { id: "campaign-suggestions", name: "Campaign Ideas", icon: Lightbulb, path: "/ai-tools/campaign-suggestions" },
     { id: "prospect-fund-matcher", name: "Prospect & Fund Matcher", icon: Target, path: "/ai-tools/unified-prospect-fund-matcher" },
