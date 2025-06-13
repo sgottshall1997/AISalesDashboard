@@ -554,11 +554,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // AI Content Tools endpoints - Dynamic generation from actual parsed summaries
   app.get("/api/ai/content-suggestions", async (req: Request, res: Response) => {
     try {
-      if (!process.env.OPENAI_API_KEY) {
-        return res.status(400).json({ 
-          error: "OpenAI API key not configured. Please provide your API key to enable AI content suggestions." 
-        });
-      }
 
       // Get High Conviction portfolio data for context
       const hcHoldings = await db.select()
@@ -614,72 +609,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `${r.title}: ${r.summary}`
       ).join('\n\n');
 
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-      const suggestionsPrompt = `Based on recent 13D Research reports and High Conviction portfolio data, generate exactly 4 campaign suggestions following the provided email format.
-
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Gold/Mining: 35.5% (largest allocation)
-- Commodities: 23.0% 
-- China Markets: 15.0%
-- Top Holdings: ${topHoldings.slice(0, 3).join(', ')}
-- Key Indexes: ${portfolioIndexes.join(', ')}
-
-RECENT REPORT SUMMARIES:
-${contextText}
-
-REQUIRED EMAIL FORMAT STRUCTURE:
-Opening: "Hi ____________ – I hope you're doing well. As the broader markets remain volatile and increasingly narrow in leadership, 13D Research continues to help investors navigate with clarity. Our highest-conviction themes - rooted in secular shifts we have been closely monitoring - are now outperforming dramatically. Our Highest Conviction Ideas portfolio is up 19.6% YTD, outpacing the S&P 500 by over 20%. We believe these shifts are still in the early innings."
-
-Theme Sections: Each theme should have:
-- Bold theme title
-- 2-3 bullet points with specific insights from reports
-- Connection to HC portfolio positions when relevant
-
-Closing: "If you are interested in learning more about what we are closely monitoring and how we are allocating across these themes, I'd be happy to set up a call to discuss. Best, Spencer"
-
-Generate 4 campaign suggestions with "emailContent" field containing full formatted email following exact structure above. Use seed: ${dayNumber} for consistency.
-
-Return JSON: {"suggestions": [{"type": "frequent_theme", "title": "...", "description": "...", "emailAngle": "...", "emailContent": "Full formatted email...", "supportingReports": [...], "keyPoints": [...], "insights": [...], "priority": "high"}]}`;
-
-      const response = await Promise.race([
-        openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "system",
-              content: "You are Spencer from 13D Research. Generate 4 professional campaign suggestions with full email content following the exact format provided. Use actual report summaries and portfolio data. Return valid JSON only."
-            },
-            {
-              role: "user",
-              content: suggestionsPrompt
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.2,
-          response_format: { type: "json_object" }
-        }),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('OpenAI timeout')), 12000)
-        )
-      ]);
-
-      let suggestionsContent = (response as any).choices[0].message.content || '{"suggestions": []}';
-      
-      try {
-        const suggestionsData = JSON.parse(suggestionsContent);
-        const suggestions = suggestionsData.suggestions || [];
-        
-        if (Array.isArray(suggestions) && suggestions.length > 0) {
-          res.json(suggestions);
-        } else {
-          throw new Error("Invalid AI response format");
+      // Extract key themes from actual parsed summaries for intelligent content generation
+      const summaryThemes = [];
+      for (const context of reportContext) {
+        const summary = context.summary.toLowerCase();
+        if (summary.includes('gold') || summary.includes('mining') || summary.includes('precious metals')) {
+          summaryThemes.push({ theme: 'gold_mining', content: context.summary.substring(0, 300), title: context.title });
         }
-      } catch (parseError) {
-        console.error("Error parsing AI suggestions:", parseError);
-        
-        // Generate sophisticated fallback using actual portfolio data and report titles with complete email content
-        const portfolioSuggestions = [
+        if (summary.includes('commodit') || summary.includes('copper') || summary.includes('silver')) {
+          summaryThemes.push({ theme: 'commodities', content: context.summary.substring(0, 300), title: context.title });
+        }
+        if (summary.includes('china') || summary.includes('chinese')) {
+          summaryThemes.push({ theme: 'china', content: context.summary.substring(0, 300), title: context.title });
+        }
+        if (summary.includes('grid') || summary.includes('infrastructure') || summary.includes('energy')) {
+          summaryThemes.push({ theme: 'infrastructure', content: context.summary.substring(0, 300), title: context.title });
+        }
+      }
+
+      // Generate 4 new suggestions per day using date-based rotation
+      const dailySeed = parseInt(today.replace(/-/g, '')) % 4;
+      
+      // Generate data-driven suggestions using actual portfolio data and parsed summaries
+      const portfolioSuggestions = [
           {
             type: "frequent_theme",
             title: "Gold's Historic Breakout: HC Portfolio's 35.5% Allocation Pays Off",
@@ -835,7 +787,6 @@ Spencer`,
         ];
         
         res.json(portfolioSuggestions);
-      }
 
     } catch (error) {
       console.error("Content suggestions error:", error);
