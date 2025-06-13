@@ -102,13 +102,7 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                    } else {
-                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                    }
-                  }}
+                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-sm">
@@ -129,13 +123,7 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                    } else {
-                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                    }
-                  }}
+                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-sm">
@@ -156,13 +144,7 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
-                    } else {
-                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
-                    }
-                  }}
+                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
                   className="rounded"
                 />
                 <span className="text-sm">
