@@ -322,6 +322,7 @@ export default function LeadPipeline() {
     
     let filteredLeads = leads.filter(lead => lead.stage === stage);
     
+    // Apply search filter
     if (searchTerm.trim()) {
       filteredLeads = filteredLeads.filter(lead =>
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -331,10 +332,24 @@ export default function LeadPipeline() {
       );
     }
     
+    // Apply likelihood filter
+    if (filterByLikelihood.length > 0) {
+      filteredLeads = filteredLeads.filter(lead => 
+        filterByLikelihood.includes(lead.likelihood_of_closing || 'medium')
+      );
+    }
+    
+    // Apply engagement filter
+    if (filterByEngagement.length > 0) {
+      filteredLeads = filteredLeads.filter(lead => 
+        filterByEngagement.includes(lead.engagement_level || 'none')
+      );
+    }
+    
     // Sort leads
     filteredLeads.sort((a, b) => {
-      let aValue: string | Date;
-      let bValue: string | Date;
+      let aValue: string | Date | number;
+      let bValue: string | Date | number;
       
       switch (sortBy) {
         case "created_at":
@@ -349,6 +364,16 @@ export default function LeadPipeline() {
           aValue = a.company.toLowerCase();
           bValue = b.company.toLowerCase();
           break;
+        case "likelihood_of_closing":
+          const likelihoodOrder = { 'low': 1, 'medium': 2, 'high': 3 };
+          aValue = likelihoodOrder[a.likelihood_of_closing as keyof typeof likelihoodOrder] || 2;
+          bValue = likelihoodOrder[b.likelihood_of_closing as keyof typeof likelihoodOrder] || 2;
+          break;
+        case "engagement_level":
+          const engagementOrder = { 'none': 1, 'medium': 2, 'full': 3 };
+          aValue = engagementOrder[a.engagement_level as keyof typeof engagementOrder] || 1;
+          bValue = engagementOrder[b.engagement_level as keyof typeof engagementOrder] || 1;
+          break;
         default:
           return 0;
       }
@@ -357,6 +382,10 @@ export default function LeadPipeline() {
         const dateA = aValue as Date;
         const dateB = bValue as Date;
         return sortOrder === "asc" ? dateA.getTime() - dateB.getTime() : dateB.getTime() - dateA.getTime();
+      } else if (sortBy === "likelihood_of_closing" || sortBy === "engagement_level") {
+        const numA = aValue as number;
+        const numB = bValue as number;
+        return sortOrder === "asc" ? numA - numB : numB - numA;
       } else {
         const strA = aValue as string;
         const strB = bValue as string;
@@ -542,14 +571,16 @@ export default function LeadPipeline() {
               
               <div className="flex items-center gap-3">
                 <Label className="text-sm font-medium text-gray-700">Sort by:</Label>
-                <Select value={sortBy} onValueChange={(value: "created_at" | "name" | "company") => setSortBy(value)}>
-                  <SelectTrigger className="w-32">
+                <Select value={sortBy} onValueChange={(value: "created_at" | "name" | "company" | "likelihood_of_closing" | "engagement_level") => setSortBy(value)}>
+                  <SelectTrigger className="w-36">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="created_at">Created Date</SelectItem>
                     <SelectItem value="name">Name</SelectItem>
                     <SelectItem value="company">Company</SelectItem>
+                    <SelectItem value="likelihood_of_closing">Likelihood</SelectItem>
+                    <SelectItem value="engagement_level">Engagement</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -563,12 +594,106 @@ export default function LeadPipeline() {
                   {sortOrder === "asc" ? "↑" : "↓"}
                 </Button>
               </div>
+              
+              {/* Filtering Controls */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700">Filter Likelihood:</Label>
+                  <div className="flex gap-1">
+                    {["low", "medium", "high"].map((likelihood) => (
+                      <Button
+                        key={likelihood}
+                        variant={filterByLikelihood.includes(likelihood) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setFilterByLikelihood(prev => 
+                            prev.includes(likelihood) 
+                              ? prev.filter(l => l !== likelihood)
+                              : [...prev, likelihood]
+                          );
+                        }}
+                        className="text-xs px-2 py-1 h-6"
+                      >
+                        {likelihood}
+                      </Button>
+                    ))}
+                    {filterByLikelihood.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilterByLikelihood([])}
+                        className="text-xs px-1 py-1 h-6"
+                        title="Clear likelihood filters"
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-medium text-gray-700">Filter Engagement:</Label>
+                  <div className="flex gap-1">
+                    {["none", "medium", "full"].map((engagement) => (
+                      <Button
+                        key={engagement}
+                        variant={filterByEngagement.includes(engagement) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          setFilterByEngagement(prev => 
+                            prev.includes(engagement) 
+                              ? prev.filter(e => e !== engagement)
+                              : [...prev, engagement]
+                          );
+                        }}
+                        className="text-xs px-2 py-1 h-6"
+                      >
+                        {engagement}
+                      </Button>
+                    ))}
+                    {filterByEngagement.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setFilterByEngagement([])}
+                        className="text-xs px-1 py-1 h-6"
+                        title="Clear engagement filters"
+                      >
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                {(filterByLikelihood.length > 0 || filterByEngagement.length > 0) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFilterByLikelihood([]);
+                      setFilterByEngagement([]);
+                    }}
+                    className="text-xs"
+                  >
+                    Clear All Filters
+                  </Button>
+                )}
+              </div>
             </div>
             
-            {searchTerm && (
-              <p className="text-sm text-gray-600 mt-2">
-                Showing results for "{searchTerm}"
-              </p>
+            {(searchTerm || filterByLikelihood.length > 0 || filterByEngagement.length > 0) && (
+              <div className="text-sm text-gray-600 mt-2 space-y-1">
+                {searchTerm && (
+                  <p>Showing results for "{searchTerm}"</p>
+                )}
+                {(filterByLikelihood.length > 0 || filterByEngagement.length > 0) && (
+                  <p>
+                    Active filters: 
+                    {filterByLikelihood.length > 0 && ` Likelihood: ${filterByLikelihood.join(', ')}`}
+                    {filterByEngagement.length > 0 && ` Engagement: ${filterByEngagement.join(', ')}`}
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </div>
