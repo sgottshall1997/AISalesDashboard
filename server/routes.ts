@@ -2026,25 +2026,23 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports selected';
 
-      const emailPrompt = `You must generate an email in this EXACT casual format connecting insights to actual 13D High Conviction portfolio holdings when relevant. Do not write paragraph blocks or formal business language.
+      const emailPrompt = `You must generate an email in this EXACT casual format based primarily on the research analysis and insights. Focus on the report content with minimal portfolio references.
 
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
-- Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
+RESEARCH ANALYSIS DATA:
+${reportContext}
 
 TEMPLATE TO FOLLOW EXACTLY:
 Hi ${leadData.name},
 
-Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
+Hope you're doing well. I wanted to share a few quick insights from our latest research that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Focus on the research findings and market data.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Reference specific HC holdings if they connect to this insight. (Article 2)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Emphasize analytical conclusions and investment themes.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Include HC portfolio connections when applicable. (Article 3)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the research analysis]. Highlight key research discoveries and market perspectives.
 
-These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus. Our High Conviction portfolio reflects these themes with actual positions in relevant sectors.
+These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top holdings: ${topHoldings.slice(0, 3).join(', ')}).
 
 On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
 
@@ -3295,25 +3293,24 @@ Based on these 13D Research insights, provide a JSON response with actionable pr
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const campaignEmailPrompt = `Generate a professional 13D Research campaign email connecting the theme to actual High Conviction portfolio holdings.
+      const campaignEmailPrompt = `Generate a professional 13D Research campaign email based primarily on the research analysis and market insights. Focus on the quality and depth of our analytical work.
 
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
-- Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
-
+RESEARCH-BASED THEME ANALYSIS:
 Theme: ${suggestion.title}
 Description: ${suggestion.description || 'Investment opportunity'}
 Email Angle: ${suggestion.emailAngle || 'Market opportunity'}
-Key Points: ${suggestion.keyPoints?.join(', ') || 'Investment thesis'}
+Research Insights: ${suggestion.insights?.join(', ') || suggestion.keyPoints?.join(', ') || 'Investment thesis'}
+Supporting Reports: ${suggestion.supportingReports?.join(', ') || 'Recent analysis'}
 
 Generate a professional email following this structure:
-- Opening greeting and market context
-- Reference to actual HC portfolio performance and holdings when relevant to the theme
-- Detailed discussion of the specific theme with connections to HC portfolio positions
-- Call to action for further discussion
+- Opening greeting and research context
+- Detailed discussion of the theme with specific insights from our analytical work
+- Key findings and market implications from the research reports
+- Emphasis on research quality and analytical depth
+- Brief validation through portfolio positioning only when directly relevant (top positions: ${topHoldings.slice(0, 3).join(', ')})
+- Call to action for further research discussion
 
-Connect the theme to actual HC portfolio holdings when thematically relevant. Use specific ticker symbols and sector weightings where applicable.`;
+Prioritize the research content and analytical insights over portfolio references.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -3415,26 +3412,23 @@ Connect the theme to actual HC portfolio holdings when thematically relevant. Us
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const prospectEmailPrompt = `Generate a professional 13D Research prospect email connecting the report insights to actual High Conviction portfolio holdings.
+      const prospectEmailPrompt = `Generate a professional 13D Research prospect email focused primarily on the insights and analysis from our research reports.
 
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
-- Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
-
+CORE RESEARCH INSIGHTS:
 Prospect: ${prospectName}
 Report: ${reportTitle || 'Recent Research'}
 Match Reason: ${matchReason || 'Investment opportunity alignment'}
-Key Points: ${keyTalkingPoints?.join(', ') || 'Portfolio insights'}
+Key Talking Points: ${keyTalkingPoints?.join(', ') || 'Research insights'}
 
 Generate a professional email following this structure:
 - Personal greeting to ${prospectName}
-- Brief market context relevant to the report
-- Reference to actual HC portfolio performance and holdings when relevant
-- Specific insights from the report with connections to HC portfolio positions
+- Brief market context from the report analysis
+- Detailed discussion of the key research insights and findings
+- Specific investment themes and implications from our analysis
+- Brief mention of relevant portfolio positioning only where it directly supports the research themes (top holdings: ${topHoldings.slice(0, 3).join(', ')})
 - Call to action for further discussion
 
-Connect the insights to actual HC portfolio holdings when thematically relevant. Use specific ticker symbols and sector weightings where applicable.`;
+Focus primarily on the research content and analytical insights. Only reference portfolio holdings when they directly validate or support the core research themes.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
