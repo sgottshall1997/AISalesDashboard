@@ -1851,44 +1851,41 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
 
       const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
 
-      const emailPrompt = `You must generate an email in this EXACT casual format connecting insights to actual 13D High Conviction portfolio holdings when relevant.
+      const emailPrompt = `Generate a professional 13D Research lead email based primarily on report insights and parsed summaries.
 
-13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
-- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
-- Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
+REPORT CONTENT FOCUS:
+Lead: ${lead.name} at ${lead.company}
+Interests: ${lead.interest_tags?.join(', ') || 'investment research'}
+Report Analysis: ${reportContext}
 
-TEMPLATE TO FOLLOW EXACTLY:
+SECONDARY CONTEXT (mention only where relevant):
+HC Portfolio: ${topHoldings.slice(0, 4).join(', ')} (top sectors: Gold/Mining 35.5%, Commodities 23.0%)
+
+Generate a professional email with exactly 4 bullet points:
+• **Personal greeting** to ${lead.name} with market context from recent reports
+• **Key insight #1** from the report analysis with specific details and market implications
+• **Key insight #2** from the reports connecting to broader investment trends
+• **Call to action** for discussion, briefly mentioning HC portfolio alignment where thematically relevant
+
+Focus 80% on report content/insights from parsed summaries, 20% on portfolio context only where it naturally connects to the report themes.
+
 Hi ${lead.name},
 
-Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
+Hope you're doing well. I wanted to share insights from our latest research that align with current market opportunities.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
+• **[Report insight headline]**: [Specific detail from report content with market implications]
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Reference specific HC holdings if they connect to this insight. (Article 2)
+• **[Market trend headline]**: [Second insight connecting to investment themes]
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Include HC portfolio connections when applicable. (Article 3)
+• **[Investment perspective]**: [Third insight with actionable market perspective]
 
-These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus. Our High Conviction portfolio reflects these themes with actual positions in relevant sectors.
+• **[Portfolio context]**: [Brief mention of relevant HC holdings where they connect to themes]
 
-On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
-
-I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
+Would be happy to discuss these insights further.
 
 Best,
 Spencer
-
-DATA TO USE:
-${reportContext || 'No reports selected'}
-
-CRITICAL: 
-- Use bullet points (•) NOT paragraphs
-- Make each bullet detailed with specific data/percentages/ratios from reports
-- Include market implications and context in each bullet
-- Each bullet must reference (Article 1), (Article 2), (Article 3)
-- After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
-- Keep conversational tone, avoid formal business language
-- Maximum 275 words`;
+13D Research`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
@@ -3416,31 +3413,40 @@ Focus 80% on theme content/insights from reports, 20% on portfolio context only 
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const prospectEmailPrompt = `Generate a professional 13D Research prospect email based primarily on the report insights and parsed summaries.
+      const prospectEmailPrompt = `Generate a professional 13D Research prospect email following this EXACT format with bullet points (•):
 
-REPORT CONTENT FOCUS:
-Prospect: ${prospectName}
-Report: ${reportTitle || 'Recent Research'}
-Match Reason: ${matchReason || 'Investment opportunity alignment'}
-Key Insights: ${keyTalkingPoints?.join(', ') || 'Market insights from report'}
+REPORT CONTENT: ${keyTalkingPoints?.join(' ') || 'Recent market insights'}
 
-SECONDARY CONTEXT (mention only where relevant):
-HC Portfolio: ${topHoldings.slice(0, 4).join(', ')} (top sectors: Gold/Mining 35.5%, Commodities 23.0%)
+Copy this format EXACTLY - use bullet points (•) not dashes (-):
 
-Generate a professional email with exactly 4 bullet points:
-• **Personal greeting** to ${prospectName} with brief market context from the report
-• **Key insight #1** from the report with specific details and implications  
-• **Key insight #2** from the report connecting to broader market trends
-• **Call to action** for discussion, briefly mentioning HC portfolio alignment where thematically relevant
+Subject: Strategic Market Insights from Latest Research
 
-Focus 80% on report content/insights, 20% on portfolio context only where it naturally connects to the report themes.`;
+Hi ${prospectName},
+
+Hope you're doing well. I wanted to share insights from our latest research that align with current market opportunities.
+
+• **Commodities Breakout**: Gold prices showing technical breakout patterns above $2400 resistance with strong momentum indicators suggesting continued upside potential.
+
+• **China Market Rotation**: Equity markets experiencing strategic rotation from growth to value strategies as policy shifts create new investment opportunities.
+
+• **Supply Chain Impact**: Global disruptions affecting mining operations creating supply constraints that could drive commodity price appreciation.
+
+• **Portfolio Alignment**: Our HC positions in ${topHoldings.slice(0, 2).join(' and ')} align with these commodity themes for strategic exposure.
+
+Would be happy to discuss these insights further and share additional research that might be relevant.
+
+Best regards,
+Spencer
+13D Research
+
+CRITICAL: Use EXACTLY this format with bullet points (•) and bold headlines. Replace bracketed content with actual report insights.`;
 
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research writing professional prospect emails that reference actual portfolio holdings when relevant to investment insights."
+            content: "You are Spencer from 13D Research. You MUST follow the exact format provided. Use exactly 4 bullet points (•) with bold headlines. Do NOT write paragraphs or dashes. Focus primarily on report content, briefly mention portfolio holdings only in the 4th bullet point where relevant."
           },
           {
             role: "user",
