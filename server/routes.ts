@@ -2090,42 +2090,20 @@ CRITICAL:
       if (hasEmailHistory) contextNotes.push(`Previous contact established (${recentEmails.length} recent emails)`);
       if (lead.last_contact_date) contextNotes.push(`Last contact: ${new Date(lead.last_contact_date).toLocaleDateString()}`);
 
+      const citationRequirement = selectedReportSummaries.length > 0 ? 
+        "MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is 2, 3, or 4. Use exactly 3 DIFFERENT article numbers. This is absolutely required." : "";
+      
+      const reportContent = selectedReportSummaries.length > 0 ? 
+        `Reference the recent 13D reports: "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1. Here's the combined report content: "${filteredSummary}". The reports cover: ${reportTags}.` : "";
+
       const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
 CONTEXT: ${contextNotes.length > 0 ? contextNotes.join(' | ') : 'First outreach to this lead'}
 ${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior relationship naturally and avoid repeating previously covered topics.' : ''}
 
-${selectedReportSummaries.length > 0 ? `Reference the recent 13D reports: "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the combined report content: "${filteredSummary}". The reports cover: ${reportTags}.
+${reportContent}
 
-${selectedReportSummaries.length > 0 ? 
-`MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
-
-${selectedReportIds && selectedReportIds.length > 1 ? 
-`CRITICAL DISTRIBUTION RULE: When multiple reports are available, you MUST pull insights from DIFFERENT reports. Do NOT take all 3 bullet points from the same report. Mix insights across the available reports to show breadth of coverage.
-
-Available reports and their articles:
-${selectedReportSummaries.map(summary => {
-  const contentReport = contentReports?.find((report: any) => report.id === summary.content_report_id);
-  return contentReport ? `${contentReport.title}:
-Article 2 = Critical minerals supply chain
-Article 3 = AI tech infrastructure  
-Article 4 = Mining stocks performance
-Article 5 = Teenagers phone experiment
-Article 6 = Loneliness investment theme
-Article 7 = Russia analysis
-Article 8 = European agriculture` : '';
-}).join('\n\n')}
-
-Example format (MANDATORY - notice 3 DIFFERENT citations from DIFFERENT reports):
-• China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (WILTW_2025-06-05 - Article 2).
-• Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (WILTW_2025-05-29 - Article 4).
-• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-05-22 - Article 7).` :
-`Example format (MANDATORY - notice 3 DIFFERENT article numbers):
-• Paradigm Shift in Market Leadership: Chinese equities are entering a secular bull market, with a projected annual growth rate of 8% over the next decade, driven by policy reforms and increased foreign investment. This shift is expected to elevate commodities and inflation-sensitive sectors. (Article 1)
-• Geopolitical Tensions and Energy Markets: Rising geopolitical tensions in Eastern Europe could lead to a 15% increase in energy prices by the end of the year, impacting global supply chains and inflation rates. This scenario underscores the importance of energy diversification. (Article 2)
-• Investment Strategy Amidst Inflation: With inflation rates expected to stabilize around 4% in the next two years, investors are advised to focus on sectors like technology and healthcare, which historically outperform during inflationary periods. (Article 3)`}
-
-CRITICAL: Each bullet point MUST include (Article X) at the end. Use different article numbers for each bullet point.` : ''}
+${citationRequirement}
 
 GOALS:
 • Greet the reader warmly with a short intro that references any prior context appropriately
@@ -2203,7 +2181,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. CRITICAL: Each bullet point MUST end with (Article X) where X is a different article number. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• Paradigm Shift in Market Leadership: Chinese equities are entering a secular bull market, with a projected annual growth rate of 8% over the next decade, driven by policy reforms and increased foreign investment. This shift is expected to elevate commodities and inflation-sensitive sectors. (Article 1)\n\n• Geopolitical Tensions and Energy Markets: Rising geopolitical tensions in Eastern Europe could lead to a 15% increase in energy prices by the end of the year, impacting global supply chains and inflation rates. This scenario underscores the importance of energy diversification. (Article 2)\n\n• Investment Strategy Amidst Inflation: With inflation rates expected to stabilize around 4% in the next two years, investors are advised to focus on sectors like technology and healthcare, which historically outperform during inflationary periods. (Article 3)\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS WITH ARTICLE CITATIONS."
+            content: "You are Spencer from 13D Research. Write personalized investment emails with bullet points that MUST end with article citations.\n\nFORMAT REQUIREMENTS:\n- Use bullet points with • symbol\n- Each bullet MUST end with (Article X) where X is 2, 3, 4, etc.\n- Never use Article 1\n- Professional but conversational tone\n\nEXAMPLE:\n• Market insight with analysis and implications (Article 2)\n• Second insight with different perspective (Article 3)\n• Third insight with strategic view (Article 4)\n\nALWAYS include article citations at the end of each bullet point."
           },
           {
             role: "user",
