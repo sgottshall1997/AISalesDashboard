@@ -2033,34 +2033,38 @@ CRITICAL:
       selectedReportSummaries.forEach((reportSummary: any) => {
         const content = reportSummary.structuredAnalysis;
         
-        // Split content into paragraphs and find article sections
-        const paragraphs = content.split(/\n\s*\n/).filter((section: string) => section.trim().length > 100);
+        // Split content more aggressively to find multiple sections
+        const sections = content.split(/(?:\n\s*\n|\. (?=[A-Z])|•|\*|-(?=\s))/);
         
-        // Look for articles in the content structure
         let articleCounter = 1;
-        paragraphs.forEach((paragraph: string) => {
-          if (paragraph.trim().length > 100) {
+        sections.forEach((section: string) => {
+          const cleanSection = section.trim();
+          if (cleanSection.length > 80 && articleCounter <= 6) {
             extractedArticles.push({
               articleNumber: articleCounter,
-              content: paragraph.trim(),
+              content: cleanSection,
               reportTitle: reportSummary.title
             });
             articleCounter++;
           }
         });
         
-        // If we found very few paragraphs, try a different approach
-        if (extractedArticles.length < 3) {
-          // Split by double line breaks or bullet points
-          const altSections = content.split(/(?:\n\s*\n|•|\*|-|\d+\.)/);
-          altSections.forEach((section: string) => {
-            const cleanSection = section.trim();
-            if (cleanSection.length > 150 && !cleanSection.startsWith('Article')) {
+        // If still not enough content, split by sentences
+        if (extractedArticles.length < 4) {
+          const sentences = content.split(/\.\s+/);
+          let groupedContent = '';
+          let groupCounter = extractedArticles.length + 1;
+          
+          sentences.forEach((sentence: string, index: number) => {
+            groupedContent += sentence.trim() + '. ';
+            if ((index + 1) % 3 === 0 && groupedContent.length > 100) {
               extractedArticles.push({
-                articleNumber: extractedArticles.length + 1,
-                content: cleanSection,
+                articleNumber: groupCounter,
+                content: groupedContent.trim(),
                 reportTitle: reportSummary.title
               });
+              groupedContent = '';
+              groupCounter++;
             }
           });
         }
@@ -2093,18 +2097,19 @@ CRITICAL:
       const personalArticles = extractedArticles.filter((article: any) => {
         const content = article.content.toLowerCase();
         
-        // Look for human interest, social issues, environmental, and personal development topics
+        // Look for specific human interest topics from the WILTW format
         const isPersonalTopic = content.includes('teen love') || content.includes('people-pleasing') ||
                content.includes('wildfire') || content.includes('deforestation') || content.includes('forest') ||
-               content.includes('travel') || content.includes('learned') || content.includes('experience') ||
-               content.includes('culture') || content.includes('lifestyle') || content.includes('personal') ||
-               content.includes('psychology') || content.includes('behavior') || content.includes('society') ||
-               content.includes('environment') || content.includes('climate') || content.includes('well-being') ||
+               content.includes('travel') || content.includes('learned') || content.includes('two weeks') ||
+               content.includes('culture') || content.includes('lifestyle') || content.includes('social') ||
+               content.includes('psychology') || content.includes('behavior') || content.includes('well-being') ||
                content.includes('education') || content.includes('learning') || content.includes('art') ||
                content.includes('music') || content.includes('book') || content.includes('story') ||
-               content.includes('importance of') || content.includes('cost of');
+               content.includes('importance of') || content.includes('cost of') || content.includes('personal growth') ||
+               content.includes('relationships') || content.includes('health') || content.includes('mental') ||
+               content.includes('environmental') || content.includes('climate change');
         
-        // Exclude market/financial content and risk factors
+        // Exclude market/financial content, risk factors, and policy/government content
         const isMarketRelated = content.includes('portfolio') || content.includes('trading') || 
                                content.includes('investment') || content.includes('stocks') ||
                                content.includes('financial') || content.includes('market') ||
@@ -2112,7 +2117,12 @@ CRITICAL:
                                content.includes('capital') || content.includes('asset') ||
                                content.includes('risk factors') || content.includes('geopolitical') ||
                                content.includes('export') || content.includes('commodity') ||
-                               content.includes('equity') || content.includes('mining');
+                               content.includes('equity') || content.includes('mining') ||
+                               content.includes('president') || content.includes('authority') ||
+                               content.includes('deploy troops') || content.includes('insurrection') ||
+                               content.includes('domestic') || content.includes('government') ||
+                               content.includes('policy') || content.includes('military') ||
+                               content.includes('political') || content.includes('legal');
         
         // Exclude China-specific content  
         const isChinaRelated = content.includes('china') || content.includes('chinese') || 
@@ -2121,9 +2131,20 @@ CRITICAL:
         return isPersonalTopic && !isMarketRelated && !isChinaRelated;
       });
 
-      const personalNote = personalArticles.length > 0 
-        ? `I came across an interesting piece on ${personalArticles[0].content.substring(0, 120).replace(/[^\w\s]/gi, '').trim()}... (Article ${personalArticles[0].articleNumber})`
-        : 'I noticed an interesting development in our broader research on technological innovation patterns.';
+      // Create better personal note, avoiding policy/government content
+      let personalNote = 'I noticed an interesting development in our broader research on technological innovation patterns.';
+      
+      if (personalArticles.length > 0) {
+        const personalContent = personalArticles[0].content;
+        // Check if it's actually personal content, not policy/government
+        if (!personalContent.toLowerCase().includes('president') && 
+            !personalContent.toLowerCase().includes('authority') &&
+            !personalContent.toLowerCase().includes('troops') &&
+            !personalContent.toLowerCase().includes('deploy')) {
+          const cleanContent = personalContent.substring(0, 120).replace(/[^\w\s]/gi, '').trim();
+          personalNote = `I came across an interesting piece on ${cleanContent}... (Article ${personalArticles[0].articleNumber})`;
+        }
+      }
 
       const emailPrompt = `You are Spencer from 13D Research writing a casual email to ${leadData.name}. Generate an email with exactly 3-4 bullets using different content sections provided.
 
@@ -2192,6 +2213,12 @@ REQUIREMENTS:
       
       // Fix lead name - replace "Prospect" with actual lead name
       emailSuggestion = emailSuggestion.replace(/Hi Prospect,/g, `Hi ${leadData.name},`);
+      
+      // Clean up any policy/government content that slipped into personal notes
+      emailSuggestion = emailSuggestion.replace(/I came across an interesting piece on Key Insights[\s\S]*?President[\s\S]*?\.\.\. \(Article \d+\)/g, 
+        'I noticed an interesting development in our broader research on sustainable innovation trends');
+      emailSuggestion = emailSuggestion.replace(/I came across an interesting piece on.*?authority.*?deploy.*?\.\.\. \(Article \d+\)/g,
+        'I noticed an interesting piece on environmental sustainability trends in our latest research');
       
       // Aggressively strip any subject lines
       emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
