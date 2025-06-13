@@ -2089,26 +2089,33 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports available';
 
-      // Find personal/non-market articles from the reports (exclude China-related content)
+      // Find personal/human interest articles like "teen love," "people-pleasing," "wildfire," travel experiences
       const personalArticles = extractedArticles.filter((article: any) => {
         const content = article.content.toLowerCase();
-        const isPersonal = content.includes('travel') || content.includes('culture') || content.includes('lifestyle') || 
-               content.includes('personal') || content.includes('art') || content.includes('food') ||
-               content.includes('sports') || content.includes('entertainment') || content.includes('social') ||
-               content.includes('family') || content.includes('vacation') || content.includes('hobby') ||
-               content.includes('restaurant') || content.includes('music') || content.includes('book') ||
-               content.includes('wellness') || content.includes('technology trends') || content.includes('health') ||
-               content.includes('education') || content.includes('innovation') || content.includes('science') ||
-               content.includes('research') || content.includes('development');
         
+        // Look for human interest, social issues, environmental, and personal development topics
+        const isPersonalTopic = content.includes('teen') || content.includes('love') || content.includes('people-pleasing') ||
+               content.includes('wildfire') || content.includes('deforestation') || content.includes('forest') ||
+               content.includes('travel') || content.includes('learned') || content.includes('experience') ||
+               content.includes('social') || content.includes('relationship') || content.includes('psychology') ||
+               content.includes('behavior') || content.includes('culture') || content.includes('society') ||
+               content.includes('environment') || content.includes('climate') || content.includes('personal growth') ||
+               content.includes('lifestyle') || content.includes('well-being') || content.includes('mental health') ||
+               content.includes('education') || content.includes('learning') || content.includes('development') ||
+               content.includes('art') || content.includes('music') || content.includes('book') || content.includes('story');
+        
+        // Exclude market/financial content
+        const isMarketRelated = content.includes('portfolio') || content.includes('trading') || 
+                               content.includes('investment') || content.includes('stocks') ||
+                               content.includes('financial') || content.includes('market') ||
+                               content.includes('economic') || content.includes('fund') ||
+                               content.includes('capital') || content.includes('asset');
+        
+        // Exclude China-specific content  
         const isChinaRelated = content.includes('china') || content.includes('chinese') || 
                               content.includes('beijing') || content.includes('shanghai');
         
-        const isNonMarket = !content.includes('portfolio') && !content.includes('trading') && 
-                           !content.includes('investment') && !content.includes('stocks') &&
-                           !content.includes('market') && !content.includes('financial');
-        
-        return (isPersonal || isNonMarket) && !isChinaRelated;
+        return isPersonalTopic && !isMarketRelated && !isChinaRelated;
       });
 
       const personalNote = personalArticles.length > 0 
