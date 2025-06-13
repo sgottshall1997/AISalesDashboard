@@ -938,6 +938,11 @@ Provide a focused 3–5 sentence overview of the theme. Highlight current market
 - List 2–3 real risks related to the theme — e.g. regulatory uncertainty, production disruption, demand lag  
 - Be balanced but clear about magnitude and timeline
 
+**💼 Relevant High Conviction Holdings:**  
+- List 3–5 specific portfolio constituents with their HC weights that relate to the theme
+- Include ticker symbols and brief rationale for relevance  
+- Example: "SI=F (3.62%) - Direct precious metals exposure aligns with inflation hedge thesis"
+
 **✅ Portfolio Takeaways:**  
 Provide 2–3 recommendations tailored to {{targetAudience}}. Should reference positioning logic, long-term thesis alignment, or relative value rotation.
 
@@ -947,7 +952,7 @@ Include WILTW or WATMTU dates used for the output.
 **Constraints:**  
 - No filler or fluff
 - Avoid generic macro language unless explicitly mentioned in the reports
-- Keep under 350 words
+- Keep under 400 words
 - Base all insights on provided report content only`;
 
       // Get High Conviction portfolio data for one-pager context
@@ -962,7 +967,7 @@ Include WILTW or WATMTU dates used for the output.
       hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
       portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 8));
 
-      const topHoldings = hcHoldings.slice(0, 10).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+      const topHoldings = hcHoldings.slice(0, 15).map((h: any) => `${h.name} (${h.ticker}) - ${h.weightInHighConviction}% from ${h.index}`);
 
       const userPrompt = `Generate a one-pager with these inputs:
 - **Title**: ${reportTitle || "Market Overview"}
@@ -972,7 +977,11 @@ Include WILTW or WATMTU dates used for the output.
 13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
 - Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
 - Key HC Indexes: ${portfolioIndexes.join(', ')}
-- Top HC Holdings: ${topHoldings.join(', ')}
+- Detailed HC Holdings Available:
+${topHoldings.join('\n')}
+
+PORTFOLIO MATCHING INSTRUCTIONS:
+For the "Relevant High Conviction Holdings" section, select 3-5 holdings from the above list that best align with the one-pager theme. Include their actual weights and provide brief rationale for their relevance to the theme being discussed.
 
 AUTHENTIC 13D RESEARCH REPORTS (WILTW & WATMTU):
 ${contextText}
