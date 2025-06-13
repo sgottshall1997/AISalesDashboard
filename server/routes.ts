@@ -3734,7 +3734,7 @@ Prioritize the research content and analytical insights over portfolio reference
 TEMPLATE TO FOLLOW EXACTLY:
 Hi ${prospectName},
 
-Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${keyTalkingPoints?.join(', ') || 'market dynamics'}.
+Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${typeof keyTalkingPoints === 'string' ? keyTalkingPoints : (Array.isArray(keyTalkingPoints) ? keyTalkingPoints.join(', ') : 'market dynamics')}.
 
 • **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
 

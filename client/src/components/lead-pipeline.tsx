@@ -127,6 +127,10 @@ export default function LeadPipeline() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Likelihood Updated",
+        description: "Lead likelihood has been updated successfully.",
+      });
     },
   });
 
@@ -137,6 +141,10 @@ export default function LeadPipeline() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Engagement Updated",
+        description: "Lead engagement has been updated successfully.",
+      });
     },
   });
 
@@ -160,7 +168,7 @@ export default function LeadPipeline() {
       const response = await apiRequest("/api/generate-prospect-email", "POST", {
         prospectName: lead?.name,
         reportTitle,
-        keyTalkingPoints: lead?.interest_tags?.join(', ') || '',
+        keyTalkingPoints: Array.isArray(lead?.interest_tags) ? lead.interest_tags.join(', ') : '',
         matchReason: lead?.notes || ''
       });
       return response.json();
