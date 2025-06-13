@@ -247,15 +247,29 @@ export default function LeadPipeline() {
 
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      const response = await apiRequest(`/api/leads/${leadId}`, "DELETE");
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('Deleting lead with ID:', leadId);
+      try {
+        const response = await apiRequest(`/api/leads/${leadId}`, "DELETE");
+        console.log('Delete response status:', response.status);
+        console.log('Delete response ok:', response.ok);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        // Check if response has content before parsing JSON
+        const text = await response.text();
+        console.log('Delete response text:', text);
+        const result = text ? JSON.parse(text) : {};
+        console.log('Delete response parsed:', result);
+        return result;
+      } catch (error) {
+        console.error('Delete mutation error:', error);
+        throw error;
       }
-      // Check if response has content before parsing JSON
-      const text = await response.text();
-      return text ? JSON.parse(text) : {};
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Delete mutation successful:', data);
       // Force refetch of leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
       queryClient.refetchQueries({ queryKey: ["/api/leads"] });
@@ -264,7 +278,8 @@ export default function LeadPipeline() {
         description: "Lead has been removed successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Delete mutation onError:', error);
       toast({
         title: "Error",
         description: "Failed to delete lead. Please try again.",
