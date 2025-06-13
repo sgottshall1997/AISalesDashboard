@@ -12,7 +12,8 @@ import {
   Bell,
   User,
   Upload,
-  Info
+  Info,
+  Building2
 } from "lucide-react";
 
 interface SidebarProps {

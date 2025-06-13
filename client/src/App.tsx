@@ -24,6 +24,7 @@ const AIQnA = lazy(() => import("@/pages/ai-tools/ai-qna"));
 const OnePager = lazy(() => import("@/pages/ai-tools/one-pager"));
 const CampaignSuggestions = lazy(() => import("@/pages/ai-tools/campaign-suggestions"));
 const CallPreparation = lazy(() => import("@/pages/ai-tools/call-preparation"));
+const PortfolioConstituents = lazy(() => import("@/pages/portfolio-constituents"));
 
 function AuthenticatedRoutes() {
   return (
@@ -95,6 +96,13 @@ function AuthenticatedRoutes() {
             <CallPreparation />
           </Suspense>
         </AIContentErrorBoundary>
+      )} />
+      <Route path="/portfolio-constituents" component={() => (
+        <ErrorBoundary title="Portfolio Error" description="Failed to load portfolio constituents.">
+          <Suspense fallback={<PageLoadingFallback />}>
+            <PortfolioConstituents />
+          </Suspense>
+        </ErrorBoundary>
       )} />
       <Route path="/about" component={() => (
         <Suspense fallback={<PageLoadingFallback />}>

@@ -11,7 +11,7 @@ import {
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
   insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history,
-  content_reports, report_summaries
+  content_reports, report_summaries, portfolio_constituents
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -3566,6 +3566,66 @@ Spencer`;
       console.error('Scoring metrics error:', error);
       res.status(500).json({ 
         message: "Failed to get scoring metrics",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Portfolio constituents endpoints
+  app.get("/api/constituents", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { index, isHighConviction } = req.query;
+      
+      let query = db.select().from(portfolio_constituents);
+      
+      if (index) {
+        query = query.where(eq(portfolio_constituents.index, index as string));
+      }
+      
+      if (isHighConviction === 'true') {
+        query = query.where(eq(portfolio_constituents.isHighConviction, true));
+      }
+      
+      const constituents = await query.orderBy(portfolio_constituents.name);
+      
+      res.json(constituents);
+    } catch (error) {
+      console.error('Error fetching constituents:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch constituents",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/constituents/indexes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const indexes = await db.selectDistinct({ index: portfolio_constituents.index })
+        .from(portfolio_constituents)
+        .orderBy(portfolio_constituents.index);
+      
+      res.json(indexes.map(i => i.index));
+    } catch (error) {
+      console.error('Error fetching indexes:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch indexes",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.get("/api/constituents/high-conviction", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const highConvictionStocks = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(portfolio_constituents.weightInHighConviction);
+      
+      res.json(highConvictionStocks);
+    } catch (error) {
+      console.error('Error fetching high conviction constituents:', error);
+      res.status(500).json({ 
+        message: "Failed to fetch high conviction constituents",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
