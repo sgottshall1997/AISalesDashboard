@@ -14,6 +14,8 @@ interface PortfolioConstituent {
   isHighConviction: boolean;
   weightInIndex: string | null;
   weightInHighConviction: string | null;
+  indexWeightInHc: string | null;
+  weightInHcPortfolio: string | null;
   rebalanceDate: string | null;
   created_at: string | null;
 }
@@ -209,7 +211,7 @@ export default function PortfolioConstituents() {
                           : 'border-gray-200 bg-white'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <div>
                           <h4 className="font-semibold text-lg">{constituent.ticker}</h4>
                           <p className="text-sm text-gray-600 line-clamp-2">{constituent.name}</p>
@@ -221,13 +223,36 @@ export default function PortfolioConstituents() {
                         )}
                       </div>
                       
-                      {constituent.weightInHighConviction && (
-                        <div className="mt-2">
-                          <p className="text-xs text-gray-500">
-                            HC Weight: {constituent.weightInHighConviction}%
-                          </p>
-                        </div>
-                      )}
+                      {/* Weight Information */}
+                      <div className="space-y-2">
+                        {constituent.isHighConviction && (
+                          <div className="bg-green-50 p-2 rounded border border-green-200">
+                            <div className="space-y-1">
+                              {constituent.indexWeightInHc && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-green-700">Index Weight in HC:</span>
+                                  <span className="text-xs font-bold text-green-800">{constituent.indexWeightInHc}%</span>
+                                </div>
+                              )}
+                              {constituent.weightInHcPortfolio && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium text-green-700">Individual HC Weight:</span>
+                                  <span className="text-xs font-bold text-green-800">{constituent.weightInHcPortfolio}%</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {constituent.weightInIndex && (
+                          <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-medium text-blue-700">Weight in {constituent.index}:</span>
+                              <span className="text-xs font-bold text-blue-800">{constituent.weightInIndex}%</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
