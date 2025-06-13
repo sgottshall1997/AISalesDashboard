@@ -374,20 +374,27 @@ export function ContentDistribution() {
 
   const deleteReportMutation = useMutation({
     mutationFn: async (reportId: number) => {
-      const response = await apiRequest(`/api/content-reports/${reportId}`, "DELETE");
+      const response = await fetch(`/api/content-reports/${reportId}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Delete failed');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/content-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
       toast({
         title: "Report Deleted",
-        description: "Report has been successfully removed.",
+        description: "Report and associated summaries have been successfully removed.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to delete report. Please try again.",
+        title: "Delete Failed",
+        description: error.message || "Failed to delete report. Please try again.",
         variant: "destructive",
       });
     },
