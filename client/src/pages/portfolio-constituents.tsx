@@ -132,6 +132,54 @@ export default function PortfolioConstituents() {
         </Card>
       </div>
 
+      {/* Active Portfolios Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Top 3 Highest Weighted Sectors */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Highest Conviction Ideas</CardTitle>
+            <p className="text-sm text-gray-600">Top weighted sectors in HC portfolio</p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+              <span className="font-medium text-gray-900">Gold, silver and their mining-stocks</span>
+              <span className="font-bold text-yellow-700">35.5%</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg border border-orange-200">
+              <span className="font-medium text-gray-900">Commodities and related-sectors</span>
+              <span className="font-bold text-orange-700">23.0%</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg border border-red-200">
+              <span className="font-medium text-gray-900">Chinese equity markets</span>
+              <span className="font-bold text-red-700">15.0%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 13D Highest Conviction Indexes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">13D Highest Conviction Indexes</CardTitle>
+            <p className="text-sm text-gray-600">Index weights in HC portfolio</p>
+          </CardHeader>
+          <CardContent className="space-y-2 max-h-80 overflow-y-auto">
+            {Object.entries(groupedConstituents)
+              .filter(([_, constituents]) => constituents.some(c => c.isHighConviction))
+              .map(([indexName, constituents]) => {
+                const indexWeight = constituents.find(c => c.isHighConviction && c.indexWeightInHc)?.indexWeightInHc;
+                return indexWeight ? (
+                  <div key={indexName} className="flex justify-between items-center p-2 bg-green-50 rounded border border-green-200">
+                    <span className="text-sm font-medium text-gray-900 flex-1">{indexName}</span>
+                    <span className="text-sm font-bold text-green-700">{indexWeight}%</span>
+                  </div>
+                ) : null;
+              })
+              .filter(Boolean)
+            }
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardContent className="p-6">
