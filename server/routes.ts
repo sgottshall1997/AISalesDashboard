@@ -1917,12 +1917,28 @@ CRITICAL:
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       const reportContext = recentReports.length > 0 
-        ? recentReports.map(r => `${r.title}: ${r.summary}`).join('\n') 
+        ? recentReports.map(r => `${r.title}: ${r.key_insights?.join(', ') || r.title}`).join('\n') 
         : 'Recent market developments and geopolitical shifts';
 
+      // Enhanced portfolio context with HC weights and themes
+      const hcHoldings = highConvictionStocks.map((s: any) => 
+        `${s.ticker} (${s.name}, ${s.weightInHcPortfolio || '0'}% HC weight, ${s.index})`
+      ).join(', ');
+      
+      const topThemes = Array.from(new Set(highConvictionStocks.map(s => s.index))).slice(0, 6);
+      const themeBreakdown = topThemes.map(theme => {
+        const holdings = highConvictionStocks.filter(s => s.index === theme);
+        const totalWeight = holdings.reduce((sum, s) => sum + parseFloat(s.weightInHcPortfolio || '0'), 0);
+        return `${theme}: ${totalWeight.toFixed(1)}% (${holdings.length} holdings)`;
+      }).join(', ');
+
       const portfolioContext = `
-HIGH CONVICTION HOLDINGS: ${highConvictionStocks.map(s => `${s.ticker} (${s.name})`).join(', ')}
-OTHER HOLDINGS: ${allConstituents.map(s => `${s.ticker}`).join(', ')}`;
+HIGH CONVICTION PORTFOLIO (165 securities, 85.84% total allocation):
+Top Holdings: ${hcHoldings}
+
+KEY THEMES: ${themeBreakdown}
+
+This represents our highest conviction investment opportunities across global markets, with significant exposure to China, commodities, clean energy, and defensive sectors.`;
 
       const emailPrompt = `You are an expert institutional sales professional writing personalized emails for 13D Research clients.
 
