@@ -1,6 +1,6 @@
-import { useState, useEffect, startTransition, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRoute, useLocation } from "wouter";
+import { useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,36 +50,17 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
     return title;
   };
 
-  const handleCheckboxChange = (contentReportId: number, checked: boolean) => {
-    startTransition(() => {
-      if (checked) {
-        setSelectedReportIds([...selectedReportIds, contentReportId]);
-      } else {
-        setSelectedReportIds(selectedReportIds.filter(id => id !== contentReportId));
-      }
-    });
-  };
-
   // Deduplicate reports by title, keeping the most recent one
   const deduplicateReports = (reports: any[]) => {
-    try {
-      const titleMap = new Map();
-      reports.forEach((summary: any) => {
-        const title = summary.report?.title;
-        if (title && (!titleMap.has(title) || new Date(summary.report.created_at) > new Date(titleMap.get(title).report.created_at))) {
-          titleMap.set(title, summary);
-        }
-      });
-      return Array.from(titleMap.values());
-    } catch (error) {
-      console.warn("Error deduplicating reports:", error);
-      return reports;
-    }
+    const titleMap = new Map();
+    reports.forEach((summary: any) => {
+      const title = summary.report?.title;
+      if (title && (!titleMap.has(title) || new Date(summary.report.created_at) > new Date(titleMap.get(title).report.created_at))) {
+        titleMap.set(title, summary);
+      }
+    });
+    return Array.from(titleMap.values());
   };
-
-  if (!reportSummaries || !Array.isArray(reportSummaries)) {
-    return null;
-  }
 
   const allWiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
   const allWatmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
@@ -102,7 +83,13 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                    } else {
+                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                    }
+                  }}
                   className="rounded"
                 />
                 <span className="text-sm">
@@ -123,7 +110,13 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                    } else {
+                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                    }
+                  }}
                   className="rounded"
                 />
                 <span className="text-sm">
@@ -144,7 +137,13 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
                 <input
                   type="checkbox"
                   checked={selectedReportIds.includes(summary.content_report_id)}
-                  onChange={(e) => handleCheckboxChange(summary.content_report_id, e.target.checked)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedReportIds([...selectedReportIds, summary.content_report_id]);
+                    } else {
+                      setSelectedReportIds(selectedReportIds.filter(id => id !== summary.content_report_id));
+                    }
+                  }}
                   className="rounded"
                 />
                 <span className="text-sm">
@@ -214,9 +213,8 @@ interface ContentReport {
   content_summary?: string;
 }
 
-function LeadDetailComponent() {
+export default function LeadDetail() {
   const [, params] = useRoute("/leads/:id");
-  const [, setLocation] = useLocation();
   const leadId = parseInt(params?.id || "0");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Lead>>({});
@@ -260,15 +258,10 @@ function LeadDetailComponent() {
     queryKey: ["/api/report-summaries"],
   });
 
-  // Helper function to safely update state with startTransition
-  const safeSetState = (updateFn: () => void) => {
-    startTransition(updateFn);
-  };
-
   // Update notes when lead data loads
   useEffect(() => {
     if (lead) {
-      safeSetState(() => setNotes(lead.notes || ""));
+      setNotes(lead.notes || "");
     }
   }, [lead]);
 
@@ -280,7 +273,7 @@ function LeadDetailComponent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      safeSetState(() => setIsEditing(false));
+      setIsEditing(false);
       toast({
         title: "Lead Updated",
         description: "Lead details have been updated successfully.",
@@ -350,10 +343,8 @@ function LeadDetailComponent() {
     },
     onSuccess: (data) => {
       if (data) {
-        startTransition(() => {
-          setAiEmailSuggestion(data.emailSuggestion);
-          setIsGeneratingEmail(false);
-        });
+        setAiEmailSuggestion(data.emailSuggestion);
+        setIsGeneratingEmail(false);
         toast({
           title: "AI Email Generated",
           description: "Personalized email suggestion created based on lead's interests and recent reports.",
@@ -361,9 +352,7 @@ function LeadDetailComponent() {
       }
     },
     onError: () => {
-      startTransition(() => {
-        setIsGeneratingEmail(false);
-      });
+      setIsGeneratingEmail(false);
       toast({
         title: "Generation Failed",
         description: "Unable to generate AI email. Please try again.",
@@ -389,10 +378,8 @@ function LeadDetailComponent() {
     onSuccess: (emails) => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/emails`] });
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/ai-suggestion`] });
-      startTransition(() => {
-        setShowConversationParser(false);
-        setConversationText("");
-      });
+      setShowConversationParser(false);
+      setConversationText("");
       toast({
         title: "Conversation Parsed",
         description: `Added ${emails.length} emails to history.`,
@@ -414,9 +401,7 @@ function LeadDetailComponent() {
     },
     onSuccess: (data) => {
       if (data) {
-        startTransition(() => {
-          setCallPrepResult(data);
-        });
+        setCallPrepResult(data);
         toast({
           title: "Call Preparation Generated",
           description: "Comprehensive call prep notes created based on prospect information.",
@@ -445,9 +430,7 @@ function LeadDetailComponent() {
     },
     onSuccess: (data) => {
       if (data?.summary) {
-        startTransition(() => {
-          setEmailSummary(data.summary);
-        });
+        setEmailSummary(data.summary);
         toast({
           title: "Email Summary Generated",
           description: "Email conversation has been summarized.",
@@ -542,7 +525,7 @@ function LeadDetailComponent() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="mb-6">
-        <Button variant="ghost" onClick={() => setLocation('/lead-pipeline')} className="mb-4">
+        <Button variant="ghost" onClick={() => window.history.back()} className="mb-4">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Lead Pipeline
         </Button>
@@ -559,16 +542,14 @@ function LeadDetailComponent() {
           <div className="flex gap-2">
             {!isEditing ? (
               <Button onClick={() => {
-                startTransition(() => {
-                  setIsEditing(true);
-                  setEditData({
-                    name: lead.name,
-                    email: lead.email,
-                    company: lead.company,
-                    stage: lead.stage,
-                    next_step: lead.next_step,
-                    how_heard: lead.how_heard,
-                  });
+                setIsEditing(true);
+                setEditData({
+                  name: lead.name,
+                  email: lead.email,
+                  company: lead.company,
+                  stage: lead.stage,
+                  next_step: lead.next_step,
+                  how_heard: lead.how_heard,
                 });
               }}>
                 <Edit className="w-4 h-4 mr-2" />
@@ -580,7 +561,7 @@ function LeadDetailComponent() {
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </Button>
-                <Button variant="outline" onClick={() => startTransition(() => setIsEditing(false))}>
+                <Button variant="outline" onClick={() => setIsEditing(false)}>
                   <X className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
@@ -607,7 +588,7 @@ function LeadDetailComponent() {
                     <Input
                       id="name"
                       value={editData.name || ""}
-                      onChange={(e) => startTransition(() => setEditData({...editData, name: e.target.value}))}
+                      onChange={(e) => setEditData({...editData, name: e.target.value})}
                     />
                   </div>
                   
@@ -617,7 +598,7 @@ function LeadDetailComponent() {
                       id="email"
                       type="email"
                       value={editData.email || ""}
-                      onChange={(e) => startTransition(() => setEditData({...editData, email: e.target.value}))}
+                      onChange={(e) => setEditData({...editData, email: e.target.value})}
                     />
                   </div>
                   
@@ -1206,7 +1187,7 @@ function LeadDetailComponent() {
                   Generate a personalized follow-up email based on recent reports and the lead's interests.
                 </p>
                 
-                {reportSummaries && Array.isArray(reportSummaries) && reportSummaries.length > 0 ? (
+                {reportSummaries && Array.isArray(reportSummaries) && reportSummaries.length > 0 && (
                   <div className="space-y-4">
                     <Label className="text-sm font-medium">
                       Select Reports to Reference (Optional)
@@ -1218,14 +1199,12 @@ function LeadDetailComponent() {
                       setSelectedReportIds={setSelectedReportIds}
                     />
                   </div>
-                ) : null}
+                )}
                 
                 <Button 
                   className="w-full" 
                   onClick={() => {
-                    startTransition(() => {
-                      setIsGeneratingEmail(true);
-                    });
+                    setIsGeneratingEmail(true);
                     generateAIEmailMutation.mutate();
                   }}
                   disabled={isGeneratingEmail || generateAIEmailMutation.isPending}
@@ -1244,15 +1223,13 @@ function LeadDetailComponent() {
                       <Button 
                         size="sm" 
                         onClick={() => {
-                          startTransition(() => {
-                            setNewEmail({
-                              subject: "Follow-up: Investment Research Opportunities",
-                              content: aiEmailSuggestion,
-                              email_type: "outgoing"
-                            });
-                            setShowAddEmail(true);
-                            setAiEmailSuggestion(null);
+                          setNewEmail({
+                            subject: "Follow-up: Investment Research Opportunities",
+                            content: aiEmailSuggestion,
+                            email_type: "outgoing"
                           });
+                          setShowAddEmail(true);
+                          setAiEmailSuggestion(null);
                         }}
                       >
                         Use This Email
@@ -1320,13 +1297,5 @@ function LeadDetailComponent() {
           )}
       </div>
     </div>
-  );
-}
-
-export default function LeadDetail() {
-  return (
-    <Suspense fallback={<div className="p-6">Loading lead details...</div>}>
-      <LeadDetailComponent />
-    </Suspense>
   );
 }

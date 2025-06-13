@@ -14,8 +14,8 @@ import Dashboard from "@/pages/dashboard";
 
 // Lazy load heavy components to reduce initial bundle size
 const InvoiceDetail = lazy(() => import("@/pages/invoice-detail"));
-const ClientDetail = lazy(() => import("@/pages/client-detail"));
 const LeadDetail = lazy(() => import("@/pages/lead-detail"));
+const ClientDetail = lazy(() => import("@/pages/client-detail"));
 const AIAnalytics = lazy(() => import("@/pages/ai-analytics").then(module => ({ default: module.AIAnalytics })));
 const About = lazy(() => import("@/pages/about"));
 const NotFound = lazy(() => import("@/pages/not-found"));
