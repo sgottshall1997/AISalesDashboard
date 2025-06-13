@@ -1743,14 +1743,22 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         const keyHoldings = topHoldings.slice(0, 6);
         const latestReports = reportSummaries.slice(0, 3);
         
+        // Parse interests properly - handle both string and array formats
+        let parsedInterests = [];
+        if (typeof interests === 'string' && interests.trim()) {
+          parsedInterests = interests.split(',').map(i => i.trim()).filter(i => i.length > 0);
+        } else if (Array.isArray(interests)) {
+          parsedInterests = interests;
+        }
+        
         const callPrepResult: any = {
-          prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} with potential alignment to 13D's high conviction themes including ${topIndexes.slice(0, 2).join(' and ')}.`,
+          prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} with specific interest in ${parsedInterests.length > 0 ? parsedInterests.join(', ') : topIndexes.slice(0, 2).join(' and ')}. Strong alignment potential with 13D's high conviction portfolio themes.`,
           
-          personalBackground: `${prospectName} serves as ${title || 'investment professional'} at ${firmName || 'their firm'}. ${title && title.toLowerCase().includes('senior') ? 'Senior leadership role' : 'Professional role'} with institutional investment focus. Given interest in ${Array.isArray(interests) && interests.length > 0 ? interests[0] : 'market opportunities'}, likely aligned with 13D's research on ${topIndexes[0] || 'commodities and geopolitical themes'}.`,
+          personalBackground: `${prospectName} serves as ${title || 'investment professional'} at ${firmName || 'their firm'}. ${title && title.toLowerCase().includes('senior') ? 'Senior leadership role' : 'Professional role'} with institutional investment focus on ${parsedInterests.length > 0 ? parsedInterests.slice(0, 2).join(' and ') : 'market opportunities'}. This aligns with 13D's research coverage and high conviction positioning.`,
           
-          companyOverview: `${firmName || 'The firm'} manages institutional capital with focus on ${investmentStyle || 'diversified strategies'}. ${Array.isArray(portfolioHoldings) && portfolioHoldings.length > 0 ? `Current holdings include ${portfolioHoldings.slice(0, 2).join(', ')}.` : `Potential interest in 13D's high conviction sectors: ${topIndexes.slice(0, 3).join(', ')}.`} Institution likely evaluates thematic opportunities similar to 13D's research coverage.`,
+          companyOverview: `${firmName || 'The firm'} manages institutional capital with focus on ${investmentStyle || 'diversified strategies'}. Given their interest in ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'thematic opportunities'}, there's clear synergy with 13D's high conviction sectors including ${topIndexes.slice(0, 3).join(', ')}.`,
           
-          topInterests: `Primary focus: ${Array.isArray(interests) && interests.length > 0 ? interests.join(', ') : 'institutional themes'}. ${latestReports.length > 0 ? `Recent 13D analysis covers ${latestReports[0].report?.title || 'market themes'} which aligns with their mandate.` : `Potential synergy with 13D's coverage of ${topIndexes.slice(0, 2).join(' and ')}.`}`,
+          topInterests: `Primary focus areas: ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'institutional themes'}. ${latestReports.length > 0 ? `Recent 13D analysis directly covers these themes through ${latestReports[0].report?.title || 'market research'}.` : `Direct alignment with 13D's coverage of ${topIndexes.slice(0, 2).join(' and ')}.`}`,
           
           portfolioInsights: `13D's high conviction portfolio (${keyHoldings.length > 0 ? keyHoldings.slice(0, 3).join(', ') : 'diversified holdings'}) demonstrates our conviction in ${topIndexes.slice(0, 2).join(' and ')} themes. ${latestReports.length > 0 && latestReports[0].parsed_summary ? `Latest research: ${latestReports[0].parsed_summary.substring(0, 150)}...` : 'Our research provides institutional-grade analysis on these themes.'} This positioning offers compelling discussion points for their investment committee.`,
           
@@ -1760,15 +1768,15 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
               subBullets: [
                 `Our ${keyHoldings.length > 0 ? keyHoldings.length : '10+'} high conviction holdings include ${keyHoldings.slice(0, 2).join(', ')}`,
                 `Portfolio concentrated in ${topIndexes.slice(0, 3).join(', ')} with 85.84% total weight`,
-                `Themes align with institutional focus on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'diversified opportunities'}`
+                `Direct alignment with your focus on ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'institutional themes'} through our sector positioning`
               ]
             },
             {
-              mainPoint: `Recent Research Insights`,
+              mainPoint: `Thematic Research Coverage`,
               subBullets: [
-                `Latest analysis covers ${Array.isArray(interests) && interests.length > 0 ? interests.slice(0, 2).join(' and ') : 'commodities and geopolitical themes'} with institutional-grade research`,
-                `${topIndexes.includes('13D Critical Minerals Index') ? 'Critical minerals positioning aligns with uranium and gold exposure themes' : 'Commodities research supports precious metals and energy positioning'}`,
-                `Research supports ${Array.isArray(interests) && interests.length > 0 && interests.some(i => ['gold', 'commodities', 'mining'].includes(i.toLowerCase())) ? 'precious metals' : topIndexes[0] || 'commodities'} allocation with compelling risk/reward profile`
+                `13D provides institutional research on ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'key sectors'} with actionable investment insights`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) || parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Critical minerals and precious metals positioning through our specialized indexes' : 'Sector-specific research aligned with your investment mandate'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('china')) ? 'China market exposure through dedicated research and portfolio allocation' : parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Digital assets and alternative investment coverage' : 'Thematic investment strategies with compelling risk-adjusted returns'}`
               ]
             },
             {
@@ -1790,13 +1798,13 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
           ],
           
           smartQuestions: [
-            "What themes or sectors are most top-of-mind for you right now?",
+            `Given your interest in ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'these sectors'}, what specific themes are most top-of-mind for you right now?`,
             "What types of research formats do you and your team find most useful—quick summaries, charts, deep dives?",
-            "What triggers a deeper look from your team—a chart, a macro signal, a contrarian thesis?",
+            `For ${parsedInterests.length > 0 ? parsedInterests.slice(0, 2).join(' and ') : 'your focus areas'}, what triggers a deeper look from your team—a chart, a macro signal, a contrarian thesis?`,
             "Is there anyone else on your team I should loop in for certain themes or decisions?",
             "What's the typical timeline for you to act on a new investment idea?",
             "What is your process for evaluating new research? Is there anyone you already use? What is your budget?",
-            `Given your focus on ${Array.isArray(interests) && interests.length > 0 ? interests.join(' and ') : 'institutional investing'}, are there any specific ${firmName ? `${firmName}` : 'firm'} initiatives or portfolio themes you're exploring for the next 6-12 months?`
+            `Given your focus on ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'institutional investing'}, are there any specific ${firmName ? `${firmName}` : 'firm'} initiatives or portfolio themes you're exploring for the next 6-12 months?`
           ]
         };
 
