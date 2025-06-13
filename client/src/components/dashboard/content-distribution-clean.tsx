@@ -100,7 +100,22 @@ export function ContentDistribution() {
       return;
     }
     
-    if (pdfFiles.length === 1) {
+    // Check if this is the single file input or multiple file input
+    const inputElement = event.target as HTMLInputElement;
+    const isMultipleUpload = inputElement.multiple;
+    
+    if (isMultipleUpload || pdfFiles.length > 1) {
+      // Multiple files selected or using multiple file input
+      setSelectedFiles(pdfFiles);
+      setSelectedFile(null);
+      setReportType('auto_detect'); // Let server auto-detect for each file
+      
+      toast({
+        title: "Files Selected",
+        description: `${pdfFiles.length} PDF files ready for bulk upload.`,
+      });
+    } else {
+      // Single file selected
       setSelectedFile(pdfFiles[0]);
       setSelectedFiles([]);
       // Auto-detect report type based on filename
@@ -109,10 +124,6 @@ export function ContentDistribution() {
       } else {
         setReportType('wiltw');
       }
-    } else {
-      setSelectedFiles(pdfFiles);
-      setSelectedFile(null);
-      setReportType('auto_detect'); // Let server auto-detect for each file
     }
     
     if (files.length > pdfFiles.length) {
@@ -553,6 +564,25 @@ export function ContentDistribution() {
                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                   />
                 </div>
+                
+                {selectedFiles.length > 0 && (
+                  <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium mb-2">
+                      <strong>Selected Files ({selectedFiles.length}):</strong>
+                    </p>
+                    <div className="space-y-1">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="text-sm text-green-700 flex items-center gap-2">
+                          <FileText className="w-3 h-3" />
+                          {file.name}
+                          <span className="text-xs text-green-600">
+                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-end">
                   <Button 
