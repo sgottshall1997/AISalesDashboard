@@ -956,18 +956,52 @@ Include WILTW or WATMTU dates used for the output.
 - Base all insights on provided report content only`;
 
       // Get High Conviction portfolio data for one-pager context
-      const hcHoldings = await db.select()
+      const allHcHoldings = await db.select()
         .from(portfolio_constituents)
         .where(eq(portfolio_constituents.isHighConviction, true))
-        .orderBy(desc(portfolio_constituents.weightInHighConviction))
-        .limit(20);
+        .orderBy(desc(portfolio_constituents.weightInHighConviction));
+
+      // Filter holdings based on theme relevance
+      const themeKeywords = (reportTitle || keyFocus || '').toLowerCase();
+      let relevantHoldings = allHcHoldings;
+
+      // Theme-based filtering for better relevance
+      if (themeKeywords.includes('gold') || themeKeywords.includes('mining') || themeKeywords.includes('precious metal')) {
+        relevantHoldings = allHcHoldings.filter((h: any) => 
+          h.index.toLowerCase().includes('gold') || 
+          h.index.toLowerCase().includes('mining') ||
+          h.index.toLowerCase().includes('commodit') ||
+          h.name.toLowerCase().includes('gold') ||
+          h.name.toLowerCase().includes('mining') ||
+          h.name.toLowerCase().includes('barrick') ||
+          h.name.toLowerCase().includes('newmont')
+        );
+      } else if (themeKeywords.includes('china') || themeKeywords.includes('chinese')) {
+        relevantHoldings = allHcHoldings.filter((h: any) => 
+          h.index.toLowerCase().includes('china') ||
+          h.ticker.includes('.SS') ||
+          h.ticker.includes('.SZ') ||
+          h.ticker.includes('.HK')
+        );
+      } else if (themeKeywords.includes('tech') || themeKeywords.includes('innovation')) {
+        relevantHoldings = allHcHoldings.filter((h: any) => 
+          h.index.toLowerCase().includes('tech') ||
+          h.index.toLowerCase().includes('innovation') ||
+          h.name.toLowerCase().includes('technology')
+        );
+      }
+
+      // If no theme-specific holdings found, use top weighted holdings
+      if (relevantHoldings.length === 0) {
+        relevantHoldings = allHcHoldings.slice(0, 15);
+      }
 
       const portfolioIndexes = [];
       const uniqueIndexes = new Set<string>();
-      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      relevantHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
       portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 8));
 
-      const topHoldings = hcHoldings.slice(0, 15).map((h: any) => `${h.name} (${h.ticker}) - ${h.weightInHighConviction}% from ${h.index}`);
+      const topHoldings = relevantHoldings.slice(0, 15).map((h: any) => `${h.name} (${h.ticker}) - ${h.weightInHighConviction}% from ${h.index}`);
 
       const userPrompt = `Generate a one-pager with these inputs:
 - **Title**: ${reportTitle || "Market Overview"}
