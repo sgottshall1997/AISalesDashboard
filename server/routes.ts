@@ -1998,11 +1998,13 @@ For each identifiable article section in the report, create a comprehensive anal
 
 Extract and analyze all numbered articles in the report with consistent formatting and depth.`;
 
-        const structuredUserPrompt = `Analyze this WILTW investment research report titled "${title}" and provide structured analysis for each article section:
+        const structuredUserPrompt = `I have extracted the full text content from a WILTW investment research report titled "${title}". Please analyze this content and provide structured analysis for each article section.
+
+Here is the complete report content:
 
 ${content}
 
-Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
+Please analyze the above content and process each numbered article section following the exact format specified. The content is available and should be analyzed thoroughly. Ensure all articles are covered with consistent formatting.`;
 
         const structuredResponse = await openai.chat.completions.create({
           model: "gpt-4o",
@@ -2021,11 +2023,13 @@ Process each numbered article section following the exact format specified. Ensu
         console.log('Generating detailed summary...');
         const detailedSystemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
 
-        const detailedUserPrompt = `Please analyze this ${reportTypeLabel} report and provide a comprehensive structured analysis:
+        const detailedUserPrompt = `I have the complete extracted text content from a ${reportTypeLabel} report titled "${title}". Please analyze this content and provide a comprehensive structured analysis.
 
-**Report Content:** ${content}
+**Complete Report Content:** 
 
-Create a detailed analysis in this format:
+${content}
+
+Please analyze the above content thoroughly and create a detailed analysis in this format:
 
 **${reportTypeLabel} Report Analysis: ${title}**
 
@@ -2088,11 +2092,13 @@ For each theme/insight, include:
 
 Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
 
-        const comprehensiveUserPrompt = `Please analyze this WILTW investment research report titled "${title}" and provide comprehensive insights for investment professionals:
+        const comprehensiveUserPrompt = `I have the complete extracted text content from a WILTW investment research report titled "${title}". Please analyze this content and provide comprehensive insights for investment professionals.
+
+**Complete Report Content:**
 
 ${content}
 
-Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content.`;
+Please analyze the above content thoroughly and extract all specific investment themes, opportunities, risks, and actionable insights from the report content. The content is available and should be analyzed completely.`;
 
         const comprehensiveResponse = await openai.chat.completions.create({
           model: "gpt-4o",
