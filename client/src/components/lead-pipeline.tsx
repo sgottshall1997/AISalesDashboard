@@ -184,7 +184,8 @@ export default function LeadPipeline() {
         description: "Prospect email has been generated successfully.",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Email generation error:', error);
       setGeneratingEmailFor(null);
       toast({
         title: "Error",
@@ -576,7 +577,10 @@ export default function LeadPipeline() {
                                     <span className="text-xs text-gray-500">Likelihood:</span>
                                     <Select 
                                       value={lead.likelihood_of_closing || "medium"} 
-                                      onValueChange={(value) => updateLikelihoodMutation.mutate({leadId: lead.id, likelihood: value})}
+                                      onValueChange={(value) => {
+                                        console.log('Likelihood change:', value, 'for lead:', lead.id);
+                                        updateLikelihoodMutation.mutate({leadId: lead.id, likelihood: value});
+                                      }}
                                     >
                                       <SelectTrigger className="w-24 h-7 text-xs">
                                         <SelectValue />
@@ -598,7 +602,10 @@ export default function LeadPipeline() {
                                     <span className="text-xs text-gray-500">Engagement:</span>
                                     <Select 
                                       value={lead.engagement_level || "none"} 
-                                      onValueChange={(value) => updateEngagementMutation.mutate({leadId: lead.id, engagement: value})}
+                                      onValueChange={(value) => {
+                                        console.log('Engagement change:', value, 'for lead:', lead.id);
+                                        updateEngagementMutation.mutate({leadId: lead.id, engagement: value});
+                                      }}
                                     >
                                       <SelectTrigger className="w-20 h-7 text-xs">
                                         <SelectValue />
