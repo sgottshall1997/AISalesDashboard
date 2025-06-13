@@ -190,75 +190,77 @@ export default function PortfolioConstituents() {
             </CardContent>
           </Card>
         ) : (
-          Object.entries(groupedConstituents).map(([indexName, indexConstituents]) => (
-            <Card key={indexName}>
-              <CardHeader className="pb-4">
-                <CardTitle className="flex items-center justify-between">
-                  <span>{indexName}</span>
-                  <Badge variant="outline">
-                    {indexConstituents.length} holding{indexConstituents.length !== 1 ? 's' : ''}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {indexConstituents.map((constituent) => (
-                    <div
-                      key={constituent.id}
-                      className={`p-4 border rounded-lg ${
-                        constituent.isHighConviction 
-                          ? 'border-green-200 bg-green-50' 
-                          : 'border-gray-200 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold text-lg">{constituent.ticker}</h4>
-                          <p className="text-sm text-gray-600 line-clamp-2">{constituent.name}</p>
-                        </div>
-                        {constituent.isHighConviction && (
-                          <Badge variant="default" className="bg-green-600 text-white">
-                            🔥 HC
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {/* Weight Information */}
-                      <div className="space-y-2">
-                        {constituent.isHighConviction && (
-                          <div className="bg-green-50 p-2 rounded border border-green-200">
-                            <div className="space-y-1">
-                              {constituent.indexWeightInHc && (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-green-700">Index Weight in HC:</span>
-                                  <span className="text-xs font-bold text-green-800">{constituent.indexWeightInHc}%</span>
-                                </div>
-                              )}
-                              {constituent.weightInHcPortfolio && (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-xs font-medium text-green-700">Individual HC Weight:</span>
-                                  <span className="text-xs font-bold text-green-800">{constituent.weightInHcPortfolio}%</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {constituent.weightInIndex && (
-                          <div className="bg-blue-50 p-2 rounded border border-blue-200">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-medium text-blue-700">Weight in {constituent.index}:</span>
-                              <span className="text-xs font-bold text-blue-800">{constituent.weightInIndex}%</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+          Object.entries(groupedConstituents).map(([indexName, indexConstituents]) => {
+            // Get index-level HC weight from the first HC constituent in this index
+            const indexHcWeight = indexConstituents.find(c => c.isHighConviction && c.indexWeightInHc)?.indexWeightInHc;
+            
+            return (
+              <Card key={indexName}>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span>{indexName}</span>
+                      {indexHcWeight && (
+                        <span className="text-sm font-normal text-green-600 mt-1">
+                          Index Weight in HC: {indexHcWeight}%
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))
+                    <Badge variant="outline">
+                      {indexConstituents.length} holding{indexConstituents.length !== 1 ? 's' : ''}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {indexConstituents.map((constituent) => (
+                      <div
+                        key={constituent.id}
+                        className={`p-4 border rounded-lg ${
+                          constituent.isHighConviction 
+                            ? 'border-green-200 bg-green-50' 
+                            : 'border-gray-200 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h4 className="font-semibold text-lg">{constituent.ticker}</h4>
+                            <p className="text-sm text-gray-600 line-clamp-2">{constituent.name}</p>
+                          </div>
+                          {constituent.isHighConviction && (
+                            <Badge variant="default" className="bg-green-600 text-white">
+                              🔥 HC
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {/* Weight Information */}
+                        <div className="space-y-2">
+                          {constituent.isHighConviction && constituent.weightInHcPortfolio && (
+                            <div className="bg-green-50 p-2 rounded border border-green-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-green-700">Individual HC Weight:</span>
+                                <span className="text-xs font-bold text-green-800">{constituent.weightInHcPortfolio}%</span>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {constituent.weightInIndex && (
+                            <div className="bg-blue-50 p-2 rounded border border-blue-200">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs font-medium text-blue-700">Weight in Index:</span>
+                                <span className="text-xs font-bold text-blue-800">{constituent.weightInIndex}%</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
     </div>
