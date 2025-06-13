@@ -2154,6 +2154,7 @@ REQUIREMENTS:
 - Generate ${selectedArticles.length >= 3 ? '3-4' : selectedArticles.length} bullets using different content sections
 - Use actual data from each content section provided
 - Write substantive bullets with real numbers and percentages
+- MUST include the personal note line exactly as written: "${personalNote}"
 - No placeholder text - write actual headlines and insights
 - Maximum 275 words`;
 
@@ -2162,7 +2163,7 @@ REQUIREMENTS:
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided."
+            content: `You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided. CRITICAL: You must include this personal note line exactly: "${personalNote}"`
           },
           {
             role: "user",
