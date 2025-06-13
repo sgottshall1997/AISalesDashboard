@@ -463,7 +463,7 @@ export function ContentDistribution() {
       setIsGeneratingEmail(true);
     },
     onSuccess: (data) => {
-      setGeneratedEmail(data.email);
+      setGeneratedEmail(data.body || data.email);
       setEmailProspectName(data.prospectName);
       setShowEmailDialog(true);
       setIsGeneratingEmail(false);
