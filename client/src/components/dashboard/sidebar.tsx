@@ -25,7 +25,7 @@ const navigation = [
   { name: "Invoicing Assistant", href: "/invoicing", icon: FileText },
   { name: "Content Distribution", href: "/content", icon: BarChart3 },
   { name: "Lead Pipeline", href: "/pipeline", icon: Users },
-  { name: "Portfolio Constituents", href: "/portfolio-constituents", icon: Building2 },
+  { name: "HC Portfolio", href: "/portfolio-constituents", icon: Building2 },
   { name: "Follow-Up Generator", href: "/followup", icon: Send },
 ];
 
