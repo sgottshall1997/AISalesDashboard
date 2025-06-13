@@ -15,8 +15,7 @@ import Dashboard from "@/pages/dashboard";
 // Lazy load heavy components to reduce initial bundle size
 const InvoiceDetail = lazy(() => import("@/pages/invoice-detail"));
 const ClientDetail = lazy(() => import("@/pages/client-detail"));
-// Import LeadDetail synchronously to avoid Suspense issues
-import LeadDetail from "@/pages/lead-detail";
+const LeadDetail = lazy(() => import("@/pages/lead-detail"));
 const AIAnalytics = lazy(() => import("@/pages/ai-analytics").then(module => ({ default: module.AIAnalytics })));
 const About = lazy(() => import("@/pages/about"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -44,7 +43,9 @@ function AuthenticatedRoutes() {
       )} />
       <Route path="/leads/:id" component={() => (
         <ErrorBoundary title="Lead Error" description="Failed to load lead details.">
-          <LeadDetail />
+          <Suspense fallback={<PageLoadingFallback />}>
+            <LeadDetail />
+          </Suspense>
         </ErrorBoundary>
       )} />
       <Route path="/client/:id" component={() => (
