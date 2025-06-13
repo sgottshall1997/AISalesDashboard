@@ -1942,40 +1942,38 @@ Focus on actionable insights and specific investment implications.`;
         // WILTW analysis - Generate three distinct summaries
         console.log('Starting WILTW three-part summary generation...');
         
-        // 1. Generate Structured Article Analysis in exact format
+        // 1. Generate Structured Article Analysis
         console.log('Generating structured summary...');
-        const structuredSystemPrompt = `You are an expert investment research analyst. Analyze the WILTW report and provide structured analysis for each article using this EXACT format:
+        const structuredSystemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title}. Analyze the report and provide structured, article-by-article analysis.
 
-Structured Article Analysis
-**Article 1: [Article Title]**
+For each identifiable article section in the report, create a comprehensive analysis following this format:
 
-- **Core Thesis:** [2-3 sentence summary of the main argument]
+**ARTICLE [NUMBER]: [TITLE]**
 
-- **Key Insights:**
-- [First key insight with specific data/quotes]
-- [Second key insight with supporting evidence]  
-- [Third key insight with implications]
+**Core Thesis:** [2-3 sentence summary of the main argument]
 
-- **Investment Implications:**
-- [Forward-looking themes and opportunities for investors]
+**Key Insights:**
+• [First key insight with specific data/quotes]
+• [Second key insight with supporting evidence]  
+• [Third key insight with implications]
 
-- **Recommended Names (if any):** [Specific stocks, ETFs, indices mentioned or "None specified"]
+**Investment Implications:** [Forward-looking themes and opportunities for investors]
 
-- **Category Tag:** [One category: Macro, AI, Energy, China, etc.]
+**Risk Factors:** [Specific risks and considerations mentioned]
 
----
+**Timeline:** [Short/medium/long-term outlook as discussed in the article]
 
-**Article 2: [Article Title]**
+**Recommended Names:** [Any specific stocks, ETFs, indices, or investment vehicles mentioned]
 
-[Continue same format for each article]
+**Category Tag:** [One primary category: Geopolitics, China, Technology, AI, Energy, Commodities, Climate, Markets, Culture, Education, Europe, Defense, Longevity, Macro, or Other]
 
-Use this exact formatting with dashes for bullets and "---" between articles. Do not use ** for formatting, just for article titles and section headers.`;
+Extract and analyze all numbered articles in the report with consistent formatting and depth.`;
 
-        const structuredUserPrompt = `Analyze this WILTW report titled "${title}" and provide structured analysis for each numbered article:
+        const structuredUserPrompt = `Analyze this WILTW investment research report titled "${title}" and provide structured analysis for each article section:
 
 ${content}
 
-Follow the exact format specified with "Structured Article Analysis" as the header and use the precise formatting shown.`;
+Process each numbered article section following the exact format specified. Ensure all articles are covered with consistent formatting.`;
 
         const structuredResponse = await openai.chat.completions.create({
           model: "gpt-4o",
