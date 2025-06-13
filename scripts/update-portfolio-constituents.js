@@ -37,7 +37,7 @@ async function updatePortfolioConstituents() {
           const ticker = row['Ticker'].trim();
           const name = row['Name'].trim();
           const index = row['13D Index / Theme']?.trim() || 'Unknown';
-          const weight = row['Weight']?.trim() || null;
+          const weight = row['Weight']?.trim() ? parseFloat(row['Weight'].replace('%', '')) : null;
           const rebalanceDate = row['Latest Rebalance']?.trim() || null;
 
           if (ticker && name) {
@@ -73,8 +73,8 @@ async function updatePortfolioConstituents() {
           const ticker = row['Ticker'].trim();
           const name = row['Name'].trim();
           const index = row['13D Theme / Index']?.trim() || 'Unknown';
-          const weightInHC = row['Security Weight in 13D Highest Conviction Portfolio']?.trim() || null;
-          const weightInIndex = row['Security Weight in Index']?.trim() || null;
+          const weightInHC = row['Security Weight in 13D Highest Conviction Portfolio']?.trim() ? parseFloat(row['Security Weight in 13D Highest Conviction Portfolio'].replace('%', '')) : null;
+          const weightInIndex = row['Security Weight in Index']?.trim() ? parseFloat(row['Security Weight in Index'].replace('%', '')) : null;
 
           if (ticker && name) {
             const key = `${ticker}|${index}`;
@@ -110,7 +110,7 @@ async function updatePortfolioConstituents() {
       try {
         await pool.query(`
           INSERT INTO portfolio_constituents 
-          (ticker, name, index, "isHighConviction", "weightInIndex", "weightInHighConviction", "rebalanceDate")
+          (ticker, name, index, is_high_conviction, weight_in_index, weight_in_high_conviction, rebalance_date)
           VALUES ($1, $2, $3, $4, $5, $6, $7)
         `, [
           constituent.ticker,
@@ -133,7 +133,7 @@ async function updatePortfolioConstituents() {
     const stats = await pool.query(`
       SELECT 
         COUNT(*) as total,
-        COUNT(*) FILTER (WHERE "isHighConviction" = true) as high_conviction,
+        COUNT(*) FILTER (WHERE is_high_conviction = true) as high_conviction,
         COUNT(DISTINCT index) as unique_indexes
       FROM portfolio_constituents
     `);
@@ -148,7 +148,7 @@ async function updatePortfolioConstituents() {
       SELECT 
         index,
         COUNT(*) as count,
-        COUNT(*) FILTER (WHERE "isHighConviction" = true) as hc_count
+        COUNT(*) FILTER (WHERE is_high_conviction = true) as hc_count
       FROM portfolio_constituents
       GROUP BY index
       ORDER BY count DESC
