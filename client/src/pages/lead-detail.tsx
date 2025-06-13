@@ -1,4 +1,4 @@
-import { useState, useEffect, startTransition } from "react";
+import { useState, useEffect, startTransition, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -214,7 +214,7 @@ interface ContentReport {
   content_summary?: string;
 }
 
-export default function LeadDetail() {
+function LeadDetailComponent() {
   const [, params] = useRoute("/leads/:id");
   const [, setLocation] = useLocation();
   const leadId = parseInt(params?.id || "0");
@@ -260,10 +260,15 @@ export default function LeadDetail() {
     queryKey: ["/api/report-summaries"],
   });
 
+  // Helper function to safely update state with startTransition
+  const safeSetState = (updateFn: () => void) => {
+    startTransition(updateFn);
+  };
+
   // Update notes when lead data loads
   useEffect(() => {
     if (lead) {
-      setNotes(lead.notes || "");
+      safeSetState(() => setNotes(lead.notes || ""));
     }
   }, [lead]);
 
@@ -275,7 +280,7 @@ export default function LeadDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}`] });
       queryClient.invalidateQueries({ queryKey: ['/api/leads'] });
-      setIsEditing(false);
+      safeSetState(() => setIsEditing(false));
       toast({
         title: "Lead Updated",
         description: "Lead details have been updated successfully.",
@@ -602,7 +607,7 @@ export default function LeadDetail() {
                     <Input
                       id="name"
                       value={editData.name || ""}
-                      onChange={(e) => setEditData({...editData, name: e.target.value})}
+                      onChange={(e) => startTransition(() => setEditData({...editData, name: e.target.value}))}
                     />
                   </div>
                   
@@ -612,7 +617,7 @@ export default function LeadDetail() {
                       id="email"
                       type="email"
                       value={editData.email || ""}
-                      onChange={(e) => setEditData({...editData, email: e.target.value})}
+                      onChange={(e) => startTransition(() => setEditData({...editData, email: e.target.value}))}
                     />
                   </div>
                   
@@ -1315,5 +1320,13 @@ export default function LeadDetail() {
           )}
       </div>
     </div>
+  );
+}
+
+export default function LeadDetail() {
+  return (
+    <Suspense fallback={<div className="p-6">Loading lead details...</div>}>
+      <LeadDetailComponent />
+    </Suspense>
   );
 }
