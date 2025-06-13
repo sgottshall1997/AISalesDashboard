@@ -173,6 +173,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete content report and associated summaries
+  app.delete("/api/content-reports/:id", async (req: Request, res: Response) => {
+    try {
+      const reportId = parseInt(req.params.id);
+      
+      if (isNaN(reportId)) {
+        return res.status(400).json({ error: "Invalid report ID" });
+      }
+
+      // First delete all associated summaries
+      await storage.deleteReportSummariesByReportId(reportId);
+      
+      // Then delete the report
+      const success = await storage.deleteContentReport(reportId);
+      
+      if (success) {
+        res.json({ success: true, message: "Report and associated summaries deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Report not found" });
+      }
+    } catch (error) {
+      console.error("Delete content report error:", error);
+      res.status(500).json({ 
+        error: "Failed to delete report",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Simple PDF upload endpoint that works with database
   app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {

@@ -12,7 +12,7 @@ import {
   users, type User, type InsertUser
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, or, ilike, gte } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -101,6 +101,7 @@ export interface IStorage {
   createReportSummary(summary: InsertReportSummary): Promise<ReportSummary>;
   updateReportSummary(id: number, updates: Partial<InsertReportSummary>): Promise<ReportSummary | undefined>;
   getAllReportSummaries(): Promise<(ReportSummary & { report: ContentReport })[]>;
+  deleteReportSummariesByReportId(contentReportId: number): Promise<boolean>;
 
   // AI suggestions for invoices and leads
   getInvoiceAISuggestion(invoiceId: number): Promise<any>;
@@ -998,33 +999,33 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
   }): Promise<any[]> {
     const searchTerm = `%${params.query.toLowerCase()}%`;
     
-    let query = db.select().from(contentReports);
+    let query = db.select().from(content_reports);
     
     query = query.where(
       or(
-        ilike(contentReports.title, searchTerm),
-        ilike(contentReports.summary, searchTerm),
-        ilike(contentReports.fullContent, searchTerm)
+        ilike(content_reports.title, searchTerm),
+        ilike(content_reports.summary, searchTerm),
+        ilike(content_reports.full_content, searchTerm)
       )
     );
 
     if (params.type) {
-      query = query.where(eq(contentReports.type, params.type));
+      query = query.where(eq(content_reports.type, params.type));
     }
 
     if (params.engagementLevel) {
-      query = query.where(eq(contentReports.engagementLevel, params.engagementLevel));
+      query = query.where(eq(content_reports.engagement_level, params.engagementLevel));
     }
 
     if (params.dateRange) {
       const days = parseInt(params.dateRange.replace('d', '')) || 30;
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - days);
-      query = query.where(gte(contentReports.publishedDate, cutoffDate));
+      query = query.where(gte(content_reports.published_date, cutoffDate));
     }
 
     const results = await query
-      .orderBy(desc(contentReports.publishedDate))
+      .orderBy(desc(content_reports.published_date))
       .limit(params.limit);
 
     return results.map(result => ({
@@ -1177,6 +1178,11 @@ Format as JSON: {"subject": "...", "body": "...", "priority": "...", "reason": "
       })
       .returning();
     return savedContent;
+  }
+
+  async deleteReportSummariesByReportId(contentReportId: number): Promise<boolean> {
+    const result = await db.delete(report_summaries).where(eq(report_summaries.content_report_id, contentReportId));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
