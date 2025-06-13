@@ -2097,10 +2097,11 @@ ${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior rela
 
 ${selectedReportSummaries.length > 0 ? `Reference the recent 13D reports: "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the combined report content: "${filteredSummary}". The reports cover: ${reportTags}.
 
-${selectedReportIds && selectedReportIds.length > 1 ? 
-`MANDATORY REQUIREMENT: You MUST end every single bullet point with (REPORT_TITLE - Article X) where REPORT_TITLE is the specific report name and X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers from potentially different reports - never repeat the same article number twice. This is absolutely required - no exceptions.
+${selectedReportSummaries.length > 0 ? 
+`MANDATORY REQUIREMENT: You MUST end every single bullet point with (Article X) where X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers - never repeat the same article number twice. This is absolutely required - no exceptions.
 
-CRITICAL DISTRIBUTION RULE: When multiple reports are available, you MUST pull insights from DIFFERENT reports. Do NOT take all 3 bullet points from the same report. Mix insights across the available reports to show breadth of coverage.
+${selectedReportIds && selectedReportIds.length > 1 ? 
+`CRITICAL DISTRIBUTION RULE: When multiple reports are available, you MUST pull insights from DIFFERENT reports. Do NOT take all 3 bullet points from the same report. Mix insights across the available reports to show breadth of coverage.
 
 Available reports and their articles:
 ${selectedReportSummaries.map(summary => {
@@ -2118,10 +2119,13 @@ Article 8 = European agriculture` : '';
 Example format (MANDATORY - notice 3 DIFFERENT citations from DIFFERENT reports):
 • China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (WILTW_2025-06-05 - Article 2).
 • Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (WILTW_2025-05-29 - Article 4).
-• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-05-22 - Article 7).
+• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-05-22 - Article 7).` :
+`Example format (MANDATORY - notice 3 DIFFERENT article numbers):
+• Paradigm Shift in Market Leadership: Chinese equities are entering a secular bull market, with a projected annual growth rate of 8% over the next decade, driven by policy reforms and increased foreign investment. This shift is expected to elevate commodities and inflation-sensitive sectors. (Article 1)
+• Geopolitical Tensions and Energy Markets: Rising geopolitical tensions in Eastern Europe could lead to a 15% increase in energy prices by the end of the year, impacting global supply chains and inflation rates. This scenario underscores the importance of energy diversification. (Article 2)
+• Investment Strategy Amidst Inflation: With inflation rates expected to stabilize around 4% in the next two years, investors are advised to focus on sectors like technology and healthcare, which historically outperform during inflationary periods. (Article 3)`}
 
-CRITICAL: Each bullet point MUST include the specific report title and a DIFFERENT article number. Distribute insights across different reports when multiple are available.` :
-`IMPORTANT: Since only one report is selected, DO NOT include article citations or reference numbers. Present the insights naturally without any (Article X) citations.`}` : ''}
+CRITICAL: Each bullet point MUST include (Article X) at the end. Use different article numbers for each bullet point.` : ''}
 
 GOALS:
 • Greet the reader warmly with a short intro that references any prior context appropriately
@@ -2137,6 +2141,7 @@ HARD RULES:
 • Use **friendly but professional tone**
 • Paragraph format is fine, but use bullets for the insights section
 • DO NOT use phrases like "Article 1," "titled," or "the report outlines"
+• MANDATORY: Every bullet point MUST end with (Article X) where X is a different number (2, 3, 4, etc.)
 • Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
 
 STRUCTURE TO FOLLOW:
@@ -2149,7 +2154,7 @@ Hi ${lead.name},
 
 [Natural greeting with seasonal/personal touch] I was going through one of our latest reports and [conversational transition about why this matters to them based on their interests].
 
-[Present 3 market insights as bullet points with detailed analysis and implications]
+[Present 3 market insights as bullet points with detailed analysis and implications - EACH BULLET MUST END WITH (Article 2), (Article 3), (Article 4)]
 
 More broadly, [broader market perspective in casual, natural language].
 
