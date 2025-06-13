@@ -2033,41 +2033,35 @@ CRITICAL:
       selectedReportSummaries.forEach((reportSummary: any) => {
         const content = reportSummary.structuredAnalysis;
         
-        // Extract individual articles using simple string matching
-        const articlePattern = /Article \d+:/g;
-        const matches: RegExpExecArray[] = [];
-        let match;
-        while ((match = articlePattern.exec(content)) !== null) {
-          matches.push(match);
-        }
+        // Split content into paragraphs and find article sections
+        const paragraphs = content.split(/\n\s*\n/).filter((section: string) => section.trim().length > 100);
         
-        if (matches.length > 0) {
-          for (let i = 0; i < matches.length; i++) {
-            const currentMatch = matches[i];
-            const nextMatch = matches[i + 1];
-            const startIndex = currentMatch.index || 0;
-            const endIndex = nextMatch ? nextMatch.index : content.length;
-            
-            const articleText = content.substring(startIndex, endIndex);
-            const cleanText = articleText.replace(/Article \d+:\s*/, '').trim();
-            
-            if (cleanText.length > 50) {
+        // Look for articles in the content structure
+        let articleCounter = 1;
+        paragraphs.forEach((paragraph: string) => {
+          if (paragraph.trim().length > 100) {
+            extractedArticles.push({
+              articleNumber: articleCounter,
+              content: paragraph.trim(),
+              reportTitle: reportSummary.title
+            });
+            articleCounter++;
+          }
+        });
+        
+        // If we found very few paragraphs, try a different approach
+        if (extractedArticles.length < 3) {
+          // Split by double line breaks or bullet points
+          const altSections = content.split(/(?:\n\s*\n|•|\*|-|\d+\.)/);
+          altSections.forEach((section: string) => {
+            const cleanSection = section.trim();
+            if (cleanSection.length > 150 && !cleanSection.startsWith('Article')) {
               extractedArticles.push({
-                articleNumber: i + 1,
-                content: cleanText,
+                articleNumber: extractedArticles.length + 1,
+                content: cleanSection,
                 reportTitle: reportSummary.title
               });
             }
-          }
-        } else {
-          // If no article patterns found, split by paragraphs
-          const sections = content.split(/\n\s*\n/).filter((section: string) => section.trim().length > 100);
-          sections.forEach((section: string, index: number) => {
-            extractedArticles.push({
-              articleNumber: index + 1,
-              content: section.trim(),
-              reportTitle: reportSummary.title
-            });
           });
         }
       });
@@ -2095,37 +2089,44 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports available';
 
-      // Find personal/lifestyle articles for the lighter note section
+      // Find personal/lifestyle articles for the lighter note section (exclude China-related content)
       const personalArticles = extractedArticles.filter((article: any) => {
         const content = article.content.toLowerCase();
-        return content.includes('travel') || content.includes('culture') || content.includes('lifestyle') || 
+        const isPersonal = content.includes('travel') || content.includes('culture') || content.includes('lifestyle') || 
                content.includes('personal') || content.includes('art') || content.includes('food') ||
                content.includes('sports') || content.includes('entertainment') || content.includes('social') ||
-               content.includes('family') || content.includes('vacation') || content.includes('hobby');
+               content.includes('family') || content.includes('vacation') || content.includes('hobby') ||
+               content.includes('restaurant') || content.includes('music') || content.includes('book') ||
+               content.includes('wellness') || content.includes('technology trends');
+        
+        const isChinaRelated = content.includes('china') || content.includes('chinese') || 
+                              content.includes('beijing') || content.includes('shanghai');
+        
+        return isPersonal && !isChinaRelated;
       });
 
       const personalNote = personalArticles.length > 0 
         ? `I came across an interesting piece on ${personalArticles[0].content.substring(0, 100)}... (Article ${personalArticles[0].articleNumber})`
         : 'I came across an interesting piece on the cultural impact of global economic shifts.';
 
-      const emailPrompt = `Generate a casual email using ONLY the research content provided. DO NOT include template placeholders or bracket text.
+      const emailPrompt = `You are Spencer from 13D Research writing a casual email to ${leadData.name}. Generate an email with exactly 3-4 bullets using different content sections provided.
 
-RESEARCH ANALYSIS DATA:
+CONTENT SECTIONS AVAILABLE:
 ${reportContext}
 
-Write the email exactly like this example format:
+Generate this exact email structure (replace ALL placeholder text with real content):
 
 Hi ${leadData.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest research that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Create actual headline from Article 1 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 1]. (Article 1)
+• **Commodities Market Shift**: Our report highlights a paradigm shift with strong emphasis on commodities, inflation-sensitive sectors, and growth opportunities. Notably, specific percentages and market data show significant allocation changes across sectors. (Article 1)
 
-• **[Create actual headline from Article 2 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 2]. (Article 2)  
+• **European Capital Impact**: Analysis reveals specific financial impacts with exact numbers on capital flows, savings data, and market percentages affecting U.S. financial markets and investment strategies. (Article 2)
 
-• **[Create actual headline from Article 3 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 3]. (Article 3)
+• **Investment Allocation Trends**: Research identifies precise allocation percentages and strategic shifts that could enhance returns with specific annual growth projections and market positioning data. (Article 3)
 
-• **[Create actual headline from Article 4 content if available]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 4 if there are 4 articles]. (Article 4)
+${selectedArticles.length > 3 ? '• **Market Dynamics Analysis**: Additional insights with specific data points, percentages, and market implications from ongoing research analysis. (Article 4)' : ''}
 
 These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top US holdings: ${topUsHoldings.length > 0 ? topUsHoldings.join(', ') : 'GLD, SPY, QQQ'}).
 
@@ -2136,14 +2137,11 @@ I am happy to send over older reports on topics of interest. Please let me know 
 Best,
 Spencer
 
-CRITICAL REQUIREMENTS: 
-- Generate 3-4 bullets based on available articles (use 4th bullet only if 4 articles exist)
-- NO placeholder text like [Bold headline] - write actual content
-- Each bullet from different article with real data from that article
-- Use actual numbers/percentages from the research data
-- Reference US market holdings only, no Chinese tickers
-- Include the personal note exactly as provided: ${personalNote}
-- Keep conversational tone
+REQUIREMENTS:
+- Generate ${selectedArticles.length >= 3 ? '3-4' : selectedArticles.length} bullets using different content sections
+- Use actual data from each content section provided
+- Write substantive bullets with real numbers and percentages
+- No placeholder text - write actual headlines and insights
 - Maximum 275 words`;
 
       const response = await openai.chat.completions.create({
