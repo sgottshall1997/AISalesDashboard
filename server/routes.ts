@@ -1673,20 +1673,39 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
+      // Get High Conviction portfolio data for lead email context
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(15);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+
+      const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      const emailPrompt = `You must generate an email in this EXACT casual format connecting insights to actual 13D High Conviction portfolio holdings when relevant.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
 
 TEMPLATE TO FOLLOW EXACTLY:
 Hi ${lead.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${lead.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 1)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 2)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Reference specific HC holdings if they connect to this insight. (Article 2)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 3)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Include HC portfolio connections when applicable. (Article 3)
 
-These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
+These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus. Our High Conviction portfolio reflects these themes with actual positions in relevant sectors.
 
 On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
 
@@ -1789,6 +1808,22 @@ CRITICAL:
         });
       }
 
+      // Get High Conviction portfolio data for lead email context
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(12);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+
+      const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
       // Get structured analysis (parsed summaries) for selected reports
       let selectedReportSummaries = [];
       if (selectedReportIds && selectedReportIds.length > 0) {
@@ -1819,8 +1854,6 @@ CRITICAL:
           }
         }
       }
-      
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
       // Build report context from structured analysis
       const reportContext = selectedReportSummaries.length > 0 
@@ -1829,20 +1862,25 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports selected';
 
-      const emailPrompt = `You must generate an email in this EXACT casual format. Do not write paragraph blocks or formal business language.
+      const emailPrompt = `You must generate an email in this EXACT casual format connecting insights to actual 13D High Conviction portfolio holdings when relevant. Do not write paragraph blocks or formal business language.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
 
 TEMPLATE TO FOLLOW EXACTLY:
 Hi ${leadData.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest report that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 1)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. When relevant, mention actual HC portfolio positions that align with this theme. (Article 1)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 2)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Reference specific HC holdings if they connect to this insight. (Article 2)
 
-• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. (Article 3)
+• **[Bold headline]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from the data]. Include HC portfolio connections when applicable. (Article 3)
 
-These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus.
+These are all trends 13D has been tracking for years. As you know, we aim to identify major inflection points before they become consensus. Our High Conviction portfolio reflects these themes with actual positions in relevant sectors.
 
 On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
 
@@ -1859,6 +1897,7 @@ CRITICAL:
 - Make each bullet detailed with specific data/percentages/ratios from reports
 - Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
+- When thematically relevant, reference actual HC portfolio holdings
 - After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the reports
 - Keep conversational tone, avoid formal business language
 - Maximum 275 words`;
