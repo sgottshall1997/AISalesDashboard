@@ -156,9 +156,12 @@ export default function LeadPipeline() {
 
   const generateProspectEmailMutation = useMutation({
     mutationFn: async ({ leadId, reportTitle }: { leadId: number; reportTitle: string }) => {
+      const lead = leads?.find(l => l.id === leadId);
       const response = await apiRequest("/api/generate-prospect-email", "POST", {
-        lead: leads?.find(l => l.id === leadId),
-        reportTitle
+        prospectName: lead?.name,
+        reportTitle,
+        keyTalkingPoints: lead?.interest_tags?.join(', ') || '',
+        matchReason: lead?.notes || ''
       });
       return response.json();
     },
@@ -619,8 +622,21 @@ export default function LeadPipeline() {
 
                                 {/* Quick Notes Section */}
                                 <div className="mb-3">
-                                  <div className="flex items-center gap-2 mb-1">
+                                  <div className="flex items-center justify-between mb-1">
                                     <span className="text-xs text-gray-500">Quick Notes:</span>
+                                    {editingNotes[lead.id] !== undefined && editingNotes[lead.id] !== (lead.notes || '') && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-6 px-2 text-xs"
+                                        onClick={() => {
+                                          updateNotesMutation.mutate({leadId: lead.id, notes: editingNotes[lead.id]});
+                                        }}
+                                        disabled={updateNotesMutation.isPending}
+                                      >
+                                        {updateNotesMutation.isPending ? "Saving..." : "Save"}
+                                      </Button>
+                                    )}
                                   </div>
                                   <Textarea
                                     value={editingNotes[lead.id] !== undefined ? editingNotes[lead.id] : (lead.notes || '')}
@@ -638,7 +654,7 @@ export default function LeadPipeline() {
                                         }
                                       }
                                     }}
-                                    placeholder="Type notes here... (Enter to save)"
+                                    placeholder="Type notes here... (Enter to save or use Save button)"
                                     className="h-16 text-xs resize-none"
                                   />
                                 </div>
