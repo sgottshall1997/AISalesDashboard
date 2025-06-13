@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,15 +52,24 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
 
   // Deduplicate reports by title, keeping the most recent one
   const deduplicateReports = (reports: any[]) => {
-    const titleMap = new Map();
-    reports.forEach((summary: any) => {
-      const title = summary.report?.title;
-      if (title && (!titleMap.has(title) || new Date(summary.report.created_at) > new Date(titleMap.get(title).report.created_at))) {
-        titleMap.set(title, summary);
-      }
-    });
-    return Array.from(titleMap.values());
+    try {
+      const titleMap = new Map();
+      reports.forEach((summary: any) => {
+        const title = summary.report?.title;
+        if (title && (!titleMap.has(title) || new Date(summary.report.created_at) > new Date(titleMap.get(title).report.created_at))) {
+          titleMap.set(title, summary);
+        }
+      });
+      return Array.from(titleMap.values());
+    } catch (error) {
+      console.warn("Error deduplicating reports:", error);
+      return reports;
+    }
   };
+
+  if (!reportSummaries || !Array.isArray(reportSummaries)) {
+    return null;
+  }
 
   const allWiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
   const allWatmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
@@ -1188,7 +1197,7 @@ export default function LeadDetail() {
                   Generate a personalized follow-up email based on recent reports and the lead's interests.
                 </p>
                 
-                {reportSummaries && Array.isArray(reportSummaries) && reportSummaries.length > 0 && (
+                {reportSummaries && Array.isArray(reportSummaries) && reportSummaries.length > 0 ? (
                   <div className="space-y-4">
                     <Label className="text-sm font-medium">
                       Select Reports to Reference (Optional)
@@ -1200,12 +1209,14 @@ export default function LeadDetail() {
                       setSelectedReportIds={setSelectedReportIds}
                     />
                   </div>
-                )}
+                ) : null}
                 
                 <Button 
                   className="w-full" 
                   onClick={() => {
-                    setIsGeneratingEmail(true);
+                    startTransition(() => {
+                      setIsGeneratingEmail(true);
+                    });
                     generateAIEmailMutation.mutate();
                   }}
                   disabled={isGeneratingEmail || generateAIEmailMutation.isPending}
