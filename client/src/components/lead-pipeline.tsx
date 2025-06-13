@@ -126,7 +126,9 @@ export default function LeadPipeline() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Force refetch of leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.refetchQueries({ queryKey: ["/api/leads"] });
       console.log('Likelihood updated successfully:', data);
       toast({
         title: "Likelihood Updated",
@@ -141,7 +143,9 @@ export default function LeadPipeline() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Force refetch of leads data
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      queryClient.refetchQueries({ queryKey: ["/api/leads"] });
       console.log('Engagement updated successfully:', data);
       toast({
         title: "Engagement Updated",
