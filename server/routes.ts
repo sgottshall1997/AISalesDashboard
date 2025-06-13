@@ -3383,6 +3383,105 @@ Connect the theme to actual HC portfolio holdings when thematically relevant. Us
     }
   });
 
+  // Prospect email generation with 13D Research style
+  app.post("/api/generate-prospect-email", async (req: Request, res: Response) => {
+    try {
+      // Check if OpenAI API key is available
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI email generation." 
+        });
+      }
+
+      const { prospectName, reportTitle, keyTalkingPoints, matchReason } = req.body;
+      
+      if (!prospectName) {
+        return res.status(400).json({ error: "Prospect name is required" });
+      }
+
+      // Get High Conviction portfolio data for prospect emails
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(12);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+
+      const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const prospectEmailPrompt = `Generate a professional 13D Research prospect email connecting the report insights to actual High Conviction portfolio holdings.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
+
+Prospect: ${prospectName}
+Report: ${reportTitle || 'Recent Research'}
+Match Reason: ${matchReason || 'Investment opportunity alignment'}
+Key Points: ${keyTalkingPoints?.join(', ') || 'Portfolio insights'}
+
+Generate a professional email following this structure:
+- Personal greeting to ${prospectName}
+- Brief market context relevant to the report
+- Reference to actual HC portfolio performance and holdings when relevant
+- Specific insights from the report with connections to HC portfolio positions
+- Call to action for further discussion
+
+Connect the insights to actual HC portfolio holdings when thematically relevant. Use specific ticker symbols and sector weightings where applicable.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are Spencer from 13D Research writing professional prospect emails that reference actual portfolio holdings when relevant to investment insights."
+          },
+          {
+            role: "user",
+            content: prospectEmailPrompt
+          }
+        ],
+        max_tokens: 600,
+        temperature: 0.2
+      });
+
+      let generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+
+      // Clean formatting
+      generatedEmail = generatedEmail.replace(/[\*#]+/g, '');
+      generatedEmail = generatedEmail.replace(/\n{3,}/g, '\n\n');
+
+      // Add source report reference
+      if (reportTitle) {
+        const reportMatch = reportTitle.match(/(WILTW|WATMTU)[_-]?(\d{4}-\d{2}-\d{2})/);
+        if (reportMatch) {
+          const reportType = reportMatch[1];
+          const reportDate = reportMatch[2];
+          generatedEmail += `\n\n---\n\nSource: ${reportType} Report (${reportDate})`;
+        }
+      }
+
+      res.json({ 
+        email: generatedEmail,
+        prospectName: prospectName
+      });
+
+    } catch (error) {
+      console.error("Error generating prospect email:", error);
+      res.status(500).json({ 
+        error: "Failed to generate email",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // AI Feedback API endpoint
   app.post("/api/feedback", async (req: Request, res: Response) => {
     try {

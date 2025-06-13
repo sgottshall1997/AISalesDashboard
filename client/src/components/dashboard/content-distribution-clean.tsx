@@ -457,7 +457,7 @@ export function ContentDistribution() {
       matchReason: string 
     }) => {
       const response = await apiRequest("/api/generate-prospect-email", "POST", data);
-      return response.json();
+      return response;
     },
     onMutate: () => {
       setIsGeneratingEmail(true);
