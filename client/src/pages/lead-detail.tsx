@@ -50,11 +50,27 @@ function ReportSelector({ reportSummaries, selectedReportIds, setSelectedReportI
     return title;
   };
 
-  const wiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
-  const watmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
-  const otherReports = reportSummaries.filter((summary: any) => 
+  // Deduplicate reports by title, keeping the most recent one
+  const deduplicateReports = (reports: any[]) => {
+    const titleMap = new Map();
+    reports.forEach((summary: any) => {
+      const title = summary.report?.title;
+      if (title && (!titleMap.has(title) || new Date(summary.report.created_at) > new Date(titleMap.get(title).report.created_at))) {
+        titleMap.set(title, summary);
+      }
+    });
+    return Array.from(titleMap.values());
+  };
+
+  const allWiltwReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WILTW'));
+  const allWatmtuReports = reportSummaries.filter((summary: any) => summary.report?.title?.includes('WATMTU'));
+  const allOtherReports = reportSummaries.filter((summary: any) => 
     !summary.report?.title?.includes('WILTW') && !summary.report?.title?.includes('WATMTU')
   );
+
+  const wiltwReports = deduplicateReports(allWiltwReports);
+  const watmtuReports = deduplicateReports(allWatmtuReports);
+  const otherReports = deduplicateReports(allOtherReports);
 
   return (
     <>
