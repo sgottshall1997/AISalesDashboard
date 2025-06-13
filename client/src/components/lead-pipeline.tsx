@@ -19,7 +19,8 @@ import {
   ExternalLink,
   Plus,
   Trash2,
-  Search
+  Search,
+  Copy
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -657,18 +658,20 @@ export default function LeadPipeline() {
                                         <SelectValue placeholder="Select WILTW/WATMTU report" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        {(contentReports as any[])?.filter((report: any) => 
-                                          report.title.includes('WILTW') || report.title.includes('WATMTU')
-                                        ).slice(0, 5).map((report: any) => (
-                                          <SelectItem key={report.id} value={report.title}>
-                                            <div className="text-xs">
-                                              <div className="font-medium">{report.title}</div>
-                                              <div className="text-gray-500">
-                                                {new Date(report.published_date).toLocaleDateString()}
+                                        {Array.isArray(contentReports) && 
+                                          contentReports.filter((report: any) => 
+                                            report.title && (report.title.includes('WILTW') || report.title.includes('WATMTU'))
+                                          ).slice(0, 5).map((report: any) => (
+                                            <SelectItem key={report.id} value={report.title}>
+                                              <div className="text-xs">
+                                                <div className="font-medium">{report.title}</div>
+                                                <div className="text-gray-500">
+                                                  {new Date(report.published_date).toLocaleDateString()}
+                                                </div>
                                               </div>
-                                            </div>
-                                          </SelectItem>
-                                        ))}
+                                            </SelectItem>
+                                          ))
+                                        }
                                       </SelectContent>
                                     </Select>
                                     {generatingEmailFor === lead.id && (
@@ -719,14 +722,19 @@ export default function LeadPipeline() {
         {/* Email Display Dialogs */}
         {Object.entries(emailDialogs).map(([leadId, dialogData]) => {
           const lead = leads?.find(l => l.id.toString() === leadId);
-          if (!dialogData.open || !dialogData.email || !lead) return null;
+          if (!dialogData?.open || !dialogData?.email || !lead) return null;
+          
+          const emailData = dialogData.email;
           
           return (
             <Dialog key={leadId} open={dialogData.open} onOpenChange={(open) => {
               if (!open) {
                 setEmailDialogs(prev => ({
                   ...prev,
-                  [leadId]: { ...prev[leadId], open: false }
+                  [leadId]: { 
+                    ...prev[leadId as keyof typeof prev], 
+                    open: false 
+                  }
                 }));
               }
             }}>
@@ -741,14 +749,14 @@ export default function LeadPipeline() {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Subject</Label>
                     <div className="mt-1 p-3 bg-gray-50 rounded-lg">
-                      <p className="text-sm font-medium">{dialogData.email.subject}</p>
+                      <p className="text-sm font-medium">{emailData.subject}</p>
                     </div>
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Email Body</Label>
                     <div className="mt-1 p-4 bg-white border rounded-lg">
                       <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                        {dialogData.email.body}
+                        {emailData.body}
                       </div>
                     </div>
                   </div>
@@ -756,7 +764,7 @@ export default function LeadPipeline() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        navigator.clipboard.writeText(`Subject: ${dialogData.email.subject}\n\n${dialogData.email.body}`);
+                        navigator.clipboard.writeText(`Subject: ${emailData.subject}\n\n${emailData.body}`);
                         toast({
                           title: "Copied to clipboard",
                           description: "Email content has been copied to your clipboard.",
@@ -770,7 +778,10 @@ export default function LeadPipeline() {
                       onClick={() => {
                         setEmailDialogs(prev => ({
                           ...prev,
-                          [leadId]: { ...prev[leadId], open: false }
+                          [leadId]: { 
+                            ...prev[leadId as keyof typeof prev], 
+                            open: false 
+                          }
                         }));
                       }}
                     >
