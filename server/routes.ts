@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import multer from "multer";
 import fs from "fs";
 import csv from "csv-parser";
+import PDFParser from "pdf2json";
 
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
@@ -15,9 +16,9 @@ import {
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
 
-// Configure multer for file uploads
+// Configure multer for file uploads with memory storage for PDF parsing
 const upload = multer({
-  dest: 'uploads/',
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB limit
   }
@@ -202,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Simple PDF upload endpoint that works with database
+  // Enhanced PDF upload endpoint with actual PDF text extraction
   app.post("/api/upload-pdf", upload.single('pdf'), async (req: Request, res: Response) => {
     try {
       const file = req.file;
@@ -212,9 +213,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Processing PDF upload:', file.originalname);
 
-      // For now, create a placeholder for PDF content extraction
-      // The file upload works, content can be processed separately via AI summarization
-      const extractedText = `PDF content from ${file.originalname} - Use AI summarization to process this file.`;
+      // Extract text content from uploaded PDF buffer
+      let extractedText = '';
+      
+      try {
+        // Check if buffer exists
+        if (!file.buffer) {
+          throw new Error('File buffer is not available - multer may not be configured correctly');
+        }
+        
+        // Extract actual PDF content using pdf2json library
+        const pdfFilename = file.originalname;
+        
+        try {
+          console.log('Processing PDF with pdf2json:', {
+            filename: pdfFilename,
+            bufferSize: file.buffer.length
+          });
+          
+          // Extract text using pdf2json library
+          extractedText = await new Promise<string>((resolve, reject) => {
+            const pdfParser = new PDFParser(null, true);
+            
+            pdfParser.on("pdfParser_dataError", (errData: any) => {
+              reject(new Error(`PDF parsing error: ${errData.parserError}`));
+            });
+            
+            pdfParser.on("pdfParser_dataReady", (pdfData: any) => {
+              try {
+                // Extract text from all pages
+                let fullText = '';
+                
+                if (pdfData.Pages) {
+                  for (const page of pdfData.Pages) {
+                    if (page.Texts) {
+                      for (const text of page.Texts) {
+                        if (text.R) {
+                          for (const run of text.R) {
+                            if (run.T) {
+                              // Decode URI component and add space
+                              fullText += decodeURIComponent(run.T) + ' ';
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                
+                resolve(fullText.trim());
+              } catch (parseError) {
+                reject(new Error(`Error processing PDF data: ${parseError}`));
+              }
+            });
+            
+            // Parse PDF from buffer
+            pdfParser.parseBuffer(file.buffer);
+          });
+
+          console.log('PDF text extraction successful:', {
+            filename: pdfFilename,
+            extractedLength: extractedText.length,
+            preview: extractedText.substring(0, 200) + '...'
+          });
+
+        } catch (parseError) {
+          console.error('PDF parsing failed:', parseError);
+          throw new Error(`Failed to extract text from PDF: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+        }
+
+      } catch (extractionError) {
+        console.error('PDF processing failed:', extractionError);
+        return res.status(400).json({ 
+          error: 'Failed to process PDF file',
+          details: String(extractionError)
+        });
+      }
 
       // Auto-detect report type from filename and content
       const filename = file.originalname.toLowerCase();
@@ -242,16 +316,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engagement_level: 'medium' as const,
         tags: [reportType.toLowerCase().replace(' report', '')],
         full_content: extractedText,
-        content_summary: extractedText.substring(0, 500) + '...'
+        content_summary: extractedText.substring(0, 500) + (extractedText.length > 500 ? '...' : '')
       };
 
       const report = await storage.createContentReport(reportData);
       console.log('Report created with ID:', report.id);
-
-      // Clean up uploaded file
-      if (fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
-      }
       
       res.json({ 
         message: "PDF uploaded and processed successfully",
