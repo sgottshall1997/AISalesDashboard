@@ -212,7 +212,7 @@ export default function LeadPipeline() {
 
   const createLeadMutation = useMutation({
     mutationFn: async (leadData: typeof newLead) => {
-      const response = await apiRequest("POST", "/api/leads", {
+      const response = await apiRequest("/api/leads", "POST", {
         ...leadData,
         interest_tags: leadData.interest_tags.split(',').map(tag => tag.trim()).filter(Boolean)
       });
@@ -247,7 +247,7 @@ export default function LeadPipeline() {
 
   const deleteLeadMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      const response = await apiRequest("DELETE", `/api/leads/${leadId}`);
+      const response = await apiRequest(`/api/leads/${leadId}`, "DELETE");
       return response.json();
     },
     onSuccess: () => {
