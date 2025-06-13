@@ -299,6 +299,27 @@ export type InsertReportSummary = z.infer<typeof insertReportSummarySchema>;
 
 export type User = typeof users.$inferSelect;
 
+// Portfolio constituents table
+export const portfolio_constituents = pgTable("portfolio_constituents", {
+  id: serial("id").primaryKey(),
+  ticker: text("ticker").notNull(),
+  name: text("name").notNull(),
+  index: text("index").notNull(),
+  isHighConviction: boolean("is_high_conviction").default(false),
+  weightInIndex: decimal("weight_in_index", { precision: 5, scale: 2 }),
+  weightInHighConviction: decimal("weight_in_high_conviction", { precision: 5, scale: 2 }),
+  rebalanceDate: timestamp("rebalance_date"),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const insertPortfolioConstituentSchema = createInsertSchema(portfolio_constituents).omit({
+  id: true,
+  created_at: true,
+});
+
+export type PortfolioConstituent = typeof portfolio_constituents.$inferSelect;
+export type InsertPortfolioConstituent = z.infer<typeof insertPortfolioConstituentSchema>;
+
 // Analytics tables for comprehensive event tracking
 export const analyticsEvents = pgTable("analytics_events", {
   id: serial("id").primaryKey(),

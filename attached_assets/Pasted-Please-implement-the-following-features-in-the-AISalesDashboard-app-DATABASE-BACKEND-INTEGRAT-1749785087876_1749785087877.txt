@@ -1,0 +1,55 @@
+Please implement the following features in the AISalesDashboard app:
+
+🔹 DATABASE & BACKEND INTEGRATION
+
+1. Create a new database table named `portfolio_constituents` with fields:
+   - `ticker` (string)
+   - `name` (string)
+   - `index` (string)
+   - `isHighConviction` (boolean)
+   - `weightInIndex` (decimal, optional)
+   - `weightInHighConviction` (decimal, optional)
+   - `rebalanceDate` (date, optional)
+
+2. Populate this table using the uploaded datasets:
+   - `20250514_All 13D Index Constituents.xlsx - Sheet1.pdf`
+   - `20250519_HC Ideas Constituents.xlsx - Components.pdf`
+
+   Make sure to include all tickers from both general and HC portfolios with accurate mapping to indexes/themes.
+
+3. Add an internal API endpoint like `/api/constituents?index=13D%20Gold%20Miners%20Index` to retrieve index components.
+
+---
+
+🔹 FRONTEND INTEGRATION
+
+4. Add a new tool in the left nav menu called **"Portfolio Constituents"** under a section header `AI Content Tools`.
+
+5. This view should allow users to:
+   - Search or filter by index/theme name.
+   - See a list of tickers and company names.
+   - Flag high conviction names visually (e.g., 🔥 icon or bold text).
+
+---
+
+🔹 AI ENHANCEMENTS
+
+6. Update the AI content generators (email drafts, one-pagers, chatbot, etc.) so that:
+   - If a user references an index (e.g., “13D Gold Miner Index”), the AI can:
+     a) Recognize the term.
+     b) Reference the companies in that index.
+     c) Highlight overlaps with high conviction holdings creatively (e.g., “Wesdome and Orla are high-conviction names within our 13D Gold strategy”).
+
+7. Enhance chatbot prompt context like this:
+   > “Below is a list of all index constituents and their conviction status. Use them to inform answers about themes or when asked about specific indexes.”
+
+8. Example Q&A Upgrade:
+   - User: *"What’s in the 13D Gold Miner Index?"*
+   - Chatbot: *"The 13D Gold Miner Index includes companies like Agnico Eagle, Alamos Gold, Orla Mining, and Wesdome. Notably, Orla and Wesdome are also part of our High Conviction portfolio, highlighting our strong outlook on their growth potential."*
+
+---
+
+⚠️ Notes:
+- **Do not modify the current authentication system.**
+- Use Drizzle ORM to store constituent data.
+- Ensure all AI tools pull constituent data dynamically and not from static text.
