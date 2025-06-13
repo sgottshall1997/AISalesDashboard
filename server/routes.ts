@@ -3697,14 +3697,8 @@ Prioritize the research content and analytical insights over portfolio reference
         try {
           const specificReport = contentReports.find((r: any) => r.title === reportTitle);
           if (specificReport) {
-            // Get report summaries for this specific report
-            const reportSummaries = await storage.getReportSummariesByReportId(specificReport.id);
+            // Use the available report content directly
             let fullReportContent = specificReport.full_content || specificReport.content_summary || '';
-            
-            if (reportSummaries && reportSummaries.length > 0) {
-              const latestSummary = reportSummaries[0];
-              fullReportContent = latestSummary.parsed_summary || fullReportContent;
-            }
             
             specificReportContent = `\n\nSPECIFIC REPORT CONTENT FOR PERSONAL NOTE:\nReport: ${specificReport.title}\nDetailed Content: ${fullReportContent}`;
           }
@@ -3766,7 +3760,8 @@ CRITICAL:
 - Include market implications and context in each bullet
 - Each bullet must reference (Article 1), (Article 2), (Article 3)
 - After the consensus line, add a personal note about non-market content (travel, lifestyle, culture, etc.) from the actual reports provided above
-- If specific report content is provided, use actual personal/lifestyle content from that report for the personal note
+- IMPORTANT: If specific report content is provided, you MUST extract and reference actual personal/lifestyle content from that specific report - do NOT use generic examples like tea ceremonies
+- Look for actual travel destinations, cultural events, lifestyle trends, or personal anecdotes mentioned in the report content
 - Keep conversational tone, avoid formal business language
 - Maximum 275 words`;
 
