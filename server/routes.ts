@@ -1899,7 +1899,7 @@ CRITICAL:
       }
 
       // Get recent reports for context
-      const recentReports = await storage.getRecentWILTWReports(3);
+      const recentReports = await storage.getRecentReports(3);
       
       // Get portfolio constituents for sector-specific insights
       const highConvictionStocks = await db.select()
