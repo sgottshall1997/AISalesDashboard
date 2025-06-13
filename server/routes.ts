@@ -334,11 +334,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('PDF upload error:', error);
       
-      // Clean up file on error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      
       res.status(500).json({ 
         message: "Failed to upload PDF",
         error: error instanceof Error ? error.message : 'Unknown error'
