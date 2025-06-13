@@ -1972,19 +1972,22 @@ CRITICAL:
         });
       }
 
-      // Get High Conviction portfolio data for lead email context
+      // Get High Conviction portfolio data for lead email context, filtering for US-relevant holdings
       const hcHoldings = await db.select()
         .from(portfolio_constituents)
         .where(eq(portfolio_constituents.isHighConviction, true))
         .orderBy(desc(portfolio_constituents.weightInHighConviction))
-        .limit(12);
+        .limit(20);
 
-      const portfolioIndexes = [];
-      const uniqueIndexes = new Set<string>();
-      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
-      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+      // Filter out Chinese/HK exchanges and focus on US-relevant holdings
+      const usRelevantHoldings = hcHoldings.filter((h: any) => 
+        !h.ticker?.includes('.HK') && 
+        !h.ticker?.includes('.SZ') && 
+        !h.ticker?.includes('.SS') &&
+        !h.index?.toLowerCase().includes('china')
+      );
 
-      const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+      const topUsHoldings = usRelevantHoldings.slice(0, 3).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
 
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -2092,44 +2095,38 @@ CRITICAL:
           ).join('\n\n')
         : 'No reports available';
 
-      const emailPrompt = `You must generate an email in this EXACT casual format based primarily on the research analysis and insights. Focus on the report content with minimal portfolio references.
+      const emailPrompt = `Generate a casual email using ONLY the research content provided. DO NOT include template placeholders or bracket text.
 
 RESEARCH ANALYSIS DATA:
 ${reportContext}
 
-TEMPLATE TO FOLLOW EXACTLY:
+Write the email exactly like this example format:
+
 Hi ${leadData.name},
 
 Hope you're doing well. I wanted to share a few quick insights from our latest research that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
 
-• **[Bold headline from Article 1]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 1]. Focus on research findings and market data. (Article 1)
+• **[Create actual headline from Article 1 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 1]. (Article 1)
 
-• **[Bold headline from Article 2]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 2]. Emphasize analytical conclusions and investment themes. (Article 2)
+• **[Create actual headline from Article 2 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 2]. (Article 2)  
 
-• **[Bold headline from Article 3]**: [Detailed insight with specific numbers, percentages, ratios, and market implications from Article 3]. Highlight key research discoveries and market perspectives. (Article 3)
+• **[Create actual headline from Article 3 content]**: [Write actual detailed insight with real numbers, percentages, ratios from Article 3]. (Article 3)
 
-These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top holdings: ${topHoldings.slice(0, 3).join(', ')}).
+These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top US holdings: ${topUsHoldings.length > 0 ? topUsHoldings.join(', ') : 'GLD, SPY, QQQ'}).
 
-On a lighter note, [mention one personal/non-market article from the reports - like travel, lifestyle, or cultural topic discussed].
+On a lighter note, [mention actual personal/non-market content from the reports].
 
 I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
 
 Best,
 Spencer
 
-DATA TO USE:
-${reportContext}
-
 CRITICAL REQUIREMENTS: 
-- Use bullet points (•) NOT paragraphs
-- Each bullet MUST come from a DIFFERENT article (Article 1, Article 2, Article 3)
-- Make each bullet detailed with specific data/percentages/ratios from the specific article
-- Include market implications and context in each bullet
-- Each bullet must reference the correct article number: (Article 1), (Article 2), (Article 3)
-- NEVER use the same article for multiple bullets
-- When thematically relevant, briefly reference actual HC portfolio holdings
-- After the consensus line, add a personal note about non-market content from the reports
-- Keep conversational tone, avoid formal business language
+- NO placeholder text like [Bold headline] - write actual content
+- Each bullet from different article with real data from that article
+- Use actual numbers/percentages from the research data
+- Reference US market holdings only, no Chinese tickers
+- Keep conversational tone
 - Maximum 275 words`;
 
       const response = await openai.chat.completions.create({
