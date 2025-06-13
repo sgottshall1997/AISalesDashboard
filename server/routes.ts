@@ -2321,7 +2321,7 @@ ${comprehensiveSummary}`;
 
       // Save the summary to the database
       const summaryData = {
-        content_report_id: parseInt(reportId),
+        content_report_id: reportId && !isNaN(parseInt(reportId)) ? parseInt(reportId) : null,
         parsed_summary: summary,
         summary_type: promptType || (isWATMTU ? 'watmtu_parser' : 'wiltw_parser')
       };
