@@ -2041,7 +2041,11 @@ CRITICAL:
       if (reportSummary) {
         // Look for non-market content indicators in the combined summary
         const lowerSummary = reportSummary.toLowerCase();
-        const hasNonMarketContent = lowerSummary.includes('teenager') || 
+        const hasNonMarketContent = lowerSummary.includes('teen love') || 
+                                   lowerSummary.includes('importance of teen') ||
+                                   lowerSummary.includes('people-pleasing') ||
+                                   lowerSummary.includes('losing yourself to be liked') ||
+                                   lowerSummary.includes('teenager') || 
                                    lowerSummary.includes('phone') ||
                                    lowerSummary.includes('experiment') ||
                                    lowerSummary.includes('sustainable') ||
@@ -2051,19 +2055,18 @@ CRITICAL:
                                    lowerSummary.includes('loneliness') ||
                                    lowerSummary.includes('culture') ||
                                    lowerSummary.includes('philosophy') ||
+                                   lowerSummary.includes('wildfire') ||
+                                   lowerSummary.includes('deforestation') ||
                                    lowerSummary.includes('european agriculture') ||
                                    lowerSummary.includes('agriculture') ||
-                                   lowerSummary.includes('farming') ||
-                                   lowerSummary.includes('russia') ||
-                                   lowerSummary.includes('putin') ||
-                                   lowerSummary.includes('geopolitical') ||
-                                   lowerSummary.includes('article 05') ||
-                                   lowerSummary.includes('article 06') ||
-                                   lowerSummary.includes('article 07') ||
-                                   lowerSummary.includes('article 08');
+                                   lowerSummary.includes('farming');
         
         if (hasNonMarketContent) {
-          if (lowerSummary.includes('teenager') || lowerSummary.includes('phone') || lowerSummary.includes('experiment')) {
+          if (lowerSummary.includes('teen love') || lowerSummary.includes('teen relationship') || lowerSummary.includes('importance of teen')) {
+            nonMarketTopics = `the importance of teen love and how relationships shape emotional development`;
+          } else if (lowerSummary.includes('people-pleasing') || lowerSummary.includes('losing yourself to be liked')) {
+            nonMarketTopics = `the psychology of people-pleasing and the cost of seeking approval at the expense of authenticity`;
+          } else if (lowerSummary.includes('teenager') || lowerSummary.includes('phone') || lowerSummary.includes('experiment')) {
             nonMarketTopics = `teenagers giving up their phones for a week and the surprising insights that emerged`;
           } else if (lowerSummary.includes('loneliness')) {
             nonMarketTopics = `loneliness as both a social epidemic and investment theme`;
@@ -2071,12 +2074,10 @@ CRITICAL:
             nonMarketTopics = `timeless wisdom from Aesop's fables and their relevance to modern decision-making`;
           } else if (lowerSummary.includes('european agriculture') || lowerSummary.includes('agriculture') || lowerSummary.includes('farming')) {
             nonMarketTopics = `European agriculture and the evolving dynamics of food production`;
-          } else if (lowerSummary.includes('russia') || lowerSummary.includes('putin') || lowerSummary.includes('geopolitical')) {
-            nonMarketTopics = `geopolitical analysis and understanding Russian strategic perspectives`;
+          } else if (lowerSummary.includes('wildfire') || lowerSummary.includes('deforestation')) {
+            nonMarketTopics = `how wildfires have become the leading cause of global deforestation`;
           } else if (lowerSummary.includes('sustainable') || lowerSummary.includes('culture')) {
             nonMarketTopics = `sustainable living practices and cultural perspectives on consumption`;
-          } else if (lowerSummary.includes('article 05') || lowerSummary.includes('article 06') || lowerSummary.includes('article 07') || lowerSummary.includes('article 08')) {
-            nonMarketTopics = `thought-provoking perspectives on culture, society, and human behavior`;
           } else {
             nonMarketTopics = `cultural insights and life wisdom that provide perspective beyond the financial world`;
           }
@@ -2209,7 +2210,7 @@ Spencer`;
         messages: [
           {
             role: "system",
-            content: "You are Spencer from 13D Research. Write personalized investment emails with bullet points that MUST end with article citations.\n\nFORMAT REQUIREMENTS:\n- Use bullet points with • symbol\n- Each bullet MUST end with (Article X) where X is 2, 3, 4, etc.\n- Never use Article 1\n- Professional but conversational tone\n\nEXAMPLE:\n• Market insight with analysis and implications (Article 2)\n• Second insight with different perspective (Article 3)\n• Third insight with strategic view (Article 4)\n\nALWAYS include article citations at the end of each bullet point."
+            content: `You are Spencer from 13D Research. Write personalized investment emails with bullet points that MUST end with article citations.\n\nFORMAT REQUIREMENTS:\n- Use bullet points with • symbol\n- Each bullet MUST end with (Article X) where X is 2, 3, 4, etc.\n- Never use Article 1\n- Professional but conversational tone\n- ONLY reference non-market content that is actually provided in the report data\n- DO NOT invent or assume content that isn't explicitly mentioned\n\n${nonMarketTopics ? `NON-MARKET CONTENT: Reference this specific content: "${nonMarketTopics}"` : 'NO NON-MARKET CONTENT: Do not include any non-market references in this email.'}\n\nEXAMPLE:\n• Market insight with analysis and implications (Article 2)\n• Second insight with different perspective (Article 3)\n• Third insight with strategic view (Article 4)\n\nALWAYS include article citations at the end of each bullet point.`
           },
           {
             role: "user",
