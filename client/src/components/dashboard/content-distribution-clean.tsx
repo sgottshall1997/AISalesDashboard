@@ -277,7 +277,7 @@ export function ContentDistribution() {
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
-      const report = reports.find((r: any) => r.id.toString() === reportId);
+      const report = (reports as any[]).find((r: any) => r.id.toString() === reportId);
       if (!report) throw new Error("Report not found");
 
       // Automatically detect report type and use appropriate parser
@@ -712,7 +712,7 @@ export function ContentDistribution() {
                       <SelectValue placeholder="Choose a WILTW report..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {reports
+                      {(reports as any[])
                         .filter((report: any) => 
                           report.source_type === 'uploaded_pdf' && 
                           (report.title.includes('WILTW') || !report.title.includes('WATMTU'))
@@ -830,7 +830,7 @@ export function ContentDistribution() {
                       <SelectValue placeholder="Choose a WATMTU report..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {reports
+                      {(reports as any[])
                         .filter((report: any) => 
                           report.source_type === 'uploaded_pdf' && 
                           report.title.includes('WATMTU')
@@ -1153,35 +1153,19 @@ export function ContentDistribution() {
                             <p className="text-sm text-gray-600">{match.notes}</p>
                           </div>
                         )}
-                            <h4 className="font-semibold text-sm mb-1">Key Talking Points:</h4>
-                            <div className="flex flex-wrap gap-1">
-                              {match.keyTalkingPoints.map((point: string, i: number) => (
-                                <Badge key={i} variant="secondary" className="text-xs">
-                                  {point}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {match.suggestedApproach && (
-                          <div>
-                            <h4 className="font-semibold text-sm mb-1">Suggested Approach:</h4>
-                            <p className="text-sm text-gray-700">{match.suggestedApproach}</p>
-                          </div>
-                        )}
                       </div>
                       <div className="pt-3 border-t">
                         <Button
                           onClick={() => {
                             const reportTitle = selectedReport ? 
-                              reports.find((r: any) => r.id.toString() === selectedReport)?.title || "Recent Report" :
+                              (reports as any[]).find((r: any) => r.id.toString() === selectedReport)?.title || "Recent Report" :
                               "Recent Report";
                             
                             generateEmailMutation.mutate({
                               prospectName: match.name,
                               reportTitle,
-                              keyTalkingPoints: match.keyTalkingPoints || [],
-                              matchReason: match.matchReason || match.reasoning || ""
+                              keyTalkingPoints: [],
+                              matchReason: match.reasoning || ""
                             });
                           }}
                           disabled={isGeneratingEmail}
