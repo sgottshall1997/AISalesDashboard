@@ -17,7 +17,7 @@ async function loadAllConstituents() {
   
   // Read the complete CSV file
   await new Promise((resolve, reject) => {
-    fs.createReadStream('./attached_assets/20250514_All 13D Index Constituents.xlsx - Sheet1_1749786057214.csv')
+    fs.createReadStream('../attached_assets/20250514_All 13D Index Constituents.xlsx - Sheet1_1749786057214.csv')
       .pipe(csv())
       .on('data', (row) => {
         if (row.Ticker && row.Name && row['13D Index / Theme']) {
