@@ -2040,18 +2040,46 @@ CRITICAL:
       
       if (reportSummary) {
         // Look for non-market content indicators in the combined summary
-        const hasNonMarketContent = reportSummary.toLowerCase().includes('teenager') || 
-                                   reportSummary.toLowerCase().includes('phone') ||
-                                   reportSummary.toLowerCase().includes('sustainable') ||
-                                   reportSummary.toLowerCase().includes('aesop') ||
-                                   reportSummary.toLowerCase().includes('fable') ||
-                                   reportSummary.toLowerCase().includes('wisdom') ||
-                                   reportSummary.toLowerCase().includes('loneliness') ||
-                                   reportSummary.toLowerCase().includes('culture') ||
-                                   reportSummary.toLowerCase().includes('philosophy');
+        const lowerSummary = reportSummary.toLowerCase();
+        const hasNonMarketContent = lowerSummary.includes('teenager') || 
+                                   lowerSummary.includes('phone') ||
+                                   lowerSummary.includes('experiment') ||
+                                   lowerSummary.includes('sustainable') ||
+                                   lowerSummary.includes('aesop') ||
+                                   lowerSummary.includes('fable') ||
+                                   lowerSummary.includes('wisdom') ||
+                                   lowerSummary.includes('loneliness') ||
+                                   lowerSummary.includes('culture') ||
+                                   lowerSummary.includes('philosophy') ||
+                                   lowerSummary.includes('european agriculture') ||
+                                   lowerSummary.includes('agriculture') ||
+                                   lowerSummary.includes('farming') ||
+                                   lowerSummary.includes('russia') ||
+                                   lowerSummary.includes('putin') ||
+                                   lowerSummary.includes('geopolitical') ||
+                                   lowerSummary.includes('article 05') ||
+                                   lowerSummary.includes('article 06') ||
+                                   lowerSummary.includes('article 07') ||
+                                   lowerSummary.includes('article 08');
         
         if (hasNonMarketContent) {
-          nonMarketTopics = `The reports also explore cultural insights and life wisdom to provide readers with perspective beyond the financial world.`;
+          if (lowerSummary.includes('teenager') || lowerSummary.includes('phone') || lowerSummary.includes('experiment')) {
+            nonMarketTopics = `teenagers giving up their phones for a week and the surprising insights that emerged`;
+          } else if (lowerSummary.includes('loneliness')) {
+            nonMarketTopics = `loneliness as both a social epidemic and investment theme`;
+          } else if (lowerSummary.includes('aesop') || lowerSummary.includes('fable')) {
+            nonMarketTopics = `timeless wisdom from Aesop's fables and their relevance to modern decision-making`;
+          } else if (lowerSummary.includes('european agriculture') || lowerSummary.includes('agriculture') || lowerSummary.includes('farming')) {
+            nonMarketTopics = `European agriculture and the evolving dynamics of food production`;
+          } else if (lowerSummary.includes('russia') || lowerSummary.includes('putin') || lowerSummary.includes('geopolitical')) {
+            nonMarketTopics = `geopolitical analysis and understanding Russian strategic perspectives`;
+          } else if (lowerSummary.includes('sustainable') || lowerSummary.includes('culture')) {
+            nonMarketTopics = `sustainable living practices and cultural perspectives on consumption`;
+          } else if (lowerSummary.includes('article 05') || lowerSummary.includes('article 06') || lowerSummary.includes('article 07') || lowerSummary.includes('article 08')) {
+            nonMarketTopics = `thought-provoking perspectives on culture, society, and human behavior`;
+          } else {
+            nonMarketTopics = `cultural insights and life wisdom that provide perspective beyond the financial world`;
+          }
         }
       }
 
