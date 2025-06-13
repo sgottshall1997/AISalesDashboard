@@ -1975,281 +1975,271 @@ CRITICAL:
         leadEmailHistory = await storage.getLeadEmailHistory(lead.id);
       }
 
-      // Get High Conviction portfolio data for lead email context, filtering for US-relevant holdings
-      const hcHoldings = await db.select()
-        .from(portfolio_constituents)
-        .where(eq(portfolio_constituents.isHighConviction, true))
-        .orderBy(desc(portfolio_constituents.weightInHighConviction))
-        .limit(20);
-
-      // Filter out Chinese/HK exchanges and focus on US-relevant holdings
-      const usRelevantHoldings = hcHoldings.filter((h: any) => 
-        !h.ticker?.includes('.HK') && 
-        !h.ticker?.includes('.SZ') && 
-        !h.ticker?.includes('.SS') &&
-        !h.index?.toLowerCase().includes('china')
-      );
-
-      const topUsHoldings = usRelevantHoldings.slice(0, 3).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
-
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-      // Get structured analysis (parsed summaries) for selected reports
+      // Get stored summaries for all selected reports
       let selectedReportSummaries = [];
       if (selectedReportIds && selectedReportIds.length > 0) {
         for (const reportId of selectedReportIds) {
           const summary = await storage.getReportSummary(reportId);
-          if (summary && summary.parsed_summary) {
-            const report = await storage.getContentReport(reportId);
-            selectedReportSummaries.push({
-              title: report?.title || 'Report',
-              structuredAnalysis: summary.parsed_summary,
-              reportType: report?.type || 'Research'
-            });
+          if (summary) {
+            selectedReportSummaries.push(summary);
           }
         }
       }
 
-      // If no reports selected, use recent reports with their summaries
-      if (selectedReportSummaries.length === 0) {
-        const recentReports = await storage.getRecentReports(3);
-        for (const report of recentReports) {
-          const summary = await storage.getReportSummary(report.id);
-          if (summary && summary.parsed_summary) {
-            selectedReportSummaries.push({
-              title: report.title,
-              structuredAnalysis: summary.parsed_summary,
-              reportType: report.type || 'Research'
-            });
-          }
-        }
-      }
+      // Find relevant reports based on lead's interests
+      const relevantReports = (contentReports || []).filter((report: any) => 
+        report.tags && lead.interest_tags && 
+        report.tags.some((tag: string) => lead.interest_tags.includes(tag))
+      );
 
-      // Parse articles from summaries to extract individual article content
-      interface ArticleData {
-        articleNumber: number;
-        content: string;
-        reportTitle: string;
-      }
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      // Prepare report content for the prompt - combine all selected reports
+      let combinedReportContent = '';
+      let reportTitles = [];
+      let allReportTags = [];
       
-      const extractedArticles: ArticleData[] = [];
-      selectedReportSummaries.forEach((reportSummary: any) => {
-        const content = reportSummary.structuredAnalysis;
-        
-        // Split content more aggressively to find multiple sections
-        const sections = content.split(/(?:\n\s*\n|\. (?=[A-Z])|•|\*|-(?=\s))/);
-        
-        let articleCounter = 1;
-        sections.forEach((section: string) => {
-          const cleanSection = section.trim();
-          if (cleanSection.length > 80 && articleCounter <= 6) {
-            extractedArticles.push({
-              articleNumber: articleCounter,
-              content: cleanSection,
-              reportTitle: reportSummary.title
-            });
-            articleCounter++;
+      if (selectedReportSummaries.length > 0) {
+        for (const summary of selectedReportSummaries) {
+          // Get the content report from database
+          let contentReport = null;
+          if (contentReports && contentReports.length > 0) {
+            contentReport = contentReports.find((report: any) => report.id === summary.content_report_id);
+          } else {
+            // Fetch from database if not provided
+            const allReports = await storage.getAllContentReports();
+            contentReport = allReports.find(report => report.id === summary.content_report_id);
           }
-        });
-        
-        // If still not enough content, split by sentences
-        if (extractedArticles.length < 4) {
-          const sentences = content.split(/\.\s+/);
-          let groupedContent = '';
-          let groupCounter = extractedArticles.length + 1;
           
-          sentences.forEach((sentence: string, index: number) => {
-            groupedContent += sentence.trim() + '. ';
-            if ((index + 1) % 3 === 0 && groupedContent.length > 100) {
-              extractedArticles.push({
-                articleNumber: groupCounter,
-                content: groupedContent.trim(),
-                reportTitle: reportSummary.title
-              });
-              groupedContent = '';
-              groupCounter++;
+          if (contentReport) {
+            reportTitles.push(contentReport.title);
+            if (contentReport.tags) {
+              allReportTags.push(...contentReport.tags);
             }
-          });
+            
+            // Add this report's content with clear separation
+            combinedReportContent += `\n\n--- ${contentReport.title} ---\n`;
+            combinedReportContent += summary.parsed_summary || '';
+          }
         }
-      });
-
-      // Filter articles based on lead interests if available
-      const relevantArticles = leadData.interest_tags && leadData.interest_tags.length > 0
-        ? extractedArticles.filter((article: ArticleData) => {
-            const articleLower = article.content.toLowerCase();
-            return leadData.interest_tags.some((tag: string) => 
-              articleLower.includes(tag.toLowerCase()) ||
-              (articleLower.includes('china') && tag.toLowerCase().includes('china')) ||
-              (articleLower.includes('gold') && tag.toLowerCase().includes('commodity')) ||
-              (articleLower.includes('mining') && tag.toLowerCase().includes('commodity'))
-            );
-          })
-        : extractedArticles;
-
-      // Select diverse articles (3-4) for the email
-      const selectedArticles = relevantArticles.length > 0 ? relevantArticles.slice(0, 4) : extractedArticles.slice(0, 4);
-
-      // Build report context with individual articles
-      const reportContext = selectedArticles.length > 0 
-        ? selectedArticles.map((article: any, index: number) => 
-            `Article ${index + 1} (from ${article.reportTitle}):\n${article.content.substring(0, 500)}`
-          ).join('\n\n')
-        : 'No reports available';
-
-      // Find personal/human interest articles like "teen love," "people-pleasing," "wildfire," travel experiences
-      const personalArticles = extractedArticles.filter((article: any) => {
-        const content = article.content.toLowerCase();
-        
-        // Look for specific human interest topics from the WILTW format
-        const isPersonalTopic = content.includes('teen love') || content.includes('people-pleasing') ||
-               content.includes('wildfire') || content.includes('deforestation') || content.includes('forest') ||
-               content.includes('travel') || content.includes('learned') || content.includes('two weeks') ||
-               content.includes('culture') || content.includes('lifestyle') || content.includes('social') ||
-               content.includes('psychology') || content.includes('behavior') || content.includes('well-being') ||
-               content.includes('education') || content.includes('learning') || content.includes('art') ||
-               content.includes('music') || content.includes('book') || content.includes('story') ||
-               content.includes('importance of') || content.includes('cost of') || content.includes('personal growth') ||
-               content.includes('relationships') || content.includes('health') || content.includes('mental') ||
-               content.includes('environmental') || content.includes('climate change');
-        
-        // Exclude market/financial content, risk factors, and policy/government content
-        const isMarketRelated = content.includes('portfolio') || content.includes('trading') || 
-                               content.includes('investment') || content.includes('stocks') ||
-                               content.includes('financial') || content.includes('market') ||
-                               content.includes('economic') || content.includes('fund') ||
-                               content.includes('capital') || content.includes('asset') ||
-                               content.includes('risk factors') || content.includes('geopolitical') ||
-                               content.includes('export') || content.includes('commodity') ||
-                               content.includes('equity') || content.includes('mining') ||
-                               content.includes('president') || content.includes('authority') ||
-                               content.includes('deploy troops') || content.includes('insurrection') ||
-                               content.includes('domestic') || content.includes('government') ||
-                               content.includes('policy') || content.includes('military') ||
-                               content.includes('political') || content.includes('legal');
-        
-        // Exclude China-specific content  
-        const isChinaRelated = content.includes('china') || content.includes('chinese') || 
-                              content.includes('beijing') || content.includes('shanghai');
-        
-        return isPersonalTopic && !isMarketRelated && !isChinaRelated;
-      });
-
-      // Create better personal note, avoiding policy/government content
-      let personalNote = 'I noticed an interesting development in our broader research on technological innovation patterns.';
+      } else if (selectedReportSummaries.length === 0 && (contentReports || []).length > 0) {
+        // Fallback to first available report if no specific selection
+        const firstReport = contentReports[0];
+        reportTitles.push(firstReport.title);
+        if (firstReport.tags) {
+          allReportTags.push(...firstReport.tags);
+        }
+      }
       
-      if (personalArticles.length > 0) {
-        const personalContent = personalArticles[0].content;
-        // Check if it's actually personal content, not policy/government
-        if (!personalContent.toLowerCase().includes('president') && 
-            !personalContent.toLowerCase().includes('authority') &&
-            !personalContent.toLowerCase().includes('troops') &&
-            !personalContent.toLowerCase().includes('deploy')) {
-          const cleanContent = personalContent.substring(0, 120).replace(/[^\w\s]/gi, '').trim();
-          personalNote = `I came across an interesting piece on ${cleanContent}... (Article ${personalArticles[0].articleNumber})`;
+      const reportTitle = reportTitles.length > 0 ? reportTitles.join(', ') : 'Recent 13D Reports';
+      const reportTags = Array.from(new Set(allReportTags)).join(', ');
+      const reportSummary = combinedReportContent || '';
+
+      // Extract non-market topics from combined content
+      let nonMarketTopics = '';
+      
+      if (reportSummary) {
+        // Look for non-market content indicators in the combined summary
+        const hasNonMarketContent = reportSummary.toLowerCase().includes('teenager') || 
+                                   reportSummary.toLowerCase().includes('phone') ||
+                                   reportSummary.toLowerCase().includes('sustainable') ||
+                                   reportSummary.toLowerCase().includes('aesop') ||
+                                   reportSummary.toLowerCase().includes('fable') ||
+                                   reportSummary.toLowerCase().includes('wisdom') ||
+                                   reportSummary.toLowerCase().includes('loneliness') ||
+                                   reportSummary.toLowerCase().includes('culture') ||
+                                   reportSummary.toLowerCase().includes('philosophy');
+        
+        if (hasNonMarketContent) {
+          nonMarketTopics = `The reports also explore cultural insights and life wisdom to provide readers with perspective beyond the financial world.`;
         }
       }
 
-      const emailPrompt = `You are Spencer from 13D Research writing a casual email to ${leadData.name}. Generate an email with exactly 3-4 bullets using different content sections provided.
+      // Filter out Article 1 content from summary with enhanced detection
+      let filteredSummary = reportSummary;
+      if (reportSummary) {
+        // Remove entire problematic sections and specific Article 1 phrases
+        filteredSummary = filteredSummary
+          // Remove core investment thesis section
+          .replace(/\*\*Core Investment Thesis:\*\*[\s\S]*?(?=\n\*\*[^*]|\n- \*\*[^*]|$)/gi, '')
+          // Remove asset allocation sections
+          .replace(/- \*\*Asset allocation recommendations:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Portfolio Allocation Recommendations:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Percentage allocations by sector[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          .replace(/- \*\*Strategic positioning advice:\*\*[\s\S]*?(?=\n- \*\*[^*]|\n\*\*[^*]|$)/gi, '')
+          // Remove specific problematic phrases
+          .replace(/outperform major stock indices/gi, '')
+          .replace(/outperform major U\.S\. indices/gi, '')
+          .replace(/strategic asset allocation/gi, '')
+          .replace(/paradigm shift towards commodities/gi, '')
+          .replace(/Gold, silver, and mining stocks \([^)]+\)/gi, '')
+          .replace(/commodities and related sectors \([^)]+\)/gi, '')
+          .replace(/Chinese equity markets \([^)]+\)/gi, '')
+          // Clean up formatting
+          .replace(/\n\s*\n\s*\n/g, '\n\n')
+          .replace(/\n\s*$/, '')
+          .trim();
+      }
 
-CONTENT SECTIONS AVAILABLE:
-${reportContext}
+      // Prepare streamlined context
+      const hasEmailHistory = leadEmailHistory && leadEmailHistory.length > 0;
+      const recentEmails = hasEmailHistory ? leadEmailHistory.slice(-2) : []; // Only last 2 emails to avoid prompt bloat
+      
+      const contextNotes = [];
+      if (lead.notes) contextNotes.push(`Notes: ${lead.notes}`);
+      if (hasEmailHistory) contextNotes.push(`Previous contact established (${recentEmails.length} recent emails)`);
+      if (lead.last_contact_date) contextNotes.push(`Last contact: ${new Date(lead.last_contact_date).toLocaleDateString()}`);
 
-Generate this exact email structure (replace ALL placeholder text with real content):
+      const emailPrompt = `Generate a personalized, concise prospect email for ${lead.name} at ${lead.company}. This is a ${lead.stage} stage lead with interests in: ${lead.interest_tags?.join(', ') || 'investment research'}.
 
-Hi ${leadData.name},
+CONTEXT: ${contextNotes.length > 0 ? contextNotes.join(' | ') : 'First outreach to this lead'}
+${hasEmailHistory ? 'IMPORTANT: This is a follow-up email - reference prior relationship naturally and avoid repeating previously covered topics.' : ''}
 
-Hope you're doing well. I wanted to share a few quick insights from our latest research that align closely with your interests - particularly ${leadData.interest_tags?.join(', ') || 'market dynamics'}.
+${selectedReportSummaries.length > 0 ? `Reference the recent 13D reports: "${reportTitle}". ONLY use insights from Article 2 onward. DO NOT use content from Article 1 ('Strategy & Asset Allocation & Performance of High Conviction Ideas'). Here's the combined report content: "${filteredSummary}". The reports cover: ${reportTags}.
 
-• **Commodities Market Shift**: Our report highlights a paradigm shift with strong emphasis on commodities, inflation-sensitive sectors, and growth opportunities. Notably, specific percentages and market data show significant allocation changes across sectors. (Article 1)
+${selectedReportIds && selectedReportIds.length > 1 ? 
+`MANDATORY REQUIREMENT: You MUST end every single bullet point with (REPORT_TITLE - Article X) where REPORT_TITLE is the specific report name and X is the specific article number from that report. Use exactly 3 DIFFERENT article numbers from potentially different reports - never repeat the same article number twice. This is absolutely required - no exceptions.
 
-• **European Capital Impact**: Analysis reveals specific financial impacts with exact numbers on capital flows, savings data, and market percentages affecting U.S. financial markets and investment strategies. (Article 2)
+CRITICAL DISTRIBUTION RULE: When multiple reports are available, you MUST pull insights from DIFFERENT reports. Do NOT take all 3 bullet points from the same report. Mix insights across the available reports to show breadth of coverage.
 
-• **Investment Allocation Trends**: Research identifies precise allocation percentages and strategic shifts that could enhance returns with specific annual growth projections and market positioning data. (Article 3)
+Available reports and their articles:
+${selectedReportSummaries.map(summary => {
+  const contentReport = contentReports?.find((report: any) => report.id === summary.content_report_id);
+  return contentReport ? `${contentReport.title}:
+Article 2 = Critical minerals supply chain
+Article 3 = AI tech infrastructure  
+Article 4 = Mining stocks performance
+Article 5 = Teenagers phone experiment
+Article 6 = Loneliness investment theme
+Article 7 = Russia analysis
+Article 8 = European agriculture` : '';
+}).join('\n\n')}
 
-${selectedArticles.length > 3 ? '• **Market Dynamics Analysis**: Additional insights with specific data points, percentages, and market implications from ongoing research analysis. (Article 4)' : ''}
+Example format (MANDATORY - notice 3 DIFFERENT citations from DIFFERENT reports):
+• China controls 78% of critical minerals needed for U.S. weapons production, creating national security vulnerabilities (WILTW_2025-06-05 - Article 2).
+• Mining sector outperforms due to reshoring challenges and decades of underinvestment in domestic capacity (WILTW_2025-05-29 - Article 4).
+• Russia's geopolitical strategies are often misunderstood by analysts who lack perspective on Russian national interests (WILTW_2025-05-22 - Article 7).
 
-These are all trends 13D has been tracking through our research process. As you know, we aim to identify major inflection points through rigorous analysis. Our research positions us to spot these themes early (top US holdings: ${topUsHoldings.length > 0 ? topUsHoldings.join(', ') : 'GLD, SPY, QQQ'}).
+CRITICAL: Each bullet point MUST include the specific report title and a DIFFERENT article number. Distribute insights across different reports when multiple are available.` :
+`IMPORTANT: Since only one report is selected, DO NOT include article citations or reference numbers. Present the insights naturally without any (Article X) citations.`}` : ''}
 
-${personalNote}
+GOALS:
+• Greet the reader warmly with a short intro that references any prior context appropriately
+• Acknowledge their stated investment interests (from ${lead.interest_tags?.join(', ') || 'general investment research'}${lead.notes ? ` or Notes: ${lead.notes}` : ''} if applicable)
+• If this is a follow-up email, reference previous conversations naturally without being repetitive
+• Explain why this specific report is relevant to their strategy and interests
+• Summarize 2–3 high-impact insights using concise bullets that complement (don't repeat) previous communications
+• End with a conclusion summarizing 13D's market view and how our research helps investors stay ahead
+• Include a clear CTA appropriate for their lead stage (${lead.stage}) and relationship history
 
-I am happy to send over older reports on topics of interest. Please let me know if there is anything I can do to help.
+HARD RULES:
+• TOTAL word count must not exceed **280 words**
+• Use **friendly but professional tone**
+• Paragraph format is fine, but use bullets for the insights section
+• DO NOT use phrases like "Article 1," "titled," or "the report outlines"
+• Include a short paragraph (~30 words) about non-market topics from the report${nonMarketTopics ? `: "${nonMarketTopics}"` : ' — such as culture, values, or timeless ideas — to provide readers with perspective beyond the financial world'}
+
+STRUCTURE TO FOLLOW:
+
+---
+
+**Subject**: [Natural, conversational subject line – max 8 words]
+
+Hi ${lead.name},
+
+[Natural greeting with seasonal/personal touch] I was going through one of our latest reports and [conversational transition about why this matters to them based on their interests].
+
+[Present 3 market insights as bullet points with detailed analysis and implications]
+
+More broadly, [broader market perspective in casual, natural language].
+
+[If non-market topics exist, weave them in naturally like: "The report also includes an unexpected section on [topic] and how [relevance]—definitely not your typical market writeup, but pretty fascinating."]
+
+Let me know if you'd like me to dig up anything specific or send over past reports that line up with this view.
 
 Best,
 Spencer
 
-REQUIREMENTS:
-- Generate ${selectedArticles.length >= 3 ? '3-4' : selectedArticles.length} bullets using different content sections
-- Use actual data from each content section provided
-- Write substantive bullets with real numbers and percentages
-- EXCLUDE all references to Chinese equities, China markets, Chinese companies
-- Focus on US markets, commodities, and non-China content only
-- MUST include the personal note line exactly as written: "${personalNote}"
-- No placeholder text - write actual headlines and insights
-- Maximum 275 words`;
+---
 
-      const response = await openai.chat.completions.create({
+TONE GUIDELINES:
+• Write like Spencer is personally sharing insights with a colleague
+• Use natural, conversational language: "Hope you're doing well", "I was going through", "thought you might find this interesting"
+• Vary sentence structure - mix short punchy statements with longer explanatory ones
+• Include casual transitions: "More broadly", "And", "Plus"
+• Present 3 market insights as clear bullet points with substantive detail
+• End casually: "Let me know if you'd like me to dig up anything specific"
+• Avoid corporate speak - sound human and approachable
+• Use seasonal references: "Hope you're enjoying the start of summer"
+• Include conversational connectors: "And", "Plus", "More broadly"
+• Mix sentence lengths for natural rhythm
+• End with casual helpfulness rather than formal CTAs
+
+EXAMPLE:
+
+**Subject**: Gold, USD Weakness, and China Tailwinds
+
+Hi Monica,
+
+I hope you're doing well. Based on our recent discussion around precious metals and geopolitics, I wanted to share a few key insights from a report that closely aligns with your strategic focus:
+
+• Gold miners are outperforming major U.S. indices, reflecting rising inflation expectations and growing demand for hard asset hedges.
+• The U.S. dollar's downtrend is driving increased interest in commodities as a diversification tool.
+• China's domestic pivot and global partnerships are reinforcing economic resilience — a compelling case for exposure to Chinese equities.
+
+We're seeing a broad rotation into hard assets and geopolitically resilient markets. At 13D, our research is designed to help investors like you get ahead of these structural shifts before they become consensus.
+
+Let me know if you would like me to pull some older reports on specific topics of interest.
+
+Spencer`;
+
+      const emailResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: `You are Spencer from 13D Research writing casual, bullet-point emails to prospects. Follow the exact template format provided. CRITICAL: You must include this personal note line exactly: "${personalNote}"`
+            content: "You are Spencer from 13D Research. MANDATORY FORMATTING: After the opening line, you MUST use bullet points with '•' symbols for market insights. Example format:\n\nHope you're enjoying the start of summer! I was reviewing one of our latest reports and thought a few insights might resonate with your focus on [interests]:\n\n• First market insight with analysis.\n• Second market insight with implications.\n• Third market insight with strategic perspective.\n\nMore broadly, we're seeing a meaningful shift into [theme]. At 13D, our work centers on helping investors anticipate structural trends like these—before they hit the mainstream narrative.\n\nOn a different note, the report also explores [cultural topic]—an unexpected but thought-provoking angle.\n\nLet me know if you'd like me to send over past reports aligned with any of these themes.\n\nBest,\nSpencer\n\nDO NOT write paragraph format. USE BULLETS."
           },
           {
             role: "user",
             content: emailPrompt
           }
         ],
-        max_tokens: 400,
-        temperature: 0.1
+        max_tokens: 500,
+        temperature: 0.7
       });
 
-      let emailSuggestion = response.choices[0].message.content || "";
+      let emailSuggestion = emailResponse.choices[0].message.content || "Follow-up email";
       
-      // Remove all * and # symbols from output
-      emailSuggestion = emailSuggestion.replace(/[\*#]+/g, '');
+      // Red flag safeguard: Check for Article 1 content leakage
+      const article1Indicators = [
+        'outperform major stock indices',
+        'outperform major U.S. indices', 
+        'paradigm shift towards commodities',
+        'high conviction ideas',
+        'Gold, silver, and mining stocks \\(',
+        'commodities and related sectors \\(',
+        'Chinese equity markets \\('
+      ];
       
-      // Remove any Chinese equity references that slipped through
-      emailSuggestion = emailSuggestion.replace(/Chinese equities?/gi, 'commodities');
-      emailSuggestion = emailSuggestion.replace(/China markets?/gi, 'US markets');
-      emailSuggestion = emailSuggestion.replace(/Chinese companies?/gi, 'US companies');
-      emailSuggestion = emailSuggestion.replace(/and Chinese equities/gi, 'and energy sectors');
+      const hasArticle1Content = article1Indicators.some(indicator => 
+        new RegExp(indicator, 'i').test(emailSuggestion)
+      );
       
-      // Fix lead name - replace "Prospect" with actual lead name
-      emailSuggestion = emailSuggestion.replace(/Hi Prospect,/g, `Hi ${leadData.name},`);
+      if (hasArticle1Content) {
+        console.warn('⚠️ Article 1 content may have leaked into the email. Check prompt filtering.');
+        console.warn('Email content:', emailSuggestion.substring(0, 200) + '...');
+      }
       
-      // Clean up any policy/government content that slipped into personal notes
-      emailSuggestion = emailSuggestion.replace(/I came across an interesting piece on Key Insights[\s\S]*?President[\s\S]*?\.\.\. \(Article \d+\)/g, 
-        'I noticed an interesting development in our broader research on sustainable innovation trends');
-      emailSuggestion = emailSuggestion.replace(/I came across an interesting piece on.*?authority.*?deploy.*?\.\.\. \(Article \d+\)/g,
-        'I noticed an interesting piece on environmental sustainability trends in our latest research');
+      // Enforce strict 280-word limit with post-processing
+      const words = emailSuggestion.split(/\s+/);
+      if (words.length > 280) {
+        // Truncate to 280 words and ensure proper ending
+        const truncated = words.slice(0, 278).join(' ');
+        emailSuggestion = truncated + "... Let me know if you'd like to discuss further.";
+      }
       
-      // Aggressively strip any subject lines
-      emailSuggestion = emailSuggestion.replace(/^Subject:.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/^.*Subject:.*$/gm, '');
-      
-      // Strip formal opening paragraphs
-      emailSuggestion = emailSuggestion.replace(/^.*I hope this message finds you well\..*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/^.*Given your.*interest.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/^.*I wanted to follow up.*$/gm, '');
-      
-      // Strip formal closing paragraphs
-      emailSuggestion = emailSuggestion.replace(/I would be delighted.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/Looking forward.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/Would you be available.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/Please let me know.*convenient.*$/gm, '');
-      emailSuggestion = emailSuggestion.replace(/Could we schedule.*$/gm, '');
-      
-      // Strip formal signatures
-      emailSuggestion = emailSuggestion.replace(/Best regards,[\s\S]*$/i, 'Best,\nSpencer');
-      emailSuggestion = emailSuggestion.replace(/13D Research$/, '');
-      
-      // Clean up multiple newlines
-      emailSuggestion = emailSuggestion.replace(/\n{3,}/g, '\n\n').trim();
-
-      res.json({ 
-        emailSuggestion,
-        subject: `Market insights for ${leadData.company || leadData.name}`
-      });
+      res.json({ emailSuggestion });
 
     } catch (error) {
       console.error("Generate lead email error:", error);
