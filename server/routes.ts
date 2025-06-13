@@ -551,81 +551,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI Content Tools endpoints
+  // AI Content Tools endpoints - Dynamic generation from actual reports
   app.get("/api/ai/content-suggestions", async (req: Request, res: Response) => {
     try {
-      const suggestions = [
-        {
-          type: "frequent_theme",
-          title: "Commodities & Inflation: Navigating the New Supercycle",
-          description: "Explore the strategic allocation towards commodities and precious metals as inflation hedges in the current market environment.",
-          emailAngle: "The reports suggest a strong shift towards commodities, highlighting the potential of gold, silver, and other inflation-sensitive assets as key investment opportunities.",
-          supportingReports: ["WATMTU_2024-05-26", "WATMTU_2025-06-08", "WILTW_2025-05-22"],
-          keyPoints: [
-            "Gold is set to outperform the S&P 500 and international stock markets.",
-            "Silver is starting to outperform gold, with silver miners showing strong relative performance.",
-            "The U.S. Dollar's long-term downtrend is bullish for commodities and inflation."
-          ],
-          insights: [
-            "The ratio of gold to the U.S. Consumer Price Index (CPI) broke-out last September from a 45-year downtrend-line (WATMTU_2025-06-08).",
-            "Silver miners have broken-out against almost every broad stock-market index in the world (WATMTU_2025-06-08)."
-          ],
-          priority: "high"
-        },
-        {
-          type: "emerging_trend",
-          title: "Market Paradigm Shifts: From Growth to Value",
-          description: "Identify the transition from growth to value sectors and the implications for asset allocation strategies.",
-          emailAngle: "The reports emphasize a paradigm shift towards value sectors, driven by rising bond yields and inflationary pressures, suggesting a strategic reallocation of portfolios.",
-          supportingReports: ["WATMTU_2024-05-26", "WATMTU_2025-06-08"],
-          keyPoints: [
-            "A classic paradigm shift into new market leaders featuring commodities and inflation-sensitive sectors.",
-            "Bond yields are expected to rise significantly as the 40-year bull market in bonds transitions to a secular bear market.",
-            "The shift towards hard assets is likely to gain further momentum."
-          ],
-          insights: [
-            "Since September 2020, a shift into commodities and inflation-sensitive sectors has been argued (WATMTU_2024-05-26).",
-            "Bond yields will rise significantly as the 40-year bull market in bonds transitions to a secular bear market (WATMTU_2024-05-26)."
-          ],
-          priority: "high"
-        },
-        {
-          type: "cross_sector",
-          title: "Geopolitical Investments: China's Market Opportunities",
-          description: "Assess the potential of Chinese markets as they enter a secular bull market, providing contrarian investment opportunities.",
-          emailAngle: "The reports highlight China's emerging bull market as a contrarian opportunity, suggesting potential gains for investors willing to navigate geopolitical risks.",
-          supportingReports: ["WATMTU_2025-06-08", "WILTW_2025-05-22"],
-          keyPoints: [
-            "Chinese stocks are in the early stages of a secular bull market.",
-            "The question of China being uninvestable presents a contrarian opportunity.",
-            "China's stock-market could be among the best-performing markets."
-          ],
-          insights: [
-            "For the past two years, the question among Western investors has been: 'Is China uninvestable?' (WATMTU_2025-06-08).",
-            "We believe Chinese stocks are in the early stages of a secular bull market (WATMTU_2025-06-08)."
-          ],
-          priority: "medium"
-        },
-        {
-          type: "deep_dive",
-          title: "Deep Investment Analysis: Strategic Portfolio Allocation",
-          description: "Delve into complex financial strategies and asset allocation insights to optimize portfolio performance in volatile markets.",
-          emailAngle: "The reports provide in-depth analysis on strategic asset allocation, emphasizing the importance of hard assets and inflation hedges in current portfolios.",
-          supportingReports: ["WATMTU_2025-06-08", "WILTW_2025-05-22"],
-          keyPoints: [
-            "Strategic allocation towards commodities and precious metals as inflation hedges.",
-            "The shift towards hard assets is likely to gain further momentum.",
-            "Sensitive inflation indicators in the markets are starting to come alive."
-          ],
-          insights: [
-            "Gold is set to outperform the S&P 500 and international stock markets (WATMTU_2025-06-08).",
-            "The shift towards hard assets is likely to gain further momentum (WATMTU_2025-06-08)."
-          ],
-          priority: "medium"
+      const { theme, audience } = req.query;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI content suggestions." 
+        });
+      }
+
+      // Get High Conviction portfolio data for context
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(10);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+
+      const topHoldings = hcHoldings.slice(0, 6).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
+      // Get recent WILTW and WATMTU reports
+      const allReports = await storage.getAllContentReports();
+      const recentReports = allReports
+        .filter(report => report.type === 'WILTW Report' || report.type === 'WATMTU Report')
+        .sort((a, b) => new Date(b.published_date).getTime() - new Date(a.published_date).getTime())
+        .slice(0, 8);
+
+      // Get report summaries for context
+      const reportContext = [];
+      for (const report of recentReports) {
+        try {
+          const summary = await storage.getReportSummary(report.id);
+          if (summary && summary.parsed_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: summary.parsed_summary.substring(0, 500),
+              type: report.type
+            });
+          } else if (report.content_summary) {
+            reportContext.push({
+              title: report.title,
+              date: report.published_date,
+              summary: report.content_summary.substring(0, 500),
+              type: report.type
+            });
+          }
+        } catch (err) {
+          console.error(`Error getting summary for report ${report.id}:`, err);
         }
-      ];
-      res.json(suggestions);
+      }
+
+      const contextText = reportContext.map(r => 
+        `${r.title} (${r.date}): ${r.summary}`
+      ).join('\n\n');
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      const suggestionsPrompt = `Analyze the recent 13D Research reports and generate 4 dynamic campaign suggestions that connect to actual High Conviction portfolio holdings.
+
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
+
+RECENT REPORTS:
+${contextText}
+
+Generate a JSON array of exactly 4 content suggestions with this structure:
+[
+  {
+    "type": "frequent_theme",
+    "title": "Theme title connecting to HC portfolio when relevant",
+    "description": "Description highlighting investment opportunities",
+    "emailAngle": "Why this matters now for institutional investors",
+    "supportingReports": ["Report title 1", "Report title 2"],
+    "keyPoints": ["Specific insight 1", "Specific insight 2", "HC portfolio connection when relevant"],
+    "insights": ["Data point from reports", "Market implication"],
+    "priority": "high"
+  }
+]
+
+Types should be: "frequent_theme", "emerging_trend", "cross_sector", "deep_dive"
+Priorities: "high", "medium", "low"
+
+Base suggestions ONLY on actual report content provided. Connect themes to HC portfolio holdings when thematically relevant.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert investment analyst generating campaign suggestions based on actual 13D Research reports and portfolio holdings. Return valid JSON only."
+          },
+          {
+            role: "user",
+            content: suggestionsPrompt
+          }
+        ],
+        max_tokens: 1200,
+        temperature: 0.3,
+        response_format: { type: "json_object" }
+      });
+
+      let suggestionsContent = response.choices[0].message.content || '{"suggestions": []}';
+      
+      // Parse and validate the response
+      let suggestionsData;
+      try {
+        suggestionsData = JSON.parse(suggestionsContent);
+        
+        // Handle different response formats
+        const suggestions = suggestionsData.suggestions || suggestionsData;
+        
+        // Ensure we have an array
+        if (Array.isArray(suggestions)) {
+          res.json(suggestions);
+        } else {
+          // Fallback if parsing fails
+          throw new Error("Invalid response format");
+        }
+      } catch (parseError) {
+        console.error("Error parsing AI suggestions:", parseError);
+        
+        // Minimal fallback based on actual portfolio themes
+        const fallbackSuggestions = [
+          {
+            type: "frequent_theme",
+            title: "Gold & Precious Metals Momentum",
+            description: "Analyze the strong performance in gold mining sectors represented in our High Conviction portfolio",
+            emailAngle: "Our HC portfolio's 35.5% weighting in Gold/Mining reflects this secular shift",
+            supportingReports: recentReports.slice(0, 2).map(r => r.title),
+            keyPoints: [
+              "Gold mining sector showing strong momentum",
+              "HC portfolio positioned with key holdings",
+              "Secular shift towards hard assets"
+            ],
+            insights: [
+              "HC portfolio weighted 35.5% in Gold/Mining sector",
+              "Recent reports highlight precious metals opportunity"
+            ],
+            priority: "high"
+          }
+        ];
+        
+        res.json(fallbackSuggestions);
+      }
+
     } catch (error) {
+      console.error("Content suggestions error:", error);
       res.status(500).json({ error: "Failed to generate content suggestions" });
     }
   });
@@ -3000,29 +3080,63 @@ Based on these 13D Research insights, provide a JSON response with actionable pr
 
 
 
+      // Get High Conviction portfolio data for campaign emails
+      const hcHoldings = await db.select()
+        .from(portfolio_constituents)
+        .where(eq(portfolio_constituents.isHighConviction, true))
+        .orderBy(desc(portfolio_constituents.weightInHighConviction))
+        .limit(12);
+
+      const portfolioIndexes = [];
+      const uniqueIndexes = new Set<string>();
+      hcHoldings.forEach((h: any) => uniqueIndexes.add(h.index));
+      portfolioIndexes.push(...Array.from(uniqueIndexes).slice(0, 6));
+
+      const topHoldings = hcHoldings.slice(0, 8).map((h: any) => `${h.ticker} (${h.weightInHighConviction}%)`);
+
       const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-      // Generate professional 13D Research style email
-      const keyPointsText = suggestion.keyPoints?.map((point: string) => `  - ${point}`).join('\n  ') || 
-        '  - Significant long-term growth potential\n  - Early-stage adoption creating competitive advantages\n  - Multiple expansion opportunity as theme gains recognition';
+      const campaignEmailPrompt = `Generate a professional 13D Research campaign email connecting the theme to actual High Conviction portfolio holdings.
 
-      let generatedEmail = `Hi ____________ – I hope you're doing well.
- 
-As the broader markets remain volatile and increasingly narrow in leadership, 13D Research continues to help investors navigate with clarity. Our highest-conviction themes - rooted in secular shifts we have been closely monitoring - are now outperforming dramatically. Our Highest Conviction Ideas portfolio is up 19.6% YTD, outpacing the S&P 500 by over 20%. We believe these shifts are still in the early innings.
- 
-Below are some of the most compelling insights we've recently shared with clients, along with key investment implications:
+13D HIGH CONVICTION PORTFOLIO CONTEXT (165 securities, 85.84% weight):
+- Top HC Sectors: Gold/Mining (35.5%), Commodities (23.0%), China Markets (15.0%)
+- Key HC Indexes: ${portfolioIndexes.join(', ')}
+- Top HC Holdings: ${topHoldings.join(', ')}
 
-• **${suggestion.title}**: ${suggestion.description || 'A critical secular shift presenting significant opportunity'}
-  
-  ${suggestion.emailAngle || 'This theme represents a fundamental transformation in market dynamics'}
-  
-  Key investment implications:
-${keyPointsText}
+Theme: ${suggestion.title}
+Description: ${suggestion.description || 'Investment opportunity'}
+Email Angle: ${suggestion.emailAngle || 'Market opportunity'}
+Key Points: ${suggestion.keyPoints?.join(', ') || 'Investment thesis'}
 
-If you are interested in learning more about what we are closely monitoring and how we are allocating across these themes, I'd be happy to set up a call to discuss.
- 
-Best,
-Spencer`;
+Generate a professional email following this structure:
+- Opening greeting and market context
+- Reference to actual HC portfolio performance and holdings when relevant to the theme
+- Detailed discussion of the specific theme with connections to HC portfolio positions
+- Call to action for further discussion
+
+Connect the theme to actual HC portfolio holdings when thematically relevant. Use specific ticker symbols and sector weightings where applicable.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "You are Spencer from 13D Research writing professional campaign emails that reference actual portfolio holdings when relevant to investment themes."
+          },
+          {
+            role: "user",
+            content: campaignEmailPrompt
+          }
+        ],
+        max_tokens: 600,
+        temperature: 0.2
+      });
+
+      let generatedEmail = response.choices[0]?.message?.content || "Unable to generate email";
+
+      // Clean formatting
+      generatedEmail = generatedEmail.replace(/[\*#]+/g, '');
+      generatedEmail = generatedEmail.replace(/\n{3,}/g, '\n\n');
 
       // Add report sources and article numbers at the bottom
       if (suggestion.supportingReports && suggestion.supportingReports.length > 0) {
