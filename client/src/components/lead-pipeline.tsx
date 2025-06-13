@@ -54,6 +54,9 @@ export default function LeadPipeline() {
   const [collapsedStages, setCollapsedStages] = useState<Record<string, boolean>>({});
   const [sortBy, setSortBy] = useState<"created_at" | "name" | "company">("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [editingNotes, setEditingNotes] = useState<Record<number, string>>({});
+  const [generatingEmailFor, setGeneratingEmailFor] = useState<number | null>(null);
+  const [emailDialogs, setEmailDialogs] = useState<Record<number, { open: boolean; email: AIEmailResponse | null }>>({});
   const [newLead, setNewLead] = useState({
     name: "",
     email: "",
@@ -69,6 +72,10 @@ export default function LeadPipeline() {
 
   const { data: leads } = useQuery<Lead[]>({
     queryKey: ["/api/leads"],
+  });
+
+  const { data: contentReports } = useQuery({
+    queryKey: ["/api/content-reports"],
   });
 
   const generateEmailMutation = useMutation({
@@ -129,6 +136,49 @@ export default function LeadPipeline() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+    },
+  });
+
+  const updateNotesMutation = useMutation({
+    mutationFn: async ({ leadId, notes }: { leadId: number; notes: string }) => {
+      const response = await apiRequest(`/api/leads/${leadId}`, "PATCH", { notes });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leads"] });
+      toast({
+        title: "Notes Updated",
+        description: "Lead notes have been saved successfully.",
+      });
+    },
+  });
+
+  const generateProspectEmailMutation = useMutation({
+    mutationFn: async ({ leadId, reportTitle }: { leadId: number; reportTitle: string }) => {
+      const response = await apiRequest("/api/generate-prospect-email", "POST", {
+        lead: leads?.find(l => l.id === leadId),
+        reportTitle
+      });
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      setEmailDialogs(prev => ({
+        ...prev,
+        [variables.leadId]: { open: true, email: data }
+      }));
+      setGeneratingEmailFor(null);
+      toast({
+        title: "Email Generated",
+        description: "Prospect email has been generated successfully.",
+      });
+    },
+    onError: () => {
+      setGeneratingEmailFor(null);
+      toast({
+        title: "Error",
+        description: "Failed to generate email. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -565,6 +615,70 @@ export default function LeadPipeline() {
                                     ))}
                                   </div>
                                 )}
+
+                                {/* Quick Notes Section */}
+                                <div className="mb-3">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-xs text-gray-500">Quick Notes:</span>
+                                  </div>
+                                  <Textarea
+                                    value={editingNotes[lead.id] !== undefined ? editingNotes[lead.id] : (lead.notes || '')}
+                                    onChange={(e) => setEditingNotes(prev => ({...prev, [lead.id]: e.target.value}))}
+                                    onBlur={() => {
+                                      if (editingNotes[lead.id] !== undefined && editingNotes[lead.id] !== (lead.notes || '')) {
+                                        updateNotesMutation.mutate({leadId: lead.id, notes: editingNotes[lead.id]});
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (editingNotes[lead.id] !== undefined && editingNotes[lead.id] !== (lead.notes || '')) {
+                                          updateNotesMutation.mutate({leadId: lead.id, notes: editingNotes[lead.id]});
+                                        }
+                                      }
+                                    }}
+                                    placeholder="Type notes here... (Enter to save)"
+                                    className="h-16 text-xs resize-none"
+                                  />
+                                </div>
+
+                                {/* Email Generation Section */}
+                                <div className="mb-3 p-2 bg-blue-50 rounded-lg">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Bot className="w-3 h-3 text-blue-600" />
+                                    <span className="text-xs font-medium text-blue-800">Generate Email</span>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    <Select onValueChange={(reportTitle) => {
+                                      setGeneratingEmailFor(lead.id);
+                                      generateProspectEmailMutation.mutate({leadId: lead.id, reportTitle});
+                                    }}>
+                                      <SelectTrigger className="h-7 text-xs">
+                                        <SelectValue placeholder="Select WILTW/WATMTU report" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {(contentReports as any[])?.filter((report: any) => 
+                                          report.title.includes('WILTW') || report.title.includes('WATMTU')
+                                        ).slice(0, 5).map((report: any) => (
+                                          <SelectItem key={report.id} value={report.title}>
+                                            <div className="text-xs">
+                                              <div className="font-medium">{report.title}</div>
+                                              <div className="text-gray-500">
+                                                {new Date(report.published_date).toLocaleDateString()}
+                                              </div>
+                                            </div>
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {generatingEmailFor === lead.id && (
+                                      <div className="text-xs text-blue-600 flex items-center gap-1">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                        Generating email...
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                                 
                                 {lead.next_step && (
                                   <p className="text-sm text-gray-600">
@@ -601,6 +715,73 @@ export default function LeadPipeline() {
             );
           })}
         </div>
+
+        {/* Email Display Dialogs */}
+        {Object.entries(emailDialogs).map(([leadId, dialogData]) => {
+          const lead = leads?.find(l => l.id.toString() === leadId);
+          if (!dialogData.open || !dialogData.email || !lead) return null;
+          
+          return (
+            <Dialog key={leadId} open={dialogData.open} onOpenChange={(open) => {
+              if (!open) {
+                setEmailDialogs(prev => ({
+                  ...prev,
+                  [leadId]: { ...prev[leadId], open: false }
+                }));
+              }
+            }}>
+              <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Bot className="w-5 h-5 text-blue-600" />
+                    Generated Email for {lead.name}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Subject</Label>
+                    <div className="mt-1 p-3 bg-gray-50 rounded-lg">
+                      <p className="text-sm font-medium">{dialogData.email.subject}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Email Body</Label>
+                    <div className="mt-1 p-4 bg-white border rounded-lg">
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                        {dialogData.email.body}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`Subject: ${dialogData.email.subject}\n\n${dialogData.email.body}`);
+                        toast({
+                          title: "Copied to clipboard",
+                          description: "Email content has been copied to your clipboard.",
+                        });
+                      }}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Email
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setEmailDialogs(prev => ({
+                          ...prev,
+                          [leadId]: { ...prev[leadId], open: false }
+                        }));
+                      }}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          );
+        })}
       </div>
     </div>
   );
