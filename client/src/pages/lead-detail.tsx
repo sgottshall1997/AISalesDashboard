@@ -353,8 +353,10 @@ export default function LeadDetail() {
     },
     onSuccess: (data) => {
       if (data) {
-        setAiEmailSuggestion(data.emailSuggestion);
-        setIsGeneratingEmail(false);
+        startTransition(() => {
+          setAiEmailSuggestion(data.emailSuggestion);
+          setIsGeneratingEmail(false);
+        });
         toast({
           title: "AI Email Generated",
           description: "Personalized email suggestion created based on lead's interests and recent reports.",
@@ -362,7 +364,9 @@ export default function LeadDetail() {
       }
     },
     onError: () => {
-      setIsGeneratingEmail(false);
+      startTransition(() => {
+        setIsGeneratingEmail(false);
+      });
       toast({
         title: "Generation Failed",
         description: "Unable to generate AI email. Please try again.",
@@ -388,8 +392,10 @@ export default function LeadDetail() {
     onSuccess: (emails) => {
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/emails`] });
       queryClient.invalidateQueries({ queryKey: [`/api/leads/${leadId}/ai-suggestion`] });
-      setShowConversationParser(false);
-      setConversationText("");
+      startTransition(() => {
+        setShowConversationParser(false);
+        setConversationText("");
+      });
       toast({
         title: "Conversation Parsed",
         description: `Added ${emails.length} emails to history.`,
@@ -411,7 +417,9 @@ export default function LeadDetail() {
     },
     onSuccess: (data) => {
       if (data) {
-        setCallPrepResult(data);
+        startTransition(() => {
+          setCallPrepResult(data);
+        });
         toast({
           title: "Call Preparation Generated",
           description: "Comprehensive call prep notes created based on prospect information.",
@@ -440,7 +448,9 @@ export default function LeadDetail() {
     },
     onSuccess: (data) => {
       if (data?.summary) {
-        setEmailSummary(data.summary);
+        startTransition(() => {
+          setEmailSummary(data.summary);
+        });
         toast({
           title: "Email Summary Generated",
           description: "Email conversation has been summarized.",
@@ -552,14 +562,16 @@ export default function LeadDetail() {
           <div className="flex gap-2">
             {!isEditing ? (
               <Button onClick={() => {
-                setIsEditing(true);
-                setEditData({
-                  name: lead.name,
-                  email: lead.email,
-                  company: lead.company,
-                  stage: lead.stage,
-                  next_step: lead.next_step,
-                  how_heard: lead.how_heard,
+                startTransition(() => {
+                  setIsEditing(true);
+                  setEditData({
+                    name: lead.name,
+                    email: lead.email,
+                    company: lead.company,
+                    stage: lead.stage,
+                    next_step: lead.next_step,
+                    how_heard: lead.how_heard,
+                  });
                 });
               }}>
                 <Edit className="w-4 h-4 mr-2" />
@@ -571,7 +583,7 @@ export default function LeadDetail() {
                   <Save className="w-4 h-4 mr-2" />
                   Save
                 </Button>
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
+                <Button variant="outline" onClick={() => startTransition(() => setIsEditing(false))}>
                   <X className="w-4 h-4 mr-2" />
                   Cancel
                 </Button>
@@ -1235,13 +1247,15 @@ export default function LeadDetail() {
                       <Button 
                         size="sm" 
                         onClick={() => {
-                          setNewEmail({
-                            subject: "Follow-up: Investment Research Opportunities",
-                            content: aiEmailSuggestion,
-                            email_type: "outgoing"
+                          startTransition(() => {
+                            setNewEmail({
+                              subject: "Follow-up: Investment Research Opportunities",
+                              content: aiEmailSuggestion,
+                              email_type: "outgoing"
+                            });
+                            setShowAddEmail(true);
+                            setAiEmailSuggestion(null);
                           });
-                          setShowAddEmail(true);
-                          setAiEmailSuggestion(null);
                         }}
                       >
                         Use This Email
