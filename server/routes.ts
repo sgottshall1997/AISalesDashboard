@@ -1745,11 +1745,13 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
         
         // Parse interests properly - handle both string and array formats
         let parsedInterests = [];
-        if (typeof interests === 'string' && interests.trim()) {
+        if (Array.isArray(interests)) {
+          parsedInterests = interests.filter(i => i && i.trim().length > 0);
+        } else if (typeof interests === 'string' && interests.trim()) {
           parsedInterests = interests.split(',').map(i => i.trim()).filter(i => i.length > 0);
-        } else if (Array.isArray(interests)) {
-          parsedInterests = interests;
         }
+        
+        console.log('Parsed interests:', parsedInterests);
         
         const callPrepResult: any = {
           prospectSnapshot: `${prospectName}${title ? `, ${title}` : ''}${firmName ? ` at ${firmName}` : ''}. ${investmentStyle || 'Institutional investor'} with specific interest in ${parsedInterests.length > 0 ? parsedInterests.join(', ') : topIndexes.slice(0, 2).join(' and ')}. Strong alignment potential with 13D's high conviction portfolio themes.`,
@@ -1760,7 +1762,7 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
           
           topInterests: `Primary focus areas: ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'institutional themes'}. ${latestReports.length > 0 ? `Recent 13D analysis directly covers these themes through ${latestReports[0].report?.title || 'market research'}.` : `Direct alignment with 13D's coverage of ${topIndexes.slice(0, 2).join(' and ')}.`}`,
           
-          portfolioInsights: `13D's high conviction portfolio (${keyHoldings.length > 0 ? keyHoldings.slice(0, 3).join(', ') : 'diversified holdings'}) demonstrates our conviction in ${topIndexes.slice(0, 2).join(' and ')} themes. ${latestReports.length > 0 && latestReports[0].parsed_summary ? `Latest research: ${latestReports[0].parsed_summary.substring(0, 150)}...` : 'Our research provides institutional-grade analysis on these themes.'} This positioning offers compelling discussion points for their investment committee.`,
+          portfolioInsights: `13D's high conviction portfolio features ${keyHoldings.length > 0 ? keyHoldings.slice(0, 3).join(', ') : 'diversified holdings'} with strong alignment to ${parsedInterests.length > 0 ? parsedInterests.join(', ') : topIndexes.slice(0, 2).join(' and ')} sectors. ${parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Gold/mining exposure represents 35.5% of our HC portfolio weight.' : parsedInterests.some(i => i.toLowerCase().includes('china')) ? 'China market allocation provides 15.0% portfolio exposure through specialized indexes.' : `${topIndexes[0] || 'Commodities'} positioning offers compelling risk-adjusted returns.`} Our research coverage directly supports these investment themes with actionable insights for institutional mandates.`,
           
           talkingPoints: [
             {
