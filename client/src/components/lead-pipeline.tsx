@@ -249,7 +249,12 @@ export default function LeadPipeline() {
     mutationFn: async (leadId: number) => {
       console.log('Deleting lead with ID:', leadId);
       try {
-        const response = await apiRequest(`/api/leads/${leadId}`, "DELETE");
+        // Use fetch directly instead of apiRequest to get proper Response object
+        const response = await fetch(`/api/leads/${leadId}`, {
+          method: "DELETE",
+          credentials: "include",
+        });
+        
         console.log('Delete response status:', response.status);
         console.log('Delete response ok:', response.ok);
         
