@@ -86,14 +86,15 @@ From these WILTW and WATMTU reports, identify 3-4 investment themes that connect
 
 For each theme found in the reports, create:
 - type: "frequent_theme", "emerging_trend", "cross_sector", or "deep_dive"
-- title: Professional email subject focused on investment opportunity
-- description: Investment angle based on actual report content AND relevant HC portfolio positions
-- emailAngle: Specific market perspective from the reports connecting to portfolio holdings
+- title: Professional email subject focused on investment opportunity from report content
+- description: Investment angle based primarily on actual report insights (80%) with brief HC portfolio context (20%)
+- emailAngle: Specific market perspective derived from the parsed report summaries
 - supportingReports: Array of report titles that contain this theme
-- keyPoints: 3-4 actual insights from the report content plus relevant HC portfolio connections
-- insights: Array of 2-3 specific, traceable facts from source reports PLUS mention of relevant HC holdings
-- priority: "high", "medium", or "low" (prioritize themes with strong HC portfolio alignment)
+- keyPoints: 4 actual insights from the report content, mentioning HC portfolio only where thematically relevant
+- insights: Array of 2-3 specific, traceable facts from source reports with minimal portfolio references
+- priority: "high", "medium", or "low" (prioritize based on report insight strength, not portfolio alignment)
 
+Focus 80% on report content/parsed summaries, 20% on HC portfolio context only where naturally relevant.
 Return only JSON: {"suggestions": [...]}`;
 
     const response = await openai.chat.completions.create({

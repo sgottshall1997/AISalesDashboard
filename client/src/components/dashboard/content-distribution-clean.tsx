@@ -1164,7 +1164,7 @@ export function ContentDistribution() {
                             generateEmailMutation.mutate({
                               prospectName: match.name,
                               reportTitle,
-                              keyTalkingPoints: [],
+                              keyTalkingPoints: [reportSummary.substring(0, 800)], // Pass actual report content
                               matchReason: match.reasoning || ""
                             });
                           }}
