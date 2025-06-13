@@ -434,14 +434,15 @@ export function ContentDistribution() {
       setIsMatchingProspects(false);
       toast({
         title: "Prospect Match Complete",
-        description: `Found ${data.matches?.length || 0} relevant prospects for this report.`,
+        description: `Found ${data.matches?.length || 0} prioritized prospects (${data.totalProspects || 0} total leads analyzed)`,
       });
     },
-    onError: () => {
+    onError: (error) => {
       setIsMatchingProspects(false);
+      console.error("Prospect matching error:", error);
       toast({
-        title: "Matching Failed",
-        description: "Failed to match prospects. Please try again.",
+        title: "Matching Failed", 
+        description: error.message || "Failed to match prospects with content. Please try again.",
         variant: "destructive",
       });
     },

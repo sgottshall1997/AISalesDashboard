@@ -2870,6 +2870,121 @@ Based on these 13D Research insights, provide a JSON response with actionable pr
     }
   });
 
+  // Enhanced Prospect Matching endpoint - matches content with high-likelihood prospects
+  app.post("/api/match-prospect-themes", async (req: Request, res: Response) => {
+    try {
+      const { reportContent } = req.body;
+
+      if (!reportContent) {
+        return res.status(400).json({ error: "Report content is required" });
+      }
+
+      // Get all leads prioritized by likelihood and engagement
+      const allLeads = await storage.getAllLeads();
+      
+      // Create scoring system for lead prioritization
+      const likelihoodMapping: Record<string, number> = {
+        'very high': 100,
+        'high': 80,
+        'medium': 60,
+        'low': 40,
+        'very low': 20
+      };
+
+      const engagementMapping: Record<string, number> = {
+        'very high': 100,
+        'high': 80, 
+        'medium': 60,
+        'low': 40,
+        'very low': 20,
+        'none': 10
+      };
+
+      // Score and sort prospects by priority
+      const prioritizedProspects = allLeads
+        .map(lead => {
+          const likelihoodKey = (lead.likelihood_of_closing?.toLowerCase() || 'medium');
+          const engagementKey = (lead.engagement_level?.toLowerCase() || 'medium');
+          const likelihoodScore = likelihoodMapping[likelihoodKey] || 60;
+          const engagementScore = engagementMapping[engagementKey] || 60;
+          const totalScore = (likelihoodScore * 0.6) + (engagementScore * 0.4); // Weight likelihood higher
+          
+          return {
+            ...lead,
+            priorityScore: totalScore
+          };
+        })
+        .sort((a, b) => b.priorityScore - a.priorityScore)
+        .slice(0, 15); // Top 15 prospects
+
+      // Analyze content themes for intelligent matching
+      const contentLower = reportContent.toLowerCase();
+      const themeKeywords = {
+        'Gold/Mining': ['gold', 'mining', 'precious metals', 'miners', 'bullion'],
+        'China Markets': ['china', 'chinese', 'asia', 'emerging markets', 'geopolitical'],
+        'Commodities': ['commodity', 'commodities', 'copper', 'silver', 'oil', 'materials'],
+        'Technology': ['technology', 'tech', 'ai', 'artificial intelligence', 'semiconductor'],
+        'Energy': ['energy', 'renewable', 'grid', 'infrastructure', 'utilities'],
+        'Healthcare': ['healthcare', 'biotech', 'pharmaceutical', 'medical'],
+        'Financial Services': ['financial', 'banking', 'fintech', 'payments']
+      };
+
+      // Generate intelligent matches based on content themes
+      const matches = prioritizedProspects.map((prospect, index) => {
+        // Calculate content relevance based on notes and interests
+        let contentRelevance = 50; // Base score
+        
+        const prospectText = `${prospect.notes || ''} ${prospect.interest_tags || ''}`.toLowerCase();
+        
+        // Theme-based matching
+        for (const [theme, keywords] of Object.entries(themeKeywords)) {
+          const themeInContent = keywords.some(keyword => contentLower.includes(keyword));
+          const themeInProspect = keywords.some(keyword => prospectText.includes(keyword));
+          
+          if (themeInContent && themeInProspect) {
+            contentRelevance += 25;
+          } else if (themeInContent) {
+            contentRelevance += 10;
+          }
+        }
+
+        // Boost for high-priority prospects
+        if (index < 5) contentRelevance += 15;
+        if (index < 10) contentRelevance += 10;
+
+        // Cap at 95 to be realistic
+        contentRelevance = Math.min(95, contentRelevance);
+
+        return {
+          name: prospect.name,
+          company: prospect.company || "Not specified",
+          stage: prospect.stage || "prospect",
+          likelihoodOfClosing: prospect.likelihood_of_closing || "medium",
+          engagementLevel: prospect.engagement_level || "medium",
+          relevanceScore: contentRelevance,
+          interestTags: prospect.interest_tags || [],
+          notes: prospect.notes || "No additional notes available",
+          howHeard: prospect.how_heard || "Not specified",
+          reasoning: `High-priority prospect (${prospect.likelihood_of_closing || 'medium'} likelihood, ${prospect.engagement_level || 'medium'} engagement) with strategic relevance to report themes.`,
+          suggestedApproach: contentRelevance >= 70 
+            ? "Direct outreach with customized insights from this report"
+            : "Include in broader campaign with relevant sections highlighted",
+          priorityScore: prospect.priorityScore
+        };
+      });
+
+      res.json({ 
+        matches: matches.sort((a, b) => b.relevanceScore - a.relevanceScore),
+        totalProspects: allLeads.length,
+        analysisNote: "Prospects prioritized by likelihood of closing and engagement level, with content relevance scoring"
+      });
+
+    } catch (error) {
+      console.error("Prospect matching error:", error);
+      res.status(500).json({ error: "Failed to match prospects with content" });
+    }
+  });
+
   // Health monitoring and system diagnostics endpoints
   app.get("/api/health", async (req: Request, res: Response) => {
     try {
