@@ -1766,35 +1766,35 @@ Make it crisp, useful, and professional. Focus on actionable insights that would
           
           talkingPoints: [
             {
-              mainPoint: `13D High Conviction Portfolio Alignment`,
+              mainPoint: `Portfolio Positioning for ${parsedInterests.length > 0 ? parsedInterests.join('/') : 'Your Themes'}`,
               subBullets: [
-                `Our ${keyHoldings.length > 0 ? keyHoldings.length : '10+'} high conviction holdings include ${keyHoldings.slice(0, 2).join(', ')}`,
-                `Portfolio concentrated in ${topIndexes.slice(0, 3).join(', ')} with 85.84% total weight`,
-                `Direct alignment with your focus on ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'institutional themes'} through our sector positioning`
+                `${parsedInterests.some(i => i.toLowerCase().includes('gold')) ? '35.5% allocation to gold/mining through our Critical Minerals Index - direct exposure to your gold focus' : 'High conviction positioning in metals and commodities sectors'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) ? 'Uranium exposure through specialized mining holdings including CCJ positioning' : 'Energy transition metals coverage through mining sector allocation'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Alternative assets research coverage including digital asset market analysis' : 'Diversified commodity exposure across critical materials'}`
               ]
             },
             {
-              mainPoint: `Thematic Research Coverage`,
+              mainPoint: `Investment Thesis Alignment`,
               subBullets: [
-                `13D provides institutional research on ${parsedInterests.length > 0 ? parsedInterests.join(', ') : 'key sectors'} with actionable investment insights`,
-                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) || parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Critical minerals and precious metals positioning through our specialized indexes' : 'Sector-specific research aligned with your investment mandate'}`,
-                `${parsedInterests.some(i => i.toLowerCase().includes('china')) ? 'China market exposure through dedicated research and portfolio allocation' : parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Digital assets and alternative investment coverage' : 'Thematic investment strategies with compelling risk-adjusted returns'}`
+                `${parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Gold as inflation hedge - 13D research shows technical breakout patterns and institutional accumulation' : 'Commodities super-cycle positioning with inflation protection'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) ? 'Uranium supply deficit story - nuclear renaissance driving long-term demand fundamentals' : 'Critical materials shortage creating investment opportunities'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Bitcoin institutional adoption theme - treasury allocation and ETF inflow trends' : 'Alternative investment diversification strategies'}`
               ]
             },
             {
-              mainPoint: "Macro Economic Positioning",
+              mainPoint: `Market Timing for ${parsedInterests.length > 0 ? parsedInterests.join('/') : 'Target Themes'}`,
               subBullets: [
-                "Federal Reserve policy pivot creating favorable conditions for growth assets",
-                "Dollar strength moderating, benefiting international exposure",
-                "Credit markets showing resilience with spreads tightening across sectors"
+                `${parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Gold breaking multi-year resistance - central bank buying and de-dollarization trends support price action' : 'Commodities in supply deficit cycle creating price support'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) ? 'Uranium spot price recovery from decade lows - reactor restarts and new build programs accelerating' : 'Energy transition creating structural demand for critical materials'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Bitcoin ETF approvals driving institutional adoption - potential for treasury allocation discussions' : 'Alternative assets gaining institutional acceptance as portfolio diversifiers'}`
               ]
             },
             {
-              mainPoint: "Portfolio Construction Themes",
+              mainPoint: `Specific Investment Opportunities`,
               subBullets: [
-                "Quality factor outperformance continuing in current market environment",
-                "ESG integration becoming standard practice for institutional mandates",
-                "Alternative investments allocation increasing among pension funds"
+                `${parsedInterests.some(i => i.toLowerCase().includes('gold')) ? 'Physical gold vs. mining equities spread trade - direct metal exposure vs. operational leverage' : 'Value opportunities in oversold commodity producers'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('uranium')) ? 'Uranium junior miners vs. established producers - risk/reward profiles for different portfolio mandates' : 'Small-cap mining opportunities with institutional quality management'}`,
+                `${parsedInterests.some(i => i.toLowerCase().includes('bitcoin')) ? 'Bitcoin allocation sizing - risk management approaches for institutional portfolios' : 'Alternative investment allocation strategies for long-term value investors'}`
               ]
             }
           ],
