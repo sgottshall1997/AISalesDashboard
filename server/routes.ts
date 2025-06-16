@@ -1334,6 +1334,174 @@ Provide a professional, data-driven response using the authentic 13D research co
     }
   });
 
+  // Regenerate specific section endpoint
+  app.post("/api/ai/regenerate-section", async (req: Request, res: Response) => {
+    try {
+      const { reportId, title, content, sectionType } = req.body;
+
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(400).json({ 
+          error: "OpenAI API key not configured. Please provide your API key to enable AI-powered section regeneration." 
+        });
+      }
+
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+      let systemPrompt = '';
+      let userPrompt = '';
+      let sectionContent = '';
+
+      if (sectionType === 'structured') {
+        systemPrompt = `You are an expert investment research analyst and summarizer. You've received a detailed WILTW report from 13D Research dated ${title}. Analyze the report and provide structured, article-by-article analysis.
+
+For each identifiable article section in the report, create a comprehensive analysis following this format:
+
+**ARTICLE [NUMBER]: [TITLE]**
+
+**Core Thesis:** [2-3 sentence summary of the main argument]
+
+**Key Insights:**
+• [First key insight with specific data/quotes]
+• [Second key insight with supporting evidence]  
+• [Third key insight with implications]
+
+**Investment Implications:** [Forward-looking themes and opportunities for investors]
+
+**Risk Factors:** [Specific risks and considerations mentioned]
+
+**Timeline:** [Short/medium/long-term outlook when specified]
+
+Be comprehensive and extract specific details from each article in the report.`;
+
+        userPrompt = `Analyze this WILTW report and provide structured analysis:
+
+**Report Title:** ${title}
+**Content:** ${content}
+
+Generate ONLY the structured article-by-article analysis section. Focus on extracting specific themes, data points, and investment insights from each article mentioned in the report.`;
+
+      } else if (sectionType === 'detailed') {
+        systemPrompt = `You are an expert investment analyst specializing in WILTW (What I Learned This Week) reports. Your task is to analyze and summarize investment research articles, extracting key themes, insights, and actionable information for portfolio managers and institutional investors.`;
+
+        userPrompt = `I have the complete extracted text content from a WILTW report titled "${title}". Please analyze this content and provide a comprehensive structured analysis.
+
+**Complete Report Content:** 
+
+${content}
+
+Please analyze the above content thoroughly and create a detailed analysis following this exact format:
+
+Executive Summary:
+[2-3 sentence overview highlighting the strategic importance and key themes covered in the report, emphasizing geopolitical tensions, market opportunities, and investment implications]
+
+Key Investment Themes:
+[Number each theme 1-6, providing detailed analysis with specific data points, percentages, and evidence from the report. Each theme should include risk factors and strategic implications]
+
+Market Outlook & Implications:
+[Detailed analysis of market expectations, sector performance outlook, and strategic positioning recommendations based on the themes identified]
+
+Risk Factors:
+[Specific risks and challenges mentioned in the report, including geopolitical tensions, regulatory hurdles, environmental concerns, and market volatility factors]
+
+Investment Opportunities:
+[Numbered list of concrete investment opportunities with specific company names, tickers, sectors, or asset classes mentioned in the report with clear rationale]
+
+Client Discussion Points:
+[Strategic talking points for advisor-client conversations, emphasizing how to discuss these themes with institutional investors and the implications for portfolio strategy]
+
+Focus on extracting specific data points, company names, percentages, and concrete investment insights from the actual report content.`;
+
+      } else if (sectionType === 'comprehensive') {
+        systemPrompt = `You are an experienced investment research analyst preparing insights for CIOs and Portfolio Managers. Analyze this comprehensive WILTW investment report and extract actionable intelligence.
+
+ANALYZE THE FOLLOWING REPORT AND PROVIDE:
+
+1. **Executive Summary** (2-3 sentences)
+2. **Key Investment Themes** (identify 5-8 major themes with specific details)
+3. **Market Outlook & Implications** (sector/asset class specific insights)
+4. **Risk Factors** (specific risks mentioned in the report)
+5. **Investment Opportunities** (concrete actionable ideas)
+6. **Client Discussion Points** (talking points for advisor-client conversations)
+
+For each theme/insight, include:
+- Specific companies, sectors, or assets mentioned
+- Numerical data, percentages, or price targets when available
+- Time horizons and catalysts
+- Risk/reward considerations
+
+Structure your analysis for investment professionals who need to make portfolio decisions and communicate with clients. Focus on specificity, actionability, and market relevance.`;
+
+        userPrompt = `Please analyze this WILTW investment research report titled "${title}" and provide comprehensive insights for investment professionals:
+
+**Report Content:**
+${content}
+
+Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content. The content is available and should be analyzed completely.`;
+      }
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        max_tokens: 4000,
+        temperature: 0.3
+      });
+
+      sectionContent = response.choices[0].message.content || '';
+      
+      // Remove all * and # symbols from output
+      sectionContent = sectionContent.replace(/[\*#]+/g, '');
+
+      // Get existing summary and update the specific section
+      const existingSummary = await storage.getReportSummary(parseInt(reportId));
+      
+      if (existingSummary) {
+        let updatedSummary = existingSummary.parsed_summary;
+        
+        // Replace the specific section in the combined summary
+        if (sectionType === 'structured') {
+          updatedSummary = updatedSummary.replace(
+            /## Structured Article-by-Article Analysis[\s\S]*?(?=---\s*## Detailed Article Analysis|$)/,
+            `## Structured Article-by-Article Analysis\n\n${sectionContent}\n\n---\n\n`
+          );
+        } else if (sectionType === 'detailed') {
+          updatedSummary = updatedSummary.replace(
+            /## Detailed Article Analysis[\s\S]*?(?=---\s*## Comprehensive Summary|$)/,
+            `## Detailed Article Analysis\n\n${sectionContent}\n\n---\n\n`
+          );
+        } else if (sectionType === 'comprehensive') {
+          updatedSummary = updatedSummary.replace(
+            /## Comprehensive Summary[\s\S]*$/,
+            `## Comprehensive Summary\n\n${sectionContent}`
+          );
+        }
+
+        // Update the summary in the database
+        await storage.updateReportSummary(existingSummary.id, {
+          parsed_summary: updatedSummary,
+          summary_type: 'wiltw_parser'
+        });
+
+        res.json({ 
+          success: true,
+          sectionType,
+          message: `${sectionType} section regenerated successfully`
+        });
+      } else {
+        res.status(404).json({ error: "Existing summary not found" });
+      }
+
+    } catch (error) {
+      console.error("Section regeneration error:", error);
+      res.status(500).json({ 
+        error: "Failed to regenerate section",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Prospect matching endpoint
   // Unified Prospect and Fund Matching endpoint
   app.post("/api/unified-prospect-fund-match", async (req: Request, res: Response) => {

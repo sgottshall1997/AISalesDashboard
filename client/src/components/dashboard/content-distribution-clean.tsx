@@ -42,6 +42,7 @@ export function ContentDistribution() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailProspectName, setEmailProspectName] = useState<string>('');
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [regeneratingSection, setRegeneratingSection] = useState<string | null>(null);
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -274,6 +275,57 @@ export function ContentDistribution() {
       console.error('Processing errors:', errors);
     }
   };
+
+  const regenerateSectionMutation = useMutation({
+    mutationFn: async ({ reportId, sectionType }: { reportId: string, sectionType: 'structured' | 'detailed' | 'comprehensive' }) => {
+      const report = (reports as any[]).find((r: any) => r.id.toString() === reportId);
+      if (!report) throw new Error("Report not found");
+
+      const response = await fetch("/api/ai/regenerate-section", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: report.id.toString(),
+          title: report.title,
+          content: report.full_content || report.content_summary,
+          sectionType: sectionType
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to regenerate ${sectionType} section`);
+      }
+
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      setRegeneratingSection(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
+      
+      // Reload the current summary to show updated content
+      if (selectedReport) {
+        apiRequest(`/api/report-summaries`, "GET").then((summaries: any[]) => {
+          const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+          if (reportSummary) {
+            setReportSummary(reportSummary.parsed_summary);
+          }
+        });
+      }
+      
+      toast({
+        title: "Section Regenerated",
+        description: `${variables.sectionType} section has been updated successfully.`,
+      });
+    },
+    onError: (error, variables) => {
+      setRegeneratingSection(null);
+      toast({
+        title: "Regeneration Failed",
+        description: `Failed to regenerate ${variables.sectionType} section. Please try again.`,
+        variant: "destructive",
+      });
+    },
+  });
 
   const summarizeReportMutation = useMutation({
     mutationFn: async (reportId: string) => {
@@ -975,13 +1027,35 @@ export function ContentDistribution() {
                 {summaryParts.structured && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center text-blue-700">
-                        <FileText className="w-5 h-5 mr-2" />
-                        Structured Analysis
-                      </CardTitle>
-                      <CardDescription>
-                        Organized breakdown of key themes and investment insights
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center text-blue-700">
+                            <FileText className="w-5 h-5 mr-2" />
+                            Structured Analysis
+                          </CardTitle>
+                          <CardDescription>
+                            Organized breakdown of key themes and investment insights
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedReport) {
+                              setRegeneratingSection('structured');
+                              regenerateSectionMutation.mutate({ 
+                                reportId: selectedReport, 
+                                sectionType: 'structured' 
+                              });
+                            }
+                          }}
+                          disabled={!selectedReport || regeneratingSection === 'structured'}
+                          className="flex items-center gap-2"
+                        >
+                          <Bot className="w-4 h-4" />
+                          {regeneratingSection === 'structured' ? "Regenerating..." : "Regenerate"}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -997,13 +1071,35 @@ export function ContentDistribution() {
                 {summaryParts.detailed && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center text-green-700">
-                        <FileText className="w-5 h-5 mr-2" />
-                        Detailed Summary
-                      </CardTitle>
-                      <CardDescription>
-                        In-depth analysis with context and market implications
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center text-green-700">
+                            <FileText className="w-5 h-5 mr-2" />
+                            Detailed Summary
+                          </CardTitle>
+                          <CardDescription>
+                            In-depth analysis with context and market implications
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedReport) {
+                              setRegeneratingSection('detailed');
+                              regenerateSectionMutation.mutate({ 
+                                reportId: selectedReport, 
+                                sectionType: 'detailed' 
+                              });
+                            }
+                          }}
+                          disabled={!selectedReport || regeneratingSection === 'detailed'}
+                          className="flex items-center gap-2"
+                        >
+                          <Bot className="w-4 h-4" />
+                          {regeneratingSection === 'detailed' ? "Regenerating..." : "Regenerate"}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="bg-green-50 rounded-lg p-4 border border-green-200">
@@ -1019,13 +1115,35 @@ export function ContentDistribution() {
                 {summaryParts.comprehensive && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center text-purple-700">
-                        <FileText className="w-5 h-5 mr-2" />
-                        Comprehensive Analysis
-                      </CardTitle>
-                      <CardDescription>
-                        Executive summary with strategic insights and recommendations
-                      </CardDescription>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="flex items-center text-purple-700">
+                            <FileText className="w-5 h-5 mr-2" />
+                            Comprehensive Analysis
+                          </CardTitle>
+                          <CardDescription>
+                            Executive summary with strategic insights and recommendations
+                          </CardDescription>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedReport) {
+                              setRegeneratingSection('comprehensive');
+                              regenerateSectionMutation.mutate({ 
+                                reportId: selectedReport, 
+                                sectionType: 'comprehensive' 
+                              });
+                            }
+                          }}
+                          disabled={!selectedReport || regeneratingSection === 'comprehensive'}
+                          className="flex items-center gap-2"
+                        >
+                          <Bot className="w-4 h-4" />
+                          {regeneratingSection === 'comprehensive' ? "Regenerating..." : "Regenerate"}
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
