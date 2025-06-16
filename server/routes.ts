@@ -1439,15 +1439,22 @@ ${content}
 Extract all specific investment themes, opportunities, risks, and actionable insights from the actual report content. The content is available and should be analyzed completely.`;
       }
 
-      const response = await openai.chat.completions.create({
+      // Create timeout wrapper for OpenAI API call
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('OpenAI API timeout')), 30000)
+      );
+
+      const openaiPromise = openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt }
         ],
-        max_tokens: 4000,
+        max_tokens: 3000,
         temperature: 0.3
       });
+
+      const response = await Promise.race([openaiPromise, timeoutPromise]);
 
       sectionContent = response.choices[0].message.content || '';
       
@@ -1458,25 +1465,108 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
       const existingSummary = await storage.getReportSummary(parseInt(reportId));
       
       if (existingSummary) {
-        let updatedSummary = existingSummary.parsed_summary;
+        console.log(`Regenerating ${sectionType} section for report ${reportId}`);
+        console.log('Original summary length:', existingSummary.parsed_summary.length);
+        console.log('New section content length:', sectionContent.length);
         
-        // Replace the specific section in the combined summary
+        let updatedSummary = existingSummary.parsed_summary;
+        const originalSummary = updatedSummary;
+        
+        // Replace the specific section in the combined summary with improved logic
+        let replacementMade = false;
+        
         if (sectionType === 'structured') {
-          updatedSummary = updatedSummary.replace(
-            /## Structured Article-by-Article Analysis[\s\S]*?(?=---\s*## Detailed Article Analysis|$)/,
-            `## Structured Article-by-Article Analysis\n\n${sectionContent}\n\n---\n\n`
-          );
+          // Try multiple patterns for structured section
+          const patterns = [
+            /## Structured Article-by-Article Analysis[\s\S]*?(?=---[\s]*## Detailed)/,
+            /## Structured Article[\s\S]*?(?=---[\s]*## Detailed)/,
+            /## Structured[\s\S]*?(?=---[\s]*## Detailed)/
+          ];
+          
+          for (const regex of patterns) {
+            if (regex.test(updatedSummary)) {
+              updatedSummary = updatedSummary.replace(regex, `## Structured Article-by-Article Analysis\n\n${sectionContent}\n\n---\n\n`);
+              replacementMade = true;
+              console.log('Structured section replacement successful');
+              break;
+            }
+          }
+          
+          // If no existing structured section found, prepend it
+          if (!replacementMade) {
+            updatedSummary = `## Structured Article-by-Article Analysis\n\n${sectionContent}\n\n---\n\n${updatedSummary}`;
+            replacementMade = true;
+            console.log('Structured section added to beginning');
+          }
+          
         } else if (sectionType === 'detailed') {
-          updatedSummary = updatedSummary.replace(
-            /## Detailed Article Analysis[\s\S]*?(?=---\s*## Comprehensive Summary|$)/,
-            `## Detailed Article Analysis\n\n${sectionContent}\n\n---\n\n`
-          );
+          // Try multiple patterns for detailed section
+          const patterns = [
+            /## Detailed Article Analysis[\s\S]*?(?=---[\s]*## Comprehensive|$)/,
+            /## Detailed Summary[\s\S]*?(?=---[\s]*## Comprehensive|$)/,
+            /## Detailed[\s\S]*?(?=---[\s]*## Comprehensive|$)/
+          ];
+          
+          for (const regex of patterns) {
+            if (regex.test(updatedSummary)) {
+              updatedSummary = updatedSummary.replace(regex, `## Detailed Article Analysis\n\n${sectionContent}\n\n---\n\n`);
+              replacementMade = true;
+              console.log('Detailed section replacement successful');
+              break;
+            }
+          }
+          
+          // If no existing detailed section found, add it in the middle
+          if (!replacementMade) {
+            const structuredMatch = updatedSummary.match(/(## Structured[\s\S]*?---[\s]*)/);
+            if (structuredMatch) {
+              updatedSummary = updatedSummary.replace(structuredMatch[0], `${structuredMatch[0]}## Detailed Article Analysis\n\n${sectionContent}\n\n---\n\n`);
+            } else {
+              updatedSummary = `## Detailed Article Analysis\n\n${sectionContent}\n\n---\n\n${updatedSummary}`;
+            }
+            replacementMade = true;
+            console.log('Detailed section added');
+          }
+          
         } else if (sectionType === 'comprehensive') {
-          updatedSummary = updatedSummary.replace(
+          // Try multiple patterns for comprehensive section
+          const patterns = [
             /## Comprehensive Summary[\s\S]*$/,
-            `## Comprehensive Summary\n\n${sectionContent}`
-          );
+            /## Comprehensive Analysis[\s\S]*$/,
+            /## Comprehensive[\s\S]*$/
+          ];
+          
+          for (const regex of patterns) {
+            if (regex.test(updatedSummary)) {
+              updatedSummary = updatedSummary.replace(regex, `## Comprehensive Summary\n\n${sectionContent}`);
+              replacementMade = true;
+              console.log('Comprehensive section replacement successful');
+              break;
+            }
+          }
+          
+          // If no existing comprehensive section found, append it
+          if (!replacementMade) {
+            updatedSummary = `${updatedSummary}\n\n---\n\n## Comprehensive Summary\n\n${sectionContent}`;
+            replacementMade = true;
+            console.log('Comprehensive section added to end');
+          }
         }
+        
+        console.log('Replacement made:', replacementMade);
+
+        console.log('Summary changed:', originalSummary !== updatedSummary);
+        console.log('Updated summary length:', updatedSummary.length);
+        
+        // Debug: Show the structure of the existing summary
+        console.log('Summary structure analysis:');
+        console.log('Has "## Structured Article":', updatedSummary.includes('## Structured Article'));
+        console.log('Has "## Detailed Article":', updatedSummary.includes('## Detailed Article'));
+        console.log('Has "## Detailed Summary":', updatedSummary.includes('## Detailed Summary'));
+        console.log('Has "## Comprehensive":', updatedSummary.includes('## Comprehensive'));
+        
+        // Show first 500 chars to see structure
+        console.log('Summary start:', updatedSummary.substring(0, 500));
 
         // Update the summary in the database
         await storage.updateReportSummary(existingSummary.id, {
