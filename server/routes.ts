@@ -1454,7 +1454,7 @@ Extract all specific investment themes, opportunities, risks, and actionable ins
         temperature: 0.3
       });
 
-      const response = await Promise.race([openaiPromise, timeoutPromise]);
+      const response = await Promise.race([openaiPromise, timeoutPromise]) as any;
 
       sectionContent = response.choices[0].message.content || '';
       

@@ -300,17 +300,29 @@ export function ContentDistribution() {
     },
     onSuccess: (data, variables) => {
       setRegeneratingSection(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
       
-      // Reload the current summary to show updated content
+      // Force immediate reload of the summary to show updated content
       if (selectedReport) {
-        apiRequest(`/api/report-summaries`, "GET").then((summaries: any[]) => {
-          const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
-          if (reportSummary) {
-            setReportSummary(reportSummary.parsed_summary);
-          }
-        });
+        // Clear current summary first to force re-render
+        setReportSummary("");
+        
+        // Fetch fresh data from API
+        fetch("/api/report-summaries")
+          .then(response => response.json())
+          .then((summaries: any[]) => {
+            const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+            if (reportSummary) {
+              setReportSummary(reportSummary.parsed_summary);
+              console.log('Summary updated after regeneration, new length:', reportSummary.parsed_summary.length);
+            }
+          })
+          .catch(error => {
+            console.error('Failed to reload summary:', error);
+          });
       }
+      
+      // Invalidate cache after updating state
+      queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
       
       toast({
         title: "Section Regenerated",
