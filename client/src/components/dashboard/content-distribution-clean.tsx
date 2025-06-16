@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -303,22 +303,26 @@ export function ContentDistribution() {
       
       // Force immediate reload of the summary to show updated content
       if (selectedReport) {
-        // Clear current summary first to force re-render
-        setReportSummary("");
-        
-        // Fetch fresh data from API
-        fetch("/api/report-summaries")
-          .then(response => response.json())
-          .then((summaries: any[]) => {
-            const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
-            if (reportSummary) {
-              setReportSummary(reportSummary.parsed_summary);
-              console.log('Summary updated after regeneration, new length:', reportSummary.parsed_summary.length);
-            }
-          })
-          .catch(error => {
-            console.error('Failed to reload summary:', error);
-          });
+        startTransition(() => {
+          // Clear current summary first to force re-render
+          setReportSummary("");
+          
+          // Fetch fresh data from API
+          fetch("/api/report-summaries")
+            .then(response => response.json())
+            .then((summaries: any[]) => {
+              const reportSummary = summaries.find((s: any) => s.content_report_id.toString() === selectedReport);
+              if (reportSummary) {
+                startTransition(() => {
+                  setReportSummary(reportSummary.parsed_summary);
+                  console.log('Summary updated after regeneration, new length:', reportSummary.parsed_summary.length);
+                });
+              }
+            })
+            .catch(error => {
+              console.error('Failed to reload summary:', error);
+            });
+        });
       }
       
       // Invalidate cache after updating state
@@ -382,7 +386,9 @@ export function ContentDistribution() {
       return await response.json();
     },
     onSuccess: (data) => {
-      setReportSummary(data.summary);
+      startTransition(() => {
+        setReportSummary(data.summary);
+      });
       setIsGeneratingSummary(false);
       queryClient.invalidateQueries({ queryKey: ["/api/report-summaries"] });
       toast({
