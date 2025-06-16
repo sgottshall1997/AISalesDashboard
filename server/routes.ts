@@ -2668,34 +2668,27 @@ Please analyze the above content and process each numbered article section follo
 
 ${content}
 
-Please analyze the above content thoroughly and create a detailed analysis in this format:
+Please analyze the above content thoroughly and create a detailed analysis following this exact format:
 
-**${reportTypeLabel} Report Analysis: ${title}**
+Executive Summary:
+[2-3 sentence overview highlighting the strategic importance and key themes covered in the report, emphasizing geopolitical tensions, market opportunities, and investment implications]
 
-**Article-by-Article Breakdown:**
-[For each article mentioned, provide a section with:]
-- **Article [Number]: [Title/Topic]**
-  - *Core Thesis:* [Main investment argument]
-  - *Key Data Points:* [Important statistics, metrics, or findings]
-  - *Investment Implications:* [How this affects portfolio decisions]
-  - *Risk Factors:* [Potential downsides or concerns]
-  - *Timeline:* [Short/medium/long-term outlook]
+Key Investment Themes:
+[Number each theme 1-6, providing detailed analysis with specific data points, percentages, and evidence from the report. Each theme should include risk factors and strategic implications]
 
-**Cross-Article Themes:**
-- *Recurring Investment Themes:* [Common threads across articles]
-- *Sector Implications:* [Which sectors are highlighted]
-- *Geographic Focus:* [Regional opportunities or risks]
-- *Macro Trends:* [Broader economic or market patterns]
+Market Outlook & Implications:
+[Detailed analysis of market expectations, sector performance outlook, and strategic positioning recommendations based on the themes identified]
 
-**Portfolio Action Items:**
-- *High Priority:* [Immediate actions recommended]
-- *Research Pipeline:* [Areas requiring deeper analysis]
-- *Risk Monitoring:* [Key metrics or events to watch]
+Risk Factors:
+[Specific risks and challenges mentioned in the report, including geopolitical tensions, regulatory hurdles, environmental concerns, and market volatility factors]
 
-**Key Takeaways:**
-[3-5 bullet points summarizing the most important insights]
+Investment Opportunities:
+[Numbered list of concrete investment opportunities with specific company names, tickers, sectors, or asset classes mentioned in the report with clear rationale]
 
-Focus on extracting actionable intelligence for investment decision-making.`;
+Client Discussion Points:
+[Strategic talking points for advisor-client conversations, emphasizing how to discuss these themes with institutional investors and the implications for portfolio strategy]
+
+Focus on extracting specific data points, company names, percentages, and concrete investment insights from the actual report content.`;
 
         const detailedResponse = await openai.chat.completions.create({
           model: "gpt-4o",
