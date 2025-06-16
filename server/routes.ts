@@ -454,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Invoice detail endpoints
-  app.get("/api/invoices/:id", async (req: Request, res: Response) => {
+  app.get("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const invoice = await storage.getInvoiceWithClient(id);
@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/invoices/:id", async (req: Request, res: Response) => {
+  app.delete("/api/invoices/:id", requireAuth, async (req: Request, res: Response) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteInvoice(id);
