@@ -10,8 +10,8 @@ import PDFParser from "pdf2json";
 import { 
   insertClientSchema, insertInvoiceSchema, updateInvoiceSchema, insertLeadSchema,
   insertContentReportSchema, insertClientEngagementSchema, insertAiSuggestionSchema,
-  insertEmailHistorySchema, clients, invoices, leads, client_engagements, email_history,
-  content_reports, report_summaries, portfolio_constituents
+  insertEmailHistorySchema, insertTaskSchema, clients, invoices, leads, client_engagements, email_history,
+  content_reports, report_summaries, portfolio_constituents, tasks
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -548,6 +548,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting invoice:", error);
       res.status(500).json({ message: "Failed to delete invoice" });
+    }
+  });
+
+  // Task management endpoints
+  app.get("/api/tasks", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const tasks = await storage.getAllTasks();
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  app.get("/api/tasks/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const task = await storage.getTask(parseInt(req.params.id));
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.json(task);
+    } catch (error) {
+      console.error("Error fetching task:", error);
+      res.status(500).json({ error: "Failed to fetch task" });
+    }
+  });
+
+  app.post("/api/tasks", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const taskData = insertTaskSchema.parse(req.body);
+      const task = await storage.createTask(taskData);
+      res.json(task);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      if (error.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid task data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create task" });
+      }
+    }
+  });
+
+  app.patch("/api/tasks/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updates = req.body;
+      const task = await storage.updateTask(parseInt(req.params.id), updates);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.json(task);
+    } catch (error) {
+      console.error("Error updating task:", error);
+      res.status(500).json({ error: "Failed to update task" });
+    }
+  });
+
+  app.delete("/api/tasks/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const success = await storage.deleteTask(parseInt(req.params.id));
+      if (success) {
+        res.json({ message: "Task deleted successfully" });
+      } else {
+        res.status(404).json({ error: "Task not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ error: "Failed to delete task" });
     }
   });
 
