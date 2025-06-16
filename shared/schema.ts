@@ -233,6 +233,16 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   created_at: true,
   completed_at: true,
+}).extend({
+  due_date: z.union([z.string(), z.date(), z.null()]).optional().transform((val) => {
+    if (typeof val === 'string' && val !== '') {
+      return new Date(val);
+    }
+    if (val === '' || val === null || val === undefined) {
+      return null;
+    }
+    return val;
+  }),
 });
 
 export const insertFeedbackSchema = createInsertSchema(feedback).omit({

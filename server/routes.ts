@@ -577,7 +577,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tasks", requireAuth, async (req: Request, res: Response) => {
     try {
-      const taskData = insertTaskSchema.parse(req.body);
+      // Handle date conversion manually before validation
+      const requestData = { ...req.body };
+      
+      // Convert due_date string to Date object if present
+      if (requestData.due_date) {
+        if (typeof requestData.due_date === 'string' && requestData.due_date.trim() !== '') {
+          requestData.due_date = new Date(requestData.due_date);
+        } else if (requestData.due_date === '' || requestData.due_date === null) {
+          requestData.due_date = null;
+        }
+      }
+      
+      const taskData = insertTaskSchema.parse(requestData);
       const task = await storage.createTask(taskData);
       res.json(task);
     } catch (error) {
